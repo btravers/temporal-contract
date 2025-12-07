@@ -1,0 +1,79 @@
+import type { z } from 'zod';
+import type { ActivityDefinition, WorkflowDefinition, ContractDefinition } from '@temporal-contract/core';
+
+/**
+ * Builder for creating activity definitions
+ * 
+ * @example
+ * ```ts
+ * const myActivity = activity({
+ *   input: z.tuple([z.object({ name: z.string() })]),
+ *   output: z.object({ greeting: z.string() }),
+ * });
+ * ```
+ */
+export const activity = <TInput extends z.ZodTuple<any, any>, TOutput extends z.ZodTypeAny>(config: {
+  input: TInput;
+  output: TOutput;
+}): ActivityDefinition => {
+  return {
+    input: config.input,
+    output: config.output,
+  };
+};
+
+/**
+ * Builder for creating workflow definitions
+ * 
+ * @example
+ * ```ts
+ * const myWorkflow = workflow({
+ *   input: z.tuple([z.object({ orderId: z.string() })]),
+ *   output: z.object({ status: z.string() }),
+ *   taskQueue: 'orders',
+ *   activities: {
+ *     processPayment: activity({
+ *       input: z.tuple([z.object({ amount: z.number() })]),
+ *       output: z.object({ success: z.boolean() }),
+ *     }),
+ *   },
+ * });
+ * ```
+ */
+export const workflow = <
+  TInput extends z.ZodTuple<any, any>,
+  TOutput extends z.ZodTypeAny,
+  TActivities extends Record<string, ActivityDefinition> = {}
+>(config: {
+  input: TInput;
+  output: TOutput;
+  taskQueue: string;
+  activities?: TActivities;
+}): WorkflowDefinition => {
+  return {
+    input: config.input,
+    output: config.output,
+    taskQueue: config.taskQueue,
+    activities: config.activities,
+  };
+};
+
+/**
+ * Builder for creating a complete contract
+ * 
+ * @example
+ * ```ts
+ * const myContract = contract({
+ *   workflows: {
+ *     processOrder: workflow({ ... }),
+ *     sendNotification: workflow({ ... }),
+ *   },
+ *   activities: {
+ *     sendEmail: activity({ ... }),
+ *   },
+ * });
+ * ```
+ */
+export const contract = <T extends ContractDefinition>(definition: T): T => {
+  return definition;
+};

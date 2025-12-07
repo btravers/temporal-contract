@@ -1,0 +1,17 @@
+packages:
+  - packages/*
+
+catalog:
+  '@temporalio/client': 1.13.2
+  '@temporalio/worker': 1.13.2
+  '@temporalio/workflow': 1.13.2
+  '@types/node': 24.10.1
+  lefthook: 2.0.8
+  oxfmt: 0.16.0
+  oxlint: 1.31.0
+  ts-node: 10.9.2
+  tsdown: 0.17.0
+  turbo: 2.6.3
+  typescript: 5.9.3
+  vitest: 4.0.15
+  zod: 4.1.13

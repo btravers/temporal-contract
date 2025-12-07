@@ -1,0 +1,27 @@
+{
+  "name": "@temporal-contract/root",
+  "private": true,
+  "type": "module",
+  "description": "Type-safe contract system for Temporal.io workflows and activities",
+  "author": "Benoit TRAVERS <benoit.travers.frgmail.com>",
+  "license": "MIT",
+  "packageManager": "pnpm@10.24.0",
+  "scripts": {
+    "prepare": "lefthook install",
+    "lint": "oxlint .",
+    "format": "oxfmt .",
+    "test": "turbo run test",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "setup": "pnpm install && pnpm build"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "lefthook": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "turbo": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

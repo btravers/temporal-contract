@@ -1,0 +1,55 @@
+{
+  "name": "@temporal-contract/worker",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Worker utilities for implementing temporal-contract workflows and activities",
+  "homepage": "https://github.com/btravers/temporal-contract#readme",
+  "bugs": {
+    "url": "https://github.com/btravers/temporal-contract/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/btravers/temporal-contract.git",
+    "directory": "packages/worker"
+  },
+  "author": "Benoit TRAVERS <benoit.travers.frgmail.com>",
+  "license": "MIT",
+  "keywords": [
+    "temporal",
+    "typescript",
+    "contract",
+    "worker"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "scripts": {
+    "dev": "tsdown src/index.ts --format cjs,esm --dts --watch",
+    "build": "tsdown src/index.ts --format cjs,esm --dts --clean"
+  },
+  "dependencies": {
+    "@temporal-contract/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@temporalio/workflow": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "zod": "catalog:"
+  },
+  "peerDependencies": {
+    "@temporalio/workflow": ">=1.13.0 <2.0.0",
+    "zod": ">=4.0.0 <5.0.0"
+  }
+}
