@@ -2,6 +2,22 @@
 
 Since Temporal workflows and activities can accept multiple arguments, `temporal-contract` uses Zod tuples to define input schemas instead of single object schemas.
 
+## Network Serialization & Validation
+
+An important feature of `temporal-contract` is that **all data exchanged between workflows and activities is validated** using Zod schemas. This is critical because Temporal serializes data when:
+- Sending workflow inputs from the client
+- Calling activities from workflows (network communication)
+- Returning results from activities to workflows
+- Returning workflow results to the client
+
+The validation happens at these points:
+1. **Client → Workflow**: Input validated before sending
+2. **Workflow → Activity**: Input validated before serialization, output validated after deserialization
+3. **Activity implementation**: Input validated on receive, output validated before returning
+4. **Workflow → Client**: Output validated before returning
+
+This ensures type safety and data integrity across all network boundaries.
+
 ## Basic Example
 
 ### Defining a Contract with Multiple Arguments
@@ -47,7 +63,7 @@ const myContract = contract({
 
 ## Implementing Workflows
 
-When implementing workflows, the arguments are destructured automatically:
+When implementing workflows, the arguments are destructured automatically. Activity calls are automatically wrapped with validation:
 
 ```typescript
 import { createWorkflow } from '@temporal-contract/worker';
@@ -60,12 +76,15 @@ const processOrder = createWorkflow({
     // customerId: string
     // items: Array<{ productId: string; quantity: number }>
     
-    // Call activities with multiple arguments
+    // When you call an activity, the input is validated BEFORE serialization
+    // and the output is validated AFTER deserialization
     for (const item of items) {
       const inventory = await context.activities.validateInventory(
         item.productId,
         item.quantity
       );
+      // ↑ Input: tuple validated with z.tuple([z.string(), z.number()])
+      // ↓ Output: object validated with the activity's output schema
       
       if (!inventory.available) {
         throw new Error(`Product ${item.productId} not available`);
@@ -83,6 +102,8 @@ const processOrder = createWorkflow({
   },
 });
 ```
+
+**Key point**: The validation wrapper intercepts activity calls to ensure data integrity across the network boundary between workflow and activity execution.
 
 ## Implementing Activities
 
@@ -172,9 +193,11 @@ await client.executeWorkflow('simple', {
 
 1. **Type Safety**: TypeScript infers the exact types for each argument
 2. **Temporal Compatibility**: Matches Temporal's native multi-argument support
-3. **Validation**: Zod validates each argument at runtime
-4. **Clarity**: Clear distinction between multiple arguments vs a single object argument
-5. **Flexibility**: Mix primitive types, objects, arrays, etc.
+3. **Network Validation**: Zod validates each argument at runtime before serialization and after deserialization
+4. **Data Integrity**: Protects against corrupted or malformed data across network boundaries
+5. **Clarity**: Clear distinction between multiple arguments vs a single object argument
+6. **Flexibility**: Mix primitive types, objects, arrays, etc.
+7. **Error Detection**: Catches serialization issues early with clear error messages
 
 ## Migration from Single Objects
 
