@@ -1,5 +1,5 @@
 import { Connection } from "@temporalio/client";
-import { createClient } from "@temporal-contract/client";
+import { TypedClient } from "@temporal-contract/client";
 import { orderProcessingContract } from "./contract.js";
 import type { Order, OrderResult } from "./contract.js";
 
@@ -15,7 +15,7 @@ async function run() {
   });
 
   // Create type-safe client for our contract
-  const contractClient = await createClient(orderProcessingContract, {
+  const contractClient = TypedClient.create(orderProcessingContract, {
     connection,
     namespace: "default",
   });

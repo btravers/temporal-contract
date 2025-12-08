@@ -11,23 +11,25 @@ pnpm add @temporal-contract/client @temporal-contract/contract @temporalio/clien
 ## Usage
 
 ```typescript
-import { createClient } from '@temporal-contract/client';
+import { Connection } from '@temporalio/client';
+import { TypedClient } from '@temporal-contract/client';
 import { myContract } from './contract';
 
+// Connect to Temporal
+const connection = await Connection.connect({
+  address: 'localhost:7233',
+});
+
 // Create a typed client
-const client = await createClient(myContract, {
-  connection: await Connection.connect(),
+const client = TypedClient.create(myContract, {
+  connection,
   namespace: 'default',
 });
 
 // Execute a workflow with full type safety
 const result = await client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
-  taskQueue: 'orders',
-  input: {
-    orderId: 'ORD-123',
-    items: [{ productId: 'PROD-1', quantity: 2 }],
-  },
+  args: ['ORD-123', [{ productId: 'PROD-1', quantity: 2 }]],
 });
 
 // Result is fully typed!
@@ -44,9 +46,15 @@ console.log(result.totalAmount); // number
 
 ## API
 
-### `createClient(contract, options?)`
+### `TypedClient.create(contract, options)`
 
 Creates a typed Temporal client from a contract.
+
+**Parameters:**
+- `contract` - The contract definition
+- `options` - Native Temporal `ClientOptions` (connection, namespace, dataConverter, etc.)
+
+**Returns:** `TypedClient<T>`
 
 ### Client Methods
 

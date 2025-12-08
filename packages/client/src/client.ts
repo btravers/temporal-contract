@@ -1,18 +1,11 @@
-import { Connection, Client, WorkflowHandle } from '@temporalio/client';
+import { Client, WorkflowHandle } from '@temporalio/client';
+import type { ClientOptions } from '@temporalio/client';
 import type {
   ContractDefinition,
   WorkflowDefinition,
   InferInput,
   InferOutput,
 } from '@temporal-contract/core';
-
-/**
- * Options for creating a typed Temporal client
- */
-export interface CreateClientOptions {
-  connection?: Connection;
-  namespace?: string;
-}
 
 /**
  * Typed workflow handle with validated results
@@ -33,7 +26,32 @@ export interface TypedWorkflowHandle<T extends WorkflowDefinition> {
  * defined in the contract.
  */
 export class TypedClient<T extends ContractDefinition> {
-  constructor(private readonly contract: T, private readonly client: Client) {
+  private constructor(private readonly contract: T, private readonly client: Client) {
+  }
+
+  /**
+   * Create a typed Temporal client from a contract
+   * 
+   * @example
+   * ```ts
+   * const connection = await Connection.connect();
+   * const client = TypedClient.create(myContract, {
+   *   connection,
+   *   namespace: 'default',
+   * });
+   * 
+   * const result = await client.executeWorkflow('processOrder', {
+   *   workflowId: 'order-123',
+   *   args: [...],
+   * });
+   * ```
+   */
+  static create<T extends ContractDefinition>(
+    contract: T,
+    options: ClientOptions
+  ): TypedClient<T> {
+    const client = new Client(options);
+    return new TypedClient(contract, client);
   }
 
   /**
@@ -161,34 +179,4 @@ export class TypedClient<T extends ContractDefinition> {
   }
 }
 
-/**
- * Create a typed Temporal client from a contract
- * 
- * @example
- * ```ts
- * const client = await createClient(myContract, {
- *   connection: await Connection.connect(),
- *   namespace: 'default',
- * });
- * 
- * const result = await client.executeWorkflow('processOrder', {
- *   workflowId: 'order-123',
- *   input: { ... },
- * });
- * ```
- */
-export async function createClient<T extends ContractDefinition>(
-  contract: T,
-  options: CreateClientOptions = {}
-): Promise<TypedClient<T>> {
-  const connection = options.connection || (await Connection.connect());
-  
-  const clientOptions: { connection: Connection; namespace?: string } = { connection };
-  if (options.namespace !== undefined) {
-    clientOptions.namespace = options.namespace;
-  }
-  
-  const client = new Client(clientOptions);
 
-  return new TypedClient(contract, client);
-}
