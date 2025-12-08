@@ -6,6 +6,9 @@
       "dependsOn": ["^build"]
     },
     "format": {},
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
     "test": {
       "dependsOn": ["build"]
     },

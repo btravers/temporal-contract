@@ -11,6 +11,7 @@
     "lint": "oxlint .",
     "format": "oxfmt .",
     "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "setup": "pnpm install && pnpm build"
