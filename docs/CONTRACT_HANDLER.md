@@ -1,60 +1,29 @@
-# Contract Handler
+# Worker Implementation
 
-The contract handler is the core feature of `@temporal-contract/worker`. It provides **complete compile-time validation** that all workflows and activities (global and workflow-specific) are correctly implemented.
+The `@temporal-contract/worker` package provides two main functions for implementing Temporal workers with full type safety.
 
 ## Overview
 
-`createContractHandler()` takes your contract definition and raw implementations, then:
-1. **Validates at compile-time** that all workflows and activities are implemented
-2. **Wraps all implementations** with automatic Zod validation (input/output)
-3. **Creates typed workflow contexts** with access to activities
-4. **Returns ready-to-use implementations** for Temporal Worker
+### Two-Part Architecture
+
+1. **`createActivitiesHandler`** - Implements all activities (global + workflow-specific) for the Temporal Worker
+2. **`createWorkflow`** - Implements individual workflows in separate files with typed context
+
+This separation follows Temporal's architecture where workflows must be loaded via `workflowsPath`.
 
 ## Basic Usage
 
-```typescript
-import { createContractHandler } from '@temporal-contract/worker';
-import { Worker } from '@temporalio/worker';
-import myContract from './contract';
+### 1. Activities Handler
 
-// Create handler with all implementations
-const handler = createContractHandler({
+Create a handler for all activities (used by the Worker):
+
+```typescript
+// activities/index.ts
+import { createActivitiesHandler } from '@temporal-contract/worker';
+import myContract from '../contract';
+
+export const activitiesHandler = createActivitiesHandler({
   contract: myContract,
-  
-  // All workflows must be implemented
-  workflows: {
-    processOrder: async (context, orderId, customerId) => {
-      // context.activities: typed activities (workflow + global)
-      // context.info: WorkflowInfo
-      const inventory = await context.activities.validateInventory(orderId);
-      const payment = await context.activities.chargePayment(customerId, 100);
-      
-      // Global activity
-      await context.activities.sendEmail(
-        customerId,
-        'Order processed',
-        'Your order has been processed'
-      );
-      
-      return {
-        orderId,
-        status: 'success',
-        transactionId: payment.transactionId,
-      };
-    },
-    
-    cancelOrder: async (context, orderId) => {
-      await context.activities.sendEmail(
-        'customer@example.com',
-        'Order cancelled',
-        `Order ${orderId} cancelled`
-      );
-      
-      return { orderId, cancelled: true };
-    },
-  },
-  
-  // All activities must be implemented (global + workflow-specific)
   activities: {
     // Global activities (available in all workflows)
     sendEmail: async (to, subject, body) => {
@@ -78,21 +47,88 @@ const handler = createContractHandler({
       return { transactionId, success: true };
     },
   },
-  
-  // Optional: default activity options for all workflows
+});
+```
+
+### 2. Workflow Implementations
+
+Create each workflow in its own file:
+
+```typescript
+// workflows/processOrder.ts
+import { createWorkflow } from '@temporal-contract/worker';
+import myContract from '../contract';
+
+export const processOrder = createWorkflow({
+  definition: myContract.workflows.processOrder,
+  contract: myContract,
+  implementation: async (context, orderId, customerId) => {
+    // context.activities: typed activities (workflow + global)
+    // context.info: WorkflowInfo
+    
+    const inventory = await context.activities.validateInventory(orderId);
+    
+    if (!inventory.available) {
+      throw new Error('Out of stock');
+    }
+    
+    const payment = await context.activities.chargePayment(customerId, 100);
+    
+    // Global activity
+    await context.activities.sendEmail(
+      customerId,
+      'Order processed',
+      'Your order has been processed'
+    );
+    
+    return {
+      orderId,
+      status: payment.success ? 'success' : 'failed',
+      transactionId: payment.transactionId,
+    };
+  },
   activityOptions: {
     startToCloseTimeout: '1 minute',
-    retry: {
-      maximumAttempts: 3,
-    },
   },
 });
+```
 
-// Use with Temporal Worker
+```typescript
+// workflows/cancelOrder.ts
+import { createWorkflow } from '@temporal-contract/worker';
+import myContract from '../contract';
+
+export const cancelOrder = createWorkflow({
+  definition: myContract.workflows.cancelOrder,
+  contract: myContract,
+  implementation: async (context, orderId) => {
+    await context.activities.sendEmail(
+      'customer@example.com',
+      'Order cancelled',
+      `Order ${orderId} cancelled`
+    );
+    
+    return { orderId, cancelled: true };
+  },
+});
+```
+
+### 3. Worker Setup
+
+```typescript
+// worker.ts
+import { Worker } from '@temporalio/worker';
+import { activitiesHandler } from './activities';
+
 const worker = await Worker.create({
+  // Workflows are loaded from file system
   workflowsPath: require.resolve('./workflows'),
-  activities: handler.activities,
-  taskQueue: handler.contract.taskQueue,
+  
+  // Activities from handler
+  activities: activitiesHandler.activities,
+  
+  // Task queue from contract
+  taskQueue: activitiesHandler.contract.taskQueue,
 });
 
 await worker.run();
@@ -100,20 +136,19 @@ await worker.run();
 
 ## File Structure
 
-Recommended organization for a clean separation of concerns:
+Recommended organization:
 
 ```
 src/
 ├── contract.ts           # Contract definition
-├── workflows/
-│   ├── index.ts         # Handler creation and exports
-│   ├── processOrder.ts  # processOrder implementation
-│   └── cancelOrder.ts   # cancelOrder implementation
 ├── activities/
-│   ├── index.ts         # All activity implementations
-│   ├── email.ts         # sendEmail implementation
-│   ├── inventory.ts     # validateInventory implementation
-│   └── payment.ts       # chargePayment implementation
+│   ├── index.ts         # Activities handler
+│   ├── email.ts         # Email activities
+│   ├── inventory.ts     # Inventory activities
+│   └── payment.ts       # Payment activities
+├── workflows/
+│   ├── processOrder.ts  # processOrder workflow
+│   └── cancelOrder.ts   # cancelOrder workflow
 └── worker.ts            # Worker setup
 ```
 
@@ -123,22 +158,21 @@ src/
 import { z } from 'zod';
 import { activity, workflow, contract } from '@temporal-contract/contract';
 
-const sendEmail = activity({
-  input: z.tuple([z.string(), z.string(), z.string()]),
-  output: z.object({ sent: z.boolean() }),
-});
-
-const logEvent = activity({
-  input: z.tuple([z.string(), z.any()]),
-  output: z.object({ logged: z.boolean() }),
-});
-
 export default contract({
   taskQueue: 'my-service',
+  
+  // Global activities (available in all workflows)
   activities: {
-    sendEmail,
-    logEvent,
+    sendEmail: activity({
+      input: z.tuple([z.string(), z.string(), z.string()]),
+      output: z.object({ sent: z.boolean() }),
+    }),
+    logEvent: activity({
+      input: z.tuple([z.string(), z.any()]),
+      output: z.object({ logged: z.boolean() }),
+    }),
   },
+  
   workflows: {
     processOrder: workflow({
       input: z.tuple([z.string(), z.string()]),
@@ -147,6 +181,8 @@ export default contract({
         status: z.string(),
         transactionId: z.string(),
       }),
+      
+      // Workflow-specific activities
       activities: {
         validateInventory: activity({
           input: z.tuple([z.string()]),
@@ -158,6 +194,7 @@ export default contract({
         }),
       },
     }),
+    
     cancelOrder: workflow({
       input: z.tuple([z.string()]),
       output: z.object({ orderId: z.string(), cancelled: z.boolean() }),
@@ -166,94 +203,89 @@ export default contract({
 });
 ```
 
-### workflows/processOrder.ts
+### activities/index.ts
 
 ```typescript
-import type { WorkflowContext } from '@temporal-contract/worker';
-import type myContract from '../contract';
+import { createActivitiesHandler } from '@temporal-contract/worker';
+import myContract from '../contract';
+import { sendEmail, logEvent } from './email';
+import { validateInventory } from './inventory';
+import { chargePayment } from './payment';
 
-type ProcessOrderWorkflow = typeof myContract.workflows.processOrder;
-type Contract = typeof myContract;
+export const activitiesHandler = createActivitiesHandler({
+  contract: myContract,
+  activities: {
+    // Global activities
+    sendEmail,
+    logEvent,
+    
+    // Workflow-specific activities
+    validateInventory,
+    chargePayment,
+  },
+});
+```
 
-export async function processOrder(
-  context: WorkflowContext<ProcessOrderWorkflow, Contract>,
-  orderId: string,
-  customerId: string
-) {
-  // Fully typed context with activities
-  const inventory = await context.activities.validateInventory(orderId);
-  
-  if (!inventory.available) {
-    throw new Error('Out of stock');
-  }
-  
-  const payment = await context.activities.chargePayment(customerId, 100);
-  
-  // Global activity
-  await context.activities.sendEmail(
-    customerId,
-    'Order processed',
-    'Your order has been processed'
-  );
-  
-  return {
-    orderId,
-    status: 'success',
-    transactionId: payment.transactionId,
-  };
+### activities/email.ts
+
+```typescript
+export async function sendEmail(to: string, subject: string, body: string) {
+  await emailService.send({ to, subject, body });
+  return { sent: true };
+}
+
+export async function logEvent(eventName: string, data: any) {
+  await logger.log(eventName, data);
+  return { logged: true };
 }
 ```
 
-### workflows/index.ts
+### workflows/processOrder.ts
 
 ```typescript
-import { createContractHandler } from '@temporal-contract/worker';
+import { createWorkflow } from '@temporal-contract/worker';
 import myContract from '../contract';
-import { processOrder } from './processOrder';
-import { cancelOrder } from './cancelOrder';
-import * as activities from '../activities';
 
-export const handler = createContractHandler({
+export const processOrder = createWorkflow({
+  definition: myContract.workflows.processOrder,
   contract: myContract,
-  workflows: {
-    processOrder,
-    cancelOrder,
+  implementation: async (context, orderId, customerId) => {
+    const inventory = await context.activities.validateInventory(orderId);
+    
+    if (!inventory.available) {
+      throw new Error('Out of stock');
+    }
+    
+    const payment = await context.activities.chargePayment(customerId, 100);
+    
+    await context.activities.sendEmail(
+      customerId,
+      'Order processed',
+      'Your order has been processed'
+    );
+    
+    return {
+      orderId,
+      status: payment.success ? 'success' : 'failed',
+      transactionId: payment.transactionId,
+    };
   },
-  activities,
   activityOptions: {
     startToCloseTimeout: '1 minute',
   },
 });
 ```
 
-### activities/index.ts
-
-```typescript
-import { sendEmail, logEvent } from './email';
-import { validateInventory } from './inventory';
-import { chargePayment } from './payment';
-
-export {
-  // Global activities
-  sendEmail,
-  logEvent,
-  
-  // Workflow-specific activities
-  validateInventory,
-  chargePayment,
-};
-```
-
 ### worker.ts
 
 ```typescript
 import { Worker } from '@temporalio/worker';
-import { handler } from './workflows';
+import { activitiesHandler } from './activities';
 
 const worker = await Worker.create({
   workflowsPath: require.resolve('./workflows'),
-  activities: handler.activities,
-  taskQueue: handler.contract.taskQueue,
+  activities: activitiesHandler.activities,
+  taskQueue: activitiesHandler.contract.taskQueue,
 });
 
 await worker.run();
@@ -261,27 +293,13 @@ await worker.run();
 
 ## Type Safety
 
-### Compile-Time Validation
+### Compile-Time Validation for Activities
 
-TypeScript will error if:
+TypeScript ensures all activities are implemented:
 
-1. **Missing workflow implementation:**
 ```typescript
-const handler = createContractHandler({
+const activitiesHandler = createActivitiesHandler({
   contract: myContract,
-  workflows: {
-    processOrder: /* ... */,
-    // ❌ Error: Property 'cancelOrder' is missing
-  },
-  activities: { /* ... */ },
-});
-```
-
-2. **Missing activity implementation:**
-```typescript
-const handler = createContractHandler({
-  contract: myContract,
-  workflows: { /* ... */ },
   activities: {
     sendEmail: /* ... */,
     validateInventory: /* ... */,
@@ -290,99 +308,81 @@ const handler = createContractHandler({
 });
 ```
 
-3. **Wrong implementation signature:**
-```typescript
-const handler = createContractHandler({
-  contract: myContract,
-  workflows: {
-    processOrder: async (context, orderId: number) => {
-      // ❌ Error: orderId should be string, not number
-      return { orderId: '', status: '', transactionId: '' };
-    },
-  },
-  activities: { /* ... */ },
-});
-```
+### Type Inference for Workflows
 
-4. **Wrong return type:**
-```typescript
-const handler = createContractHandler({
-  contract: myContract,
-  workflows: {
-    processOrder: async (context, orderId, customerId) => {
-      return { orderId, status: 'success' };
-      // ❌ Error: Property 'transactionId' is missing
-    },
-  },
-  activities: { /* ... */ },
-});
-```
-
-### Type Inference Helpers
-
-Use TypeScript's type inference to keep implementations typed:
+Use TypeScript's type inference to keep workflow implementations typed:
 
 ```typescript
-import type { WorkflowContext, RawWorkflowImplementation } from '@temporal-contract/worker';
-import type myContract from './contract';
+import type { WorkflowContext, WorkflowImplementation } from '@temporal-contract/worker';
+import type myContract from '../contract';
 
-// Extract specific workflow type
 type ProcessOrderWorkflow = typeof myContract.workflows.processOrder;
 type Contract = typeof myContract;
 
-// Use in function signature
-export async function processOrder(
-  context: WorkflowContext<ProcessOrderWorkflow, Contract>,
-  orderId: string,
-  customerId: string
-) {
-  // context is fully typed
-  // arguments are fully typed
-  // return type is inferred and validated
-}
+// Option 1: Function signature with explicit types
+export const processOrder = createWorkflow({
+  definition: myContract.workflows.processOrder,
+  contract: myContract,
+  implementation: async (
+    context: WorkflowContext<ProcessOrderWorkflow, Contract>,
+    orderId: string,
+    customerId: string
+  ) => {
+    // Full type inference
+  },
+});
 
-// Or use RawWorkflowImplementation
-export const processOrder: RawWorkflowImplementation<
-  ProcessOrderWorkflow,
-  Contract
-> = async (context, orderId, customerId) => {
-  // Everything typed
-};
+// Option 2: Using WorkflowImplementation type
+const processOrderImpl: WorkflowImplementation<ProcessOrderWorkflow, Contract> = 
+  async (context, orderId, customerId) => {
+    // Everything typed
+  };
+
+export const processOrder = createWorkflow({
+  definition: myContract.workflows.processOrder,
+  contract: myContract,
+  implementation: processOrderImpl,
+});
 ```
 
 ## Automatic Validation
 
-The handler wraps all implementations with Zod validation:
+All implementations are wrapped with Zod validation:
 
 ### Workflow Validation
 
 ```typescript
-workflows: {
-  processOrder: async (context, orderId, customerId) => {
+export const processOrder = createWorkflow({
+  definition: myContract.workflows.processOrder,
+  contract: myContract,
+  implementation: async (context, orderId, customerId) => {
     // 1. Input validated: [orderId, customerId] parsed with input schema
     // 2. Your implementation runs
     // 3. Output validated: result parsed with output schema
     return { orderId, status: 'success', transactionId: '123' };
   },
-}
+});
 ```
 
 ### Activity Validation
 
 ```typescript
-activities: {
-  chargePayment: async (customerId, amount) => {
-    // 1. Input validated: [customerId, amount] parsed with input schema
-    // 2. Your implementation runs
-    // 3. Output validated: result parsed with output schema
-    return { transactionId: '123', success: true };
+const activitiesHandler = createActivitiesHandler({
+  contract: myContract,
+  activities: {
+    chargePayment: async (customerId, amount) => {
+      // 1. Input validated: [customerId, amount] parsed with input schema
+      // 2. Your implementation runs
+      // 3. Output validated: result parsed with output schema
+      return { transactionId: '123', success: true };
+    },
   },
-}
+});
 ```
 
 ### Network Boundary Validation
 
-Activity calls from workflows are also validated:
+Activity calls from workflows are validated at network boundaries:
 
 ```typescript
 // Inside workflow
@@ -396,72 +396,69 @@ This ensures **complete type safety and data integrity** across all network boun
 
 ## Best Practices
 
-### 1. Separate Implementation Files
+### 1. Separate Files for Workflows
 
-Keep workflow and activity implementations in separate files for better organization:
+Each workflow should be in its own file for better organization and to work properly with Temporal's `workflowsPath`:
 
 ```typescript
+// ✅ Good: Each workflow in its own file
 // workflows/processOrder.ts
-export async function processOrder(context, orderId, customerId) {
-  // Implementation
-}
+export const processOrder = createWorkflow({ /* ... */ });
 
-// workflows/index.ts
-import { processOrder } from './processOrder';
-import { cancelOrder } from './cancelOrder';
-
-export const handler = createContractHandler({
-  contract: myContract,
-  workflows: { processOrder, cancelOrder },
-  activities: { /* ... */ },
-});
+// workflows/cancelOrder.ts
+export const cancelOrder = createWorkflow({ /* ... */ });
 ```
 
-### 2. Use Type Annotations
+### 2. Group Activities by Domain
 
-Add explicit types to your implementations for better IDE support:
+Organize activities by domain in separate files:
+
+```typescript
+// activities/email.ts
+export async function sendEmail(to, subject, body) { /* ... */ }
+export async function sendSMS(to, message) { /* ... */ }
+
+// activities/payment.ts
+export async function chargePayment(customerId, amount) { /* ... */ }
+export async function refundPayment(transactionId) { /* ... */ }
+
+// activities/inventory.ts
+export async function validateInventory(orderId) { /* ... */ }
+export async function reserveInventory(orderId) { /* ... */ }
+```
+
+### 3. Use Type Annotations
+
+Add explicit types for better IDE support:
 
 ```typescript
 import type { WorkflowContext } from '@temporal-contract/worker';
 
-export async function processOrder(
-  context: WorkflowContext<typeof myContract.workflows.processOrder, typeof myContract>,
-  orderId: string,
-  customerId: string
-) {
-  // Full type inference and autocomplete
-}
-```
-
-### 3. Group Related Activities
-
-Organize activities by domain:
-
-```typescript
-activities: {
-  // Email domain
-  sendEmail: emailService.send,
-  sendSMS: emailService.sendSMS,
-  
-  // Payment domain
-  chargePayment: paymentService.charge,
-  refundPayment: paymentService.refund,
-  
-  // Inventory domain
-  validateInventory: inventoryService.validate,
-  reserveInventory: inventoryService.reserve,
-}
+export const processOrder = createWorkflow({
+  definition: myContract.workflows.processOrder,
+  contract: myContract,
+  implementation: async (
+    context: WorkflowContext<
+      typeof myContract.workflows.processOrder,
+      typeof myContract
+    >,
+    orderId: string,
+    customerId: string
+  ) => {
+    // Full type inference and autocomplete
+  },
+});
 ```
 
 ### 4. Configure Activity Options
 
-Set sensible defaults for all activities:
+Set sensible defaults for workflow activities:
 
 ```typescript
-const handler = createContractHandler({
+export const processOrder = createWorkflow({
+  definition: myContract.workflows.processOrder,
   contract: myContract,
-  workflows: { /* ... */ },
-  activities: { /* ... */ },
+  implementation: async (context, orderId, customerId) => { /* ... */ },
   activityOptions: {
     startToCloseTimeout: '1 minute',
     retry: {
@@ -476,7 +473,7 @@ const handler = createContractHandler({
 
 ## Multiple Contracts
 
-If you have multiple contracts, create a handler for each:
+If you have multiple contracts, create separate handlers and workers:
 
 ```typescript
 // contracts/orders.ts
@@ -491,34 +488,43 @@ export default contract({
   workflows: { /* ... */ },
 });
 
-// workers/orders.ts
+// activities/orders.ts
 import ordersContract from '../contracts/orders';
 
-export const ordersHandler = createContractHandler({
+export const ordersActivitiesHandler = createActivitiesHandler({
   contract: ordersContract,
-  workflows: { /* ... */ },
   activities: { /* ... */ },
 });
 
-// workers/payments.ts
+// activities/payments.ts
 import paymentsContract from '../contracts/payments';
 
-export const paymentsHandler = createContractHandler({
+export const paymentsActivitiesHandler = createActivitiesHandler({
   contract: paymentsContract,
-  workflows: { /* ... */ },
   activities: { /* ... */ },
 });
 
-// Start separate workers
+// workflows/orders/processOrder.ts
+import ordersContract from '../../contracts/orders';
+
+export const processOrder = createWorkflow({
+  definition: ordersContract.workflows.processOrder,
+  contract: ordersContract,
+  implementation: async (context, orderId) => { /* ... */ },
+});
+
+// worker.ts - Start separate workers
 const ordersWorker = await Worker.create({
-  workflowsPath: require.resolve('./workers/orders'),
-  activities: ordersHandler.activities,
-  taskQueue: ordersHandler.contract.taskQueue,
+  workflowsPath: require.resolve('./workflows/orders'),
+  activities: ordersActivitiesHandler.activities,
+  taskQueue: ordersActivitiesHandler.contract.taskQueue,
 });
 
 const paymentsWorker = await Worker.create({
-  workflowsPath: require.resolve('./workers/payments'),
-  activities: paymentsHandler.activities,
-  taskQueue: paymentsHandler.contract.taskQueue,
+  workflowsPath: require.resolve('./workflows/payments'),
+  activities: paymentsActivitiesHandler.activities,
+  taskQueue: paymentsActivitiesHandler.contract.taskQueue,
 });
+
+await Promise.all([ordersWorker.run(), paymentsWorker.run()]);
 ```

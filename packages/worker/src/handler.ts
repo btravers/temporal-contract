@@ -20,9 +20,9 @@ export interface WorkflowContext<
 }
 
 /**
- * Raw workflow implementation function (receives context + typed args)
+ * Workflow implementation function (receives context + typed args)
  */
-export type RawWorkflowImplementation<
+export type WorkflowImplementation<
   TWorkflow extends WorkflowDefinition,
   TContract extends ContractDefinition
 > = (
@@ -36,13 +36,6 @@ export type RawWorkflowImplementation<
 export type RawActivityImplementation<T extends ActivityDefinition> = (
   ...args: InferInput<T>
 ) => Promise<InferOutput<T>>;
-
-/**
- * Map of workflow implementations for a contract
- */
-export type WorkflowImplementations<T extends ContractDefinition> = {
-  [K in keyof T['workflows']]: RawWorkflowImplementation<T['workflows'][K], T>;
-};
 
 /**
  * Map of all activity implementations for a contract (global + all workflow-specific)
@@ -73,25 +66,35 @@ export type ActivityImplementations<T extends ContractDefinition> =
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
 
 /**
- * Options for creating a contract handler
+ * Options for creating activities handler
  */
-export interface CreateContractHandlerOptions<T extends ContractDefinition> {
+export interface CreateActivitiesHandlerOptions<T extends ContractDefinition> {
   contract: T;
-  workflows: WorkflowImplementations<T>;
   activities: ActivityImplementations<T>;
-  /**
-   * Default activity options for all workflows
-   */
-  activityOptions?: ActivityOptions;
 }
 
 /**
- * Contract handler with wrapped implementations ready for Temporal Worker
+ * Activities handler ready for Temporal Worker
  */
-export interface ContractHandler<T extends ContractDefinition> {
+export interface ActivitiesHandler<T extends ContractDefinition> {
   contract: T;
-  workflows: Record<string, (...args: any[]) => Promise<any>>;
   activities: Record<string, (...args: any[]) => Promise<any>>;
+}
+
+/**
+ * Options for creating a workflow implementation
+ */
+export interface CreateWorkflowOptions<
+  TWorkflow extends WorkflowDefinition,
+  TContract extends ContractDefinition
+> {
+  definition: TWorkflow;
+  contract: TContract;
+  implementation: WorkflowImplementation<TWorkflow, TContract>;
+  /**
+   * Default activity options
+   */
+  activityOptions?: ActivityOptions;
 }
 
 /**
@@ -135,29 +138,20 @@ function createValidatedActivities<
 }
 
 /**
- * Create a typed contract handler with automatic validation
+ * Create a typed activities handler with automatic validation
  * 
- * This wraps all workflow and activity implementations with Zod validation:
- * - Workflows: validates input/output, provides typed context with activities
- * - Activities: validates input/output at network boundaries
+ * This wraps all activity implementations with Zod validation at network boundaries.
+ * TypeScript ensures ALL activities (global + workflow-specific) are implemented.
  * 
- * TypeScript ensures ALL workflows and activities are implemented.
+ * Use this to create the activities object for the Temporal Worker.
  * 
  * @example
  * ```ts
- * import { createContractHandler } from '@temporal-contract/worker';
+ * import { createActivitiesHandler } from '@temporal-contract/worker';
  * import myContract from './contract';
  * 
- * const handler = createContractHandler({
+ * export const activitiesHandler = createActivitiesHandler({
  *   contract: myContract,
- *   workflows: {
- *     processOrder: async (context, orderId, customerId) => {
- *       // context.activities has typed activities (workflow + global)
- *       // context.info has workflow info
- *       const inventory = await context.activities.validateInventory(orderId);
- *       return { orderId, status: 'success' };
- *     },
- *   },
  *   activities: {
  *     // Global activities
  *     sendEmail: async (to, subject, body) => {
@@ -170,9 +164,6 @@ function createValidatedActivities<
  *       return { available };
  *     },
  *   },
- *   activityOptions: {
- *     startToCloseTimeout: '1 minute',
- *   },
  * });
  * 
  * // Use with Temporal Worker
@@ -180,15 +171,15 @@ function createValidatedActivities<
  * 
  * const worker = await Worker.create({
  *   workflowsPath: require.resolve('./workflows'),
- *   activities: handler.activities,
- *   taskQueue: handler.contract.taskQueue,
+ *   activities: activitiesHandler.activities,
+ *   taskQueue: activitiesHandler.contract.taskQueue,
  * });
  * ```
  */
-export function createContractHandler<T extends ContractDefinition>(
-  options: CreateContractHandlerOptions<T>
-): ContractHandler<T> {
-  const { contract, workflows, activities, activityOptions } = options;
+export function createActivitiesHandler<T extends ContractDefinition>(
+  options: CreateActivitiesHandlerOptions<T>
+): ActivitiesHandler<T> {
+  const { contract, activities } = options;
 
   // Wrap activities with validation
   const wrappedActivities: Record<string, (...args: any[]) => Promise<any>> = {};
@@ -202,7 +193,7 @@ export function createContractHandler<T extends ContractDefinition>(
       activityDef = contract.activities[activityName];
     } else {
       // Check workflow-specific activities
-      for (const workflow of Object.values(contract.workflows)) {
+      for (const workflow of Object.values(contract.workflows) as WorkflowDefinition[]) {
         if (workflow.activities?.[activityName]) {
           activityDef = workflow.activities[activityName];
           break;
@@ -226,55 +217,115 @@ export function createContractHandler<T extends ContractDefinition>(
     };
   }
 
-  // Wrap workflows with validation and context
-  const wrappedWorkflows: Record<string, (...args: any[]) => Promise<any>> = {};
-  
-  for (const [workflowName, workflowImpl] of Object.entries(workflows)) {
-    const workflowDef = contract.workflows[workflowName];
-    
-    if (!workflowDef) {
-      throw new Error(`Workflow definition not found for: ${workflowName}`);
-    }
-    
-    wrappedWorkflows[workflowName] = async (...args: any[]) => {
-      // Validate workflow input
-      const validatedInput = workflowDef.input.parse(args) as any;
-
-      // Create activities proxy if activities are defined
-      let contextActivities: any = {};
-      
-      if (workflowDef.activities || contract.activities) {
-        const rawActivities = proxyActivities<Record<string, (...args: any[]) => Promise<any>>>({
-          startToCloseTimeout: 60_000, // 1 minute default
-          ...activityOptions,
-        });
-        
-        contextActivities = createValidatedActivities(
-          rawActivities,
-          workflowDef.activities,
-          contract.activities
-        );
-      }
-
-      // Create workflow context
-      const context = {
-        activities: contextActivities,
-        info: workflowInfo(),
-      };
-
-      // Execute workflow
-      const result = await (workflowImpl as any)(context, ...validatedInput);
-
-      // Validate workflow output
-      return workflowDef.output.parse(result);
-    };
-  }
-
   return {
     contract,
-    workflows: wrappedWorkflows,
     activities: wrappedActivities,
   };
 }
 
+/**
+ * Create a typed workflow implementation with automatic validation
+ * 
+ * This wraps a workflow implementation with:
+ * - Input/output validation
+ * - Typed workflow context with activities
+ * - Workflow info access
+ * 
+ * Workflows must be defined in separate files and imported by the Temporal Worker
+ * via workflowsPath.
+ * 
+ * @example
+ * ```ts
+ * // workflows/processOrder.ts
+ * import { createWorkflow } from '@temporal-contract/worker';
+ * import myContract from '../contract';
+ * 
+ * export const processOrder = createWorkflow({
+ *   definition: myContract.workflows.processOrder,
+ *   contract: myContract,
+ *   implementation: async (context, orderId, customerId) => {
+ *     // context.activities: typed activities (workflow + global)
+ *     // context.info: WorkflowInfo
+ *     
+ *     const inventory = await context.activities.validateInventory(orderId);
+ *     
+ *     if (!inventory.available) {
+ *       throw new Error('Out of stock');
+ *     }
+ *     
+ *     const payment = await context.activities.chargePayment(customerId, 100);
+ *     
+ *     // Global activity
+ *     await context.activities.sendEmail(
+ *       customerId,
+ *       'Order processed',
+ *       'Your order has been processed'
+ *     );
+ *     
+ *     return {
+ *       orderId,
+ *       status: payment.success ? 'success' : 'failed',
+ *       transactionId: payment.transactionId,
+ *     };
+ *   },
+ *   activityOptions: {
+ *     startToCloseTimeout: '1 minute',
+ *   },
+ * });
+ * ```
+ * 
+ * Then in your worker setup:
+ * ```ts
+ * // worker.ts
+ * import { Worker } from '@temporalio/worker';
+ * import { activitiesHandler } from './activities';
+ * 
+ * const worker = await Worker.create({
+ *   workflowsPath: require.resolve('./workflows'), // Imports processOrder
+ *   activities: activitiesHandler.activities,
+ *   taskQueue: activitiesHandler.contract.taskQueue,
+ * });
+ * ```
+ */
+export function createWorkflow<
+  TWorkflow extends WorkflowDefinition,
+  TContract extends ContractDefinition
+>(
+  options: CreateWorkflowOptions<TWorkflow, TContract>
+): (...args: InferInput<TWorkflow>) => Promise<InferOutput<TWorkflow>> {
+  const { definition, contract, implementation, activityOptions } = options;
+
+  return async (...args: any[]) => {
+    // Validate workflow input
+    const validatedInput = definition.input.parse(args) as any;
+
+    // Create activities proxy if activities are defined
+    let contextActivities: any = {};
+    
+    if (definition.activities || contract.activities) {
+      const rawActivities = proxyActivities<Record<string, (...args: any[]) => Promise<any>>>({
+        startToCloseTimeout: 60_000, // 1 minute default
+        ...activityOptions,
+      });
+      
+      contextActivities = createValidatedActivities(
+        rawActivities,
+        definition.activities,
+        contract.activities
+      );
+    }
+
+    // Create workflow context
+    const context: WorkflowContext<TWorkflow, TContract> = {
+      activities: contextActivities,
+      info: workflowInfo(),
+    };
+
+    // Execute workflow
+    const result = await implementation(context, ...validatedInput);
+
+    // Validate workflow output
+    return definition.output.parse(result) as InferOutput<TWorkflow>;
+  };
+}
 

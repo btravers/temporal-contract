@@ -73,44 +73,15 @@ export default contract({
 });
 ```
 
-### 2. Implement workflows and activities
+### 2. Implement activities
 
 ```typescript
-// worker/index.ts
-import { createContractHandler } from '@temporal-contract/worker';
-import myContract from './contract';
+// activities/index.ts
+import { createActivitiesHandler } from '@temporal-contract/worker';
+import myContract from '../contract';
 
-export const handler = createContractHandler({
+export const activitiesHandler = createActivitiesHandler({
   contract: myContract,
-  
-  workflows: {
-    processOrder: async (context, orderId, customerId) => {
-      // context.activities: typed activities (workflow + global)
-      // context.info: WorkflowInfo
-      
-      const inventory = await context.activities.validateInventory(orderId);
-      
-      if (!inventory.available) {
-        throw new Error('Out of stock');
-      }
-      
-      const payment = await context.activities.chargePayment(customerId, 100);
-      
-      // Global activity
-      await context.activities.sendEmail(
-        customerId,
-        'Order processed',
-        'Your order has been processed'
-      );
-      
-      return {
-        orderId,
-        status: payment.success ? 'success' : 'failed',
-        transactionId: payment.transactionId,
-      };
-    },
-  },
-  
   activities: {
     // Global activities
     sendEmail: async (to, subject, body) => {
@@ -129,30 +100,67 @@ export const handler = createContractHandler({
       return { transactionId, success: true };
     },
   },
-  
+});
+```
+
+### 3. Implement workflows
+
+```typescript
+// workflows/processOrder.ts
+import { createWorkflow } from '@temporal-contract/worker';
+import myContract from '../contract';
+
+export const processOrder = createWorkflow({
+  definition: myContract.workflows.processOrder,
+  contract: myContract,
+  implementation: async (context, orderId, customerId) => {
+    // context.activities: typed activities (workflow + global)
+    // context.info: WorkflowInfo
+    
+    const inventory = await context.activities.validateInventory(orderId);
+    
+    if (!inventory.available) {
+      throw new Error('Out of stock');
+    }
+    
+    const payment = await context.activities.chargePayment(customerId, 100);
+    
+    // Global activity
+    await context.activities.sendEmail(
+      customerId,
+      'Order processed',
+      'Your order has been processed'
+    );
+    
+    return {
+      orderId,
+      status: payment.success ? 'success' : 'failed',
+      transactionId: payment.transactionId,
+    };
+  },
   activityOptions: {
     startToCloseTimeout: '1 minute',
   },
 });
 ```
 
-### 3. Setup Temporal Worker
+### 4. Setup Temporal Worker
 
 ```typescript
 // worker.ts
 import { Worker } from '@temporalio/worker';
-import { handler } from './worker';
+import { activitiesHandler } from './activities';
 
 const worker = await Worker.create({
-  workflowsPath: require.resolve('./worker'),
-  activities: handler.activities,
-  taskQueue: handler.contract.taskQueue,
+  workflowsPath: require.resolve('./workflows'),
+  activities: activitiesHandler.activities,
+  taskQueue: activitiesHandler.contract.taskQueue,
 });
 
 await worker.run();
 ```
 
-### 4. Call workflows from client
+### 5. Call workflows from client
 
 ```typescript
 // client.ts
@@ -172,15 +180,21 @@ console.log(result.transactionId); // string
 
 ## Key Concepts
 
-### Contract Handler
+### Two-Part Worker Architecture
 
-The contract handler is the core of the worker implementation. It:
-- ✅ **Validates at compile-time** that all workflows and activities are implemented
-- ✅ **Wraps implementations** with automatic Zod validation
-- ✅ **Provides typed context** to workflows with activities and workflow info
-- ✅ **Returns ready-to-use** implementations for Temporal Worker
+The worker implementation is split into two functions:
 
-See [Contract Handler documentation](./docs/CONTRACT_HANDLER.md) for details.
+1. **`createActivitiesHandler`** - Implements all activities (global + workflow-specific)
+   - Used by the Temporal Worker
+   - Ensures all activities are implemented at compile-time
+   - Wraps activities with validation
+
+2. **`createWorkflow`** - Implements individual workflows
+   - Each workflow in its own file
+   - Loaded by Worker via `workflowsPath`
+   - Receives typed context with activities and workflow info
+
+This follows Temporal's architecture where workflows must be loaded from the file system.
 
 ### Arguments as Tuples
 
@@ -313,7 +327,7 @@ temporal-contract/
 
 Essential documentation:
 
-- **[Contract Handler](./docs/CONTRACT_HANDLER.md)** - Complete guide to implementing workers with type safety
+- **[Worker Implementation](./docs/CONTRACT_HANDLER.md)** - Complete guide to implementing workers with type safety
 - **[Changesets](./docs/CHANGESETS.md)** - Release and publishing workflow
 - **[PNPM Catalog](./docs/CATALOG.md)** - Centralized dependency management
 

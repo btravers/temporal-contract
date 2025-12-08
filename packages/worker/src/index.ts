@@ -1,11 +1,11 @@
-export { createContractHandler } from './handler.js';
+export { createActivitiesHandler, createWorkflow } from './handler.js';
 
 export type {
   WorkflowContext,
-  RawWorkflowImplementation,
+  WorkflowImplementation,
   RawActivityImplementation,
-  WorkflowImplementations,
   ActivityImplementations,
-  CreateContractHandlerOptions,
-  ContractHandler,
+  CreateActivitiesHandlerOptions,
+  ActivitiesHandler,
+  CreateWorkflowOptions,
 } from './handler.js';
