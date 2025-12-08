@@ -317,11 +317,21 @@ temporal-contract/
 │   ├── contract/       # Contract builder
 │   ├── worker/         # Worker implementation (handler)
 │   └── client/         # Typed client
+├── samples/            # Sample applications
+│   └── basic-order-processing/  # Order processing example
 ├── docs/               # Documentation
 ├── .github/
 │   └── workflows/      # CI/CD
 └── .changeset/         # Changesets config
 ```
+
+## Samples
+
+Explore working examples in the [`samples/`](./samples) directory:
+
+- **[basic-order-processing](./samples/basic-order-processing)** - Complete order processing system with payment, inventory, and shipping
+
+Each sample demonstrates real-world usage patterns with full documentation.
 
 ## Documentation
 

@@ -1,0 +1,28 @@
+{
+  "name": "@temporal-contract/sample-basic-order-processing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Basic order processing sample using temporal-contract",
+  "scripts": {
+    "dev:worker": "tsx watch src/worker.ts",
+    "dev:client": "tsx src/client.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@temporal-contract/client": "workspace:*",
+    "@temporal-contract/contract": "workspace:*",
+    "@temporal-contract/core": "workspace:*",
+    "@temporal-contract/worker": "workspace:*",
+    "@temporalio/client": "catalog:",
+    "@temporalio/worker": "catalog:",
+    "@temporalio/workflow": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}
