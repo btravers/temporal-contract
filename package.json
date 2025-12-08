@@ -14,9 +14,14 @@
     "typecheck": "turbo run typecheck",
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "setup": "pnpm install && pnpm build"
+    "setup": "pnpm install && pnpm build",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "pnpm build && changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "catalog:",
+    "@changesets/config": "catalog:",
     "@types/node": "catalog:",
     "lefthook": "catalog:",
     "oxfmt": "catalog:",
