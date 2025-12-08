@@ -43,6 +43,7 @@
     "@temporal-contract/core": "workspace:*"
   },
   "devDependencies": {
+    "@temporal-contract/tsconfig": "workspace:*",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "zod": "catalog:"

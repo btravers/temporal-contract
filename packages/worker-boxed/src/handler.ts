@@ -133,6 +133,10 @@ function createValidatedActivities<
   for (const [activityName, activityDef] of Object.entries(allActivitiesDefinition)) {
     const rawActivity = rawActivities[activityName];
     
+    if (!rawActivity) {
+      throw new Error(`Activity implementation not found for: ${activityName}`);
+    }
+    
     validatedActivities[activityName] = async (...args: any[]) => {
       // Validate input before sending over network
       const validatedInput = activityDef.input.parse(args);

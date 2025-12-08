@@ -1,6 +1,6 @@
 import type { WorkflowImplementation } from "@temporal-contract/worker-boxed";
 import type { boxedOrderContract } from "../contract.js";
-import type { OrderResult, PaymentResult, InventoryResult, ShippingResult } from "../contract.js";
+import type { PaymentResult, InventoryResult, ShippingResult } from "../contract.js";
 
 /**
  * Process Order Workflow Implementation
@@ -44,7 +44,11 @@ export const processOrderWorkflow: WorkflowImplementation<
 
     // Step 2: Process payment
     await activities.log("info", `Processing payment of $${order.totalAmount}`);
-    const paymentResult = await activities.processPayment(
+    const processPaymentFn = activities['processPayment'];
+    if (!processPaymentFn) {
+      throw new Error('processPayment activity not found');
+    }
+    const paymentResult = await processPaymentFn(
       order.customerId,
       order.totalAmount
     ) as PaymentResult;
@@ -58,7 +62,11 @@ export const processOrderWorkflow: WorkflowImplementation<
 
     // Step 3: Reserve inventory
     await activities.log("info", "Reserving inventory");
-    const inventoryResult = await activities.reserveInventory(order.items) as InventoryResult;
+    const reserveInventoryFn = activities['reserveInventory'];
+    if (!reserveInventoryFn) {
+      throw new Error('reserveInventory activity not found');
+    }
+    const inventoryResult = await reserveInventoryFn(order.items) as InventoryResult;
 
     if (!inventoryResult.reserved) {
       throw new Error("Inventory reservation failed");
@@ -72,7 +80,11 @@ export const processOrderWorkflow: WorkflowImplementation<
 
     // Step 4: Create shipment
     await activities.log("info", "Creating shipment");
-    const shippingResult = await activities.createShipment(
+    const createShipmentFn = activities['createShipment'];
+    if (!createShipmentFn) {
+      throw new Error('createShipment activity not found');
+    }
+    const shippingResult = await createShipmentFn(
       order.orderId,
       order.customerId
     ) as ShippingResult;
@@ -134,7 +146,11 @@ export const processOrderWorkflow: WorkflowImplementation<
     if (inventoryReservationId) {
       try {
         await activities.log("info", "Rolling back: releasing inventory");
-        await activities.releaseInventory(inventoryReservationId);
+        const releaseInventoryFn = activities['releaseInventory'];
+        if (!releaseInventoryFn) {
+          throw new Error('releaseInventory activity not found');
+        }
+        await releaseInventoryFn(inventoryReservationId);
         await activities.log("info", "Inventory released successfully");
       } catch (releaseError) {
         await activities.log(
@@ -148,7 +164,11 @@ export const processOrderWorkflow: WorkflowImplementation<
     if (paymentTransactionId) {
       try {
         await activities.log("info", "Rolling back: refunding payment");
-        const refundResult = await activities.refundPayment(
+        const refundPaymentFn = activities['refundPayment'];
+        if (!refundPaymentFn) {
+          throw new Error('refundPayment activity not found');
+        }
+        const refundResult = await refundPaymentFn(
           paymentTransactionId
         ) as { refunded: boolean; refundId?: string };
         if (refundResult.refunded) {

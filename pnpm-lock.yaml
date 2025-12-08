@@ -93,6 +93,9 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@temporal-contract/tsconfig':
+        specifier: workspace:*
+        version: link:../../tools/tsconfig
       '@temporalio/client':
         specifier: 'catalog:'
         version: 1.13.2
@@ -112,6 +115,9 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@temporal-contract/tsconfig':
+        specifier: workspace:*
+        version: link:../../tools/tsconfig
       tsdown:
         specifier: 'catalog:'
         version: 0.17.2(typescript@5.9.3)
@@ -124,6 +130,9 @@ importers:
 
   packages/core:
     devDependencies:
+      '@temporal-contract/tsconfig':
+        specifier: workspace:*
+        version: link:../../tools/tsconfig
       tsdown:
         specifier: 'catalog:'
         version: 0.17.2(typescript@5.9.3)
@@ -140,6 +149,9 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@temporal-contract/tsconfig':
+        specifier: workspace:*
+        version: link:../../tools/tsconfig
       '@temporalio/workflow':
         specifier: 'catalog:'
         version: 1.13.2
@@ -168,6 +180,9 @@ importers:
         specifier: 'catalog:'
         version: 4.1.13
     devDependencies:
+      '@temporal-contract/tsconfig':
+        specifier: workspace:*
+        version: link:../../tools/tsconfig
       '@types/node':
         specifier: 'catalog:'
         version: 24.10.1
@@ -205,6 +220,9 @@ importers:
         specifier: 'catalog:'
         version: 4.1.13
     devDependencies:
+      '@temporal-contract/tsconfig':
+        specifier: workspace:*
+        version: link:../../tools/tsconfig
       '@types/node':
         specifier: 'catalog:'
         version: 24.10.1
@@ -245,6 +263,9 @@ importers:
         specifier: 'catalog:'
         version: 4.1.13
     devDependencies:
+      '@temporal-contract/tsconfig':
+        specifier: workspace:*
+        version: link:../../tools/tsconfig
       '@types/node':
         specifier: 'catalog:'
         version: 24.10.1
@@ -254,6 +275,8 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
+
+  tools/tsconfig: {}
 
 packages:
 

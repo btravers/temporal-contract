@@ -26,7 +26,11 @@ const implementation: WorkflowImplementation<
   try {
     // Step 1: Process payment
     await activities.log("info", "Processing payment...");
-    const paymentResult = await activities.processPayment(
+    const processPaymentFn = activities['processPayment'];
+    if (!processPaymentFn) {
+      throw new Error('processPayment activity not found');
+    }
+    const paymentResult = await processPaymentFn(
       order.customerId,
       order.totalAmount
     ) as PaymentResult;
@@ -50,7 +54,11 @@ const implementation: WorkflowImplementation<
 
     // Step 2: Reserve inventory
     await activities.log("info", "Reserving inventory...");
-    const inventoryResult = await activities.reserveInventory(order.items) as InventoryResult;
+    const reserveInventoryFn = activities['reserveInventory'];
+    if (!reserveInventoryFn) {
+      throw new Error('reserveInventory activity not found');
+    }
+    const inventoryResult = await reserveInventoryFn(order.items) as InventoryResult;
 
     if (!inventoryResult.reserved) {
       await activities.log("error", "Inventory not available");
@@ -73,7 +81,11 @@ const implementation: WorkflowImplementation<
 
     // Step 3: Create shipment
     await activities.log("info", "Creating shipment...");
-    const shipmentResult = await activities.createShipment(
+    const createShipmentFn = activities['createShipment'];
+    if (!createShipmentFn) {
+      throw new Error('createShipment activity not found');
+    }
+    const shipmentResult = await createShipmentFn(
       order.orderId,
       order.customerId
     ) as ShippingResult;
@@ -102,7 +114,11 @@ const implementation: WorkflowImplementation<
     // If something goes wrong, release inventory if it was reserved
     if (reservationId) {
       await activities.log("error", "Workflow failed, releasing inventory");
-      await activities.releaseInventory(reservationId);
+      const releaseInventoryFn = activities['releaseInventory'];
+      if (!releaseInventoryFn) {
+        throw new Error('releaseInventory activity not found');
+      }
+      await releaseInventoryFn(reservationId);
     }
 
     const errorMessage = error instanceof Error ? error.message : "Unknown error";

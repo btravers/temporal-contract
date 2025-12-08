@@ -1,8 +1,7 @@
 import { Worker } from "@temporalio/worker";
-import { createBoxedActivitiesHandler, createWorkflow } from "@temporal-contract/worker-boxed";
+import { createBoxedActivitiesHandler } from "@temporal-contract/worker-boxed";
 import { activities } from "./activities/index.js";
 import { boxedOrderContract } from "./contract.js";
-import { processOrderWorkflow } from "./workflows/processOrder.js";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
@@ -26,22 +25,6 @@ async function run() {
   const activitiesHandler = createBoxedActivitiesHandler({
     contract: boxedOrderContract,
     activities,
-  });
-
-  // Create workflow implementation
-  const processOrderWorkflowImpl = createWorkflow({
-    definition: boxedOrderContract.workflows.processOrder,
-    contract: boxedOrderContract,
-    implementation: processOrderWorkflow,
-    activityOptions: {
-      startToCloseTimeout: "30 seconds",
-      retry: {
-        initialInterval: "1s",
-        maximumInterval: "10s",
-        backoffCoefficient: 2,
-        maximumAttempts: 3,
-      },
-    },
   });
 
   // Create Temporal Worker

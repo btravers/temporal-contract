@@ -3,7 +3,6 @@ import type { BoxedActivityImplementations } from "@temporal-contract/worker-box
 import type { ActivityError } from "@temporal-contract/worker-boxed";
 import type { boxedOrderContract } from "../contract.js";
 import type {
-  Order,
   PaymentResult,
   InventoryResult,
   ShippingResult,
@@ -147,6 +146,14 @@ const reserveInventory = (
       } else {
         // Pick a random item that's out of stock
         const outOfStockItem = items[Math.floor(Math.random() * items.length)];
+        if (!outOfStockItem) {
+          resolve(Result.Error({
+            code: "OUT_OF_STOCK",
+            message: "No items found to check stock",
+            details: {},
+          }));
+          return;
+        }
         console.log(`✗ Product ${outOfStockItem.productId} is out of stock`);
 
         resolve(
@@ -192,7 +199,7 @@ const createShipment = (
           .substring(7)
           .toUpperCase()}`;
         const carriers = ["FedEx", "UPS", "USPS", "DHL"];
-        const carrier = carriers[Math.floor(Math.random() * carriers.length)];
+        const carrier = carriers[Math.floor(Math.random() * carriers.length)] ?? "FedEx";
 
         // Estimated delivery: 3-7 days
         const daysToDeliver = 3 + Math.floor(Math.random() * 5);

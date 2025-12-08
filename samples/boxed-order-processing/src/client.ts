@@ -1,4 +1,4 @@
-import { Connection, WorkflowClient } from "@temporalio/client";
+import { Connection } from "@temporalio/client";
 import { createClient } from "@temporal-contract/client";
 import { boxedOrderContract } from "./contract.js";
 import type { Order, OrderResult } from "./contract.js";

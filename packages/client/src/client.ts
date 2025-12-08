@@ -58,6 +58,10 @@ export class TypedClient<T extends ContractDefinition> {
   ): Promise<TypedWorkflowHandle<T['workflows'][K]>> {
     const definition = this.contract.workflows[workflowName];
     
+    if (!definition) {
+      throw new Error(`Workflow definition not found for: ${workflowName}`);
+    }
+    
     // Validate input with Zod schema (tuple)
     const validatedInput = definition.input.parse(options.args) as any;
 
@@ -93,6 +97,10 @@ export class TypedClient<T extends ContractDefinition> {
   ): Promise<InferOutput<T['workflows'][K]>> {
     const definition = this.contract.workflows[workflowName];
     
+    if (!definition) {
+      throw new Error(`Workflow definition not found for: ${workflowName}`);
+    }
+    
     // Validate input with Zod schema (tuple)
     const validatedInput = definition.input.parse(options.args) as any;
 
@@ -121,6 +129,11 @@ export class TypedClient<T extends ContractDefinition> {
     workflowId: string
   ): Promise<TypedWorkflowHandle<T['workflows'][K]>> {
     const definition = this.contract.workflows[workflowName];
+    
+    if (!definition) {
+      throw new Error(`Workflow definition not found for: ${workflowName}`);
+    }
+    
     const handle = this.client.workflow.getHandle(workflowId);
     return this.createTypedHandle(handle, definition) as TypedWorkflowHandle<T['workflows'][K]>;
   }
@@ -169,10 +182,13 @@ export async function createClient<T extends ContractDefinition>(
   options: CreateClientOptions = {}
 ): Promise<TypedClient<T>> {
   const connection = options.connection || (await Connection.connect());
-  const client = new Client({
-    connection,
-    namespace: options.namespace,
-  });
+  
+  const clientOptions: { connection: Connection; namespace?: string } = { connection };
+  if (options.namespace !== undefined) {
+    clientOptions.namespace = options.namespace;
+  }
+  
+  const client = new Client(clientOptions);
 
   return new TypedClient(contract, client);
 }

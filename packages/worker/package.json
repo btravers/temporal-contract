@@ -44,6 +44,7 @@
     "@temporal-contract/core": "workspace:*"
   },
   "devDependencies": {
+    "@temporal-contract/tsconfig": "workspace:*",
     "@temporalio/workflow": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",

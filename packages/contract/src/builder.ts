@@ -48,11 +48,16 @@ export const workflow = <
   output: TOutput;
   activities?: TActivities;
 }): WorkflowDefinition => {
-  return {
+  const result: WorkflowDefinition = {
     input: config.input,
     output: config.output,
-    activities: config.activities,
   };
+  
+  if (config.activities !== undefined) {
+    result.activities = config.activities;
+  }
+  
+  return result;
 };
 
 /**

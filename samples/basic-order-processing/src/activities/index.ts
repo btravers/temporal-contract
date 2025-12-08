@@ -1,7 +1,4 @@
-import {
-  createActivitiesHandler,
-  type RawActivityImplementation,
-} from "@temporal-contract/worker";
+import { createActivitiesHandler } from "@temporal-contract/worker";
 import { orderProcessingContract } from "../contract.js";
 import type {
   PaymentResult,
@@ -92,7 +89,7 @@ const releaseInventory = async (reservationId: string): Promise<void> => {
   console.log(`✅ Inventory released`);
 };
 
-const createShipment = async (orderId: string, customerId: string): Promise<ShippingResult> => {
+const createShipment = async (orderId: string, _customerId: string): Promise<ShippingResult> => {
   console.log(`📮 Creating shipment for order ${orderId}`);
 
   // Simulate shipment creation delay

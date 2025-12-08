@@ -1,6 +1,7 @@
 packages:
   - packages/*
   - samples/*
+  - tools/*
 
 catalog:
   '@changesets/cli': 2.29.8
