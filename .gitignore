@@ -1,6 +1,29 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+build/
+
+# Logs
+logs
 *.log
+npm-debug.log*
+
+# Environment
 .env
+.env.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Turbo
 .turbo
