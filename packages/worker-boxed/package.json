@@ -1,0 +1,52 @@
+{
+  "name": "@temporal-contract/worker-boxed",
+  "version": "0.0.1",
+  "description": "Type-safe Temporal worker with boxed Result/Future pattern for activities",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown src/index.ts --format cjs,esm --dts --clean",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsdown src/index.ts --format cjs,esm --dts --watch"
+  },
+  "keywords": [
+    "temporal",
+    "workflow",
+    "contract",
+    "type-safe",
+    "boxed",
+    "result",
+    "future"
+  ],
+  "dependencies": {
+    "@swan-io/boxed": "^3.2.1",
+    "@temporal-contract/core": "workspace:*",
+    "@temporalio/workflow": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "@temporalio/worker": ">=1.0.0"
+  }
+}

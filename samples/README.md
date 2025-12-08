@@ -15,6 +15,21 @@ A simple order processing system that demonstrates:
 
 **What it does:** Processes an order through payment, inventory reservation, and shipping, with proper error handling and customer notifications.
 
+**Approach:** Standard worker with Promise-based activities and try/catch error handling.
+
+### 📦✨ [boxed-order-processing](./boxed-order-processing)
+
+The same order processing system but using the **Result/Future pattern** from [@swan-io/boxed](https://swan-io.github.io/boxed/):
+- Explicit error types in activity signatures
+- Functional error handling (Result.Ok / Result.Error)
+- Better testability (no try/catch in activities)
+- Railway-oriented programming pattern
+- Automatic Result unwrapping by worker-boxed
+
+**What it does:** Same order processing flow as the basic sample, but activities return `Future<Result<T, ActivityError>>` for explicit, type-safe error handling.
+
+**Approach:** Boxed worker with Result/Future pattern for activities.
+
 ## Running the Samples
 
 Each sample is a standalone Node.js application that can be run independently.

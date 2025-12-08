@@ -5,6 +5,7 @@ packages:
 catalog:
   '@changesets/cli': 2.29.8
   '@changesets/config': 3.1.2
+  '@swan-io/boxed': 3.2.1
   '@temporalio/client': 1.13.2
   '@temporalio/worker': 1.13.2
   '@temporalio/workflow': 1.13.2
@@ -14,7 +15,7 @@ catalog:
   oxlint: 1.32.0
   ts-node: 10.9.2
   tsdown: 0.17.1
-  tsx: 4.19.2
+  tsx: 4.21.0
   turbo: 2.6.3
   typescript: 5.9.3
   vitest: 4.0.15
