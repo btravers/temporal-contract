@@ -20,7 +20,6 @@ export interface ActivityDefinition {
 export interface WorkflowDefinition {
   input: AnyZodTuple;
   output: AnyZodSchema;
-  taskQueue: string;
   activities?: Record<string, ActivityDefinition>;
 }
 
@@ -28,6 +27,7 @@ export interface WorkflowDefinition {
  * Contract definition containing workflows and optional global activities
  */
 export interface ContractDefinition {
+  taskQueue: string;
   workflows: Record<string, WorkflowDefinition>;
   activities?: Record<string, ActivityDefinition>;
 }
@@ -88,3 +88,11 @@ export type InferWorkflowActivities<T extends WorkflowDefinition> = T['activitie
       [K in keyof T['activities']]: InferActivity<T['activities'][K]>;
     }
   : {};
+
+/**
+ * Infer all activities available in a workflow context (workflow activities + global activities)
+ */
+export type InferWorkflowContextActivities<
+  TWorkflow extends WorkflowDefinition,
+  TContract extends ContractDefinition
+> = InferWorkflowActivities<TWorkflow> & InferActivities<TContract>;

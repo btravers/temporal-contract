@@ -1,2 +1,11 @@
-export { createActivity, type CreateActivityOptions } from './activity.js';
-export { createWorkflow, type CreateWorkflowOptions, type WorkflowContext } from './workflow.js';
+export { createContractHandler } from './handler.js';
+
+export type {
+  WorkflowContext,
+  RawWorkflowImplementation,
+  RawActivityImplementation,
+  WorkflowImplementations,
+  ActivityImplementations,
+  CreateContractHandlerOptions,
+  ContractHandler,
+} from './handler.js';

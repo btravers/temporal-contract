@@ -30,7 +30,6 @@ export const activity = <TInput extends z.ZodTuple<any, any>, TOutput extends z.
  * const myWorkflow = workflow({
  *   input: z.tuple([z.object({ orderId: z.string() })]),
  *   output: z.object({ status: z.string() }),
- *   taskQueue: 'orders',
  *   activities: {
  *     processPayment: activity({
  *       input: z.tuple([z.object({ amount: z.number() })]),
@@ -47,13 +46,11 @@ export const workflow = <
 >(config: {
   input: TInput;
   output: TOutput;
-  taskQueue: string;
   activities?: TActivities;
 }): WorkflowDefinition => {
   return {
     input: config.input,
     output: config.output,
-    taskQueue: config.taskQueue,
     activities: config.activities,
   };
 };
@@ -64,6 +61,7 @@ export const workflow = <
  * @example
  * ```ts
  * const myContract = contract({
+ *   taskQueue: 'my-service',
  *   workflows: {
  *     processOrder: workflow({ ... }),
  *     sendNotification: workflow({ ... }),
@@ -74,6 +72,18 @@ export const workflow = <
  * });
  * ```
  */
-export const contract = <T extends ContractDefinition>(definition: T): T => {
-  return definition;
+export const contract = <
+  TTaskQueue extends string,
+  TWorkflows extends Record<string, WorkflowDefinition>,
+  TActivities extends Record<string, ActivityDefinition> | undefined = undefined
+>(definition: {
+  taskQueue: TTaskQueue;
+  workflows: TWorkflows;
+  activities?: TActivities;
+}): ContractDefinition & {
+  taskQueue: TTaskQueue;
+  workflows: TWorkflows;
+  activities: TActivities;
+} => {
+  return definition as any;
 };

@@ -27,6 +27,7 @@ import { z } from 'zod';
 import { workflow, activity, contract } from '@temporal-contract/contract';
 
 const myContract = contract({
+  taskQueue: 'my-service',
   workflows: {
     processOrder: workflow({
       // Use z.tuple() to define multiple arguments
@@ -43,7 +44,6 @@ const myContract = contract({
         status: z.string(),
         totalAmount: z.number(),
       }),
-      taskQueue: 'orders',
       activities: {
         validateInventory: activity({
           input: z.tuple([
@@ -226,3 +226,10 @@ implementation: async (input) => {
   const { orderId, customerId } = input;
 }
 ```
+
+## Key Points
+
+- **Task Queue**: Defined once at the contract level, shared by all workflows
+- **Tuple Arguments**: Use `z.tuple([...])` to support multiple arguments
+- **Type Safety**: Full TypeScript inference for all arguments
+- **Validation**: Automatic Zod validation at every network boundary

@@ -64,7 +64,7 @@ export class TypedClient<T extends ContractDefinition> {
     // Start workflow
     const handle = await this.client.workflow.start(workflowName as string, {
       workflowId: options.workflowId,
-      taskQueue: definition.taskQueue,
+      taskQueue: this.contract.taskQueue,
       args: validatedInput,
     });
 
@@ -99,7 +99,7 @@ export class TypedClient<T extends ContractDefinition> {
     // Execute workflow
     const result = await this.client.workflow.execute(workflowName as string, {
       workflowId: options.workflowId,
-      taskQueue: definition.taskQueue,
+      taskQueue: this.contract.taskQueue,
       args: validatedInput,
     });
 
