@@ -1,1 +1,1 @@
-export { activity, workflow, contract } from './builder.js';
+export { defineActivity, defineWorkflow, defineContract } from "./builder.js";

@@ -1,95 +1,99 @@
 import { createActivitiesHandler } from "@temporal-contract/worker";
 import { orderProcessingContract } from "../contract.js";
-import type {
-  PaymentResult,
-  InventoryResult,
-  ShippingResult,
-} from "../contract.js";
+import type { PaymentResult, InventoryResult, ShippingResult } from "../contract.js";
 
 // ============================================================================
 // Global Activities Implementation
 // ============================================================================
 
-const log = async (level: string, message: string): Promise<void> => {
+const log = async ({ level, message }: { level: string; message: string }): Promise<void> => {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] [${level.toUpperCase()}] ${message}`);
 };
 
-const sendNotification = async (customerId: string, subject: string, message: string): Promise<void> => {
-  console.log(`📧 Notification to customer ${customerId}`);
+const sendNotification = async ({
+  customerId,
+  subject,
+  message,
+}: {
+  customerId: string;
+  subject: string;
+  message: string;
+}): Promise<void> => {
+  console.log(`\uD83D\uDCE7 Sending notification to ${customerId}`);
   console.log(`   Subject: ${subject}`);
   console.log(`   Message: ${message}`);
-  // In a real application, this would send an email or push notification
+  // Simulate API call delay
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  console.log(`\u2705 Notification sent to ${customerId}`);
 };
 
 // ============================================================================
 // Workflow-Specific Activities Implementation
 // ============================================================================
 
-const processPayment = async (customerId: string, amount: number): Promise<PaymentResult> => {
-  console.log(`💳 Processing payment of $${amount} for customer ${customerId}`);
+const processPayment = async ({
+  customerId,
+  amount,
+}: {
+  customerId: string;
+  amount: number;
+}): Promise<PaymentResult> => {
+  console.log(`\uD83D\uDCB3 Processing payment of $${amount} for customer ${customerId}`);
 
   // Simulate payment processing delay
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  // Simulate occasional payment failures (10% chance)
+  // Simulate random payment failure (10% chance)
   const success = Math.random() > 0.1;
 
-  if (!success) {
-    const result: PaymentResult = {
-      transactionId: "",
-      status: "failed",
-      paidAmount: 0,
-    };
-    console.log(`❌ Payment failed for customer ${customerId}`);
-    return result;
-  }
-
-  const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substring(7)}`;
   const result: PaymentResult = {
-    transactionId,
-    status: "success",
-    paidAmount: amount,
+    transactionId: `TXN${Date.now()}`,
+    status: success ? "success" : "failed",
+    paidAmount: success ? amount : 0,
   };
 
-  console.log(`✅ Payment successful: ${transactionId}`);
+  if (success) {
+    console.log(`\u2705 Payment processed: ${result.transactionId}`);
+  } else {
+    console.log(`\u274C Payment failed`);
+  }
+
   return result;
 };
 
-const reserveInventory = async (items: Array<{ productId: string; quantity: number }>): Promise<InventoryResult> => {
-  console.log(`📦 Reserving inventory for ${items.length} items`);
+const reserveInventory = async (
+  items: Array<{ productId: string; quantity: number }>,
+): Promise<InventoryResult> => {
+  console.log(`\uD83D\uDCE6 Reserving inventory for ${items.length} items`);
 
   // Simulate inventory check delay
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, 600));
 
-  // Simulate occasional out-of-stock scenarios (5% chance)
-  const available = Math.random() > 0.05;
-
-  if (!available) {
-    console.log(`❌ Inventory not available`);
-    const result: InventoryResult = {
-      reserved: false,
-    };
-    return result;
-  }
-
-  const reservationId = `res_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+  // All items available
+  const reservationId = `RES${Date.now()}`;
   const result: InventoryResult = {
     reserved: true,
     reservationId,
   };
 
-  console.log(`✅ Inventory reserved: ${reservationId}`);
+  console.log(`\u2705 Inventory reserved: ${reservationId}`);
   return result;
 };
 
 const releaseInventory = async (reservationId: string): Promise<void> => {
-  console.log(`🔓 Releasing inventory reservation: ${reservationId}`);
+  console.log(`\uD83D\uDD13 Releasing inventory reservation: ${reservationId}`);
   await new Promise((resolve) => setTimeout(resolve, 300));
-  console.log(`✅ Inventory released`);
+  console.log(`\u2705 Inventory released`);
 };
 
-const createShipment = async (orderId: string, _customerId: string): Promise<ShippingResult> => {
+const createShipment = async ({
+  orderId,
+  customerId: _customerId,
+}: {
+  orderId: string;
+  customerId: string;
+}): Promise<ShippingResult> => {
   console.log(`📮 Creating shipment for order ${orderId}`);
 
   // Simulate shipment creation delay

@@ -34,18 +34,21 @@ temporal server start-dev
 ## Running the Sample
 
 1. Install dependencies (from repository root):
+
 ```bash
 pnpm install
 pnpm build
 ```
 
 2. Start the worker:
+
 ```bash
 cd samples/basic-order-processing
 pnpm dev:worker
 ```
 
 3. In another terminal, run the client:
+
 ```bash
 cd samples/basic-order-processing
 pnpm dev:client
@@ -64,15 +67,19 @@ pnpm dev:client
 ## Key Concepts
 
 ### Contract Definition
+
 The contract defines the structure of your workflows and activities with Zod schemas for validation.
 
 ### Activities Handler
+
 All activities (global + workflow-specific) are implemented together using `createActivitiesHandler`.
 
 ### Workflow Implementation
+
 Each workflow is implemented in a separate file using `createWorkflow`, receiving a typed context with activities.
 
 ### Worker Setup
+
 The worker uses `workflowsPath` to load workflows from the file system and includes the activities handler.
 
 ## Next Steps

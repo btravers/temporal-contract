@@ -5,17 +5,20 @@ Thank you for your interest in contributing to temporal-contract! 🎉
 ## Development Setup
 
 1. Fork and clone the repository:
+
 ```bash
 git clone https://github.com/yourusername/temporal-contract.git
 cd temporal-contract
 ```
 
 2. Install dependencies:
+
 ```bash
 pnpm install
 ```
 
 3. Build all packages:
+
 ```bash
 pnpm build
 ```
@@ -37,6 +40,7 @@ temporal-contract/
 ## Making Changes
 
 1. Create a new branch:
+
 ```bash
 git checkout -b feature/your-feature-name
 ```
@@ -44,12 +48,14 @@ git checkout -b feature/your-feature-name
 2. Make your changes in the appropriate package
 
 3. Build and test:
+
 ```bash
 pnpm build
 pnpm test
 ```
 
 4. Commit your changes:
+
 ```bash
 git commit -m "feat: description of your changes"
 ```

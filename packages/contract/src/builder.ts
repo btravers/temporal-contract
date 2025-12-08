@@ -1,37 +1,36 @@
-import type { z } from 'zod';
-import type { ActivityDefinition, WorkflowDefinition, ContractDefinition } from '@temporal-contract/core';
+import type {
+  ActivityDefinition,
+  WorkflowDefinition,
+  ContractDefinition,
+} from "@temporal-contract/core";
 
 /**
  * Builder for creating activity definitions
- * 
+ *
  * @example
  * ```ts
- * const myActivity = activity({
+ * const myActivity = defineActivity({
  *   input: z.tuple([z.object({ name: z.string() })]),
  *   output: z.object({ greeting: z.string() }),
  * });
  * ```
  */
-export const activity = <TInput extends z.ZodTuple<any, any>, TOutput extends z.ZodTypeAny>(config: {
-  input: TInput;
-  output: TOutput;
-}): ActivityDefinition => {
-  return {
-    input: config.input,
-    output: config.output,
-  };
+export const defineActivity = <TActivity extends ActivityDefinition>(
+  definition: TActivity,
+): TActivity => {
+  return definition;
 };
 
 /**
  * Builder for creating workflow definitions
- * 
+ *
  * @example
  * ```ts
- * const myWorkflow = workflow({
+ * const myWorkflow = defineWorkflow({
  *   input: z.tuple([z.object({ orderId: z.string() })]),
  *   output: z.object({ status: z.string() }),
  *   activities: {
- *     processPayment: activity({
+ *     processPayment: defineActivity({
  *       input: z.tuple([z.object({ amount: z.number() })]),
  *       output: z.object({ success: z.boolean() }),
  *     }),
@@ -39,56 +38,31 @@ export const activity = <TInput extends z.ZodTuple<any, any>, TOutput extends z.
  * });
  * ```
  */
-export const workflow = <
-  TInput extends z.ZodTuple<any, any>,
-  TOutput extends z.ZodTypeAny,
-  TActivities extends Record<string, ActivityDefinition> = {}
->(config: {
-  input: TInput;
-  output: TOutput;
-  activities?: TActivities;
-}): WorkflowDefinition => {
-  const result: WorkflowDefinition = {
-    input: config.input,
-    output: config.output,
-  };
-  
-  if (config.activities !== undefined) {
-    result.activities = config.activities;
-  }
-  
-  return result;
+export const defineWorkflow = <TWorkflow extends WorkflowDefinition>(
+  definition: TWorkflow,
+): TWorkflow => {
+  return definition;
 };
 
 /**
  * Builder for creating a complete contract
- * 
+ *
  * @example
  * ```ts
- * const myContract = contract({
+ * const myContract = defineContract({
  *   taskQueue: 'my-service',
  *   workflows: {
- *     processOrder: workflow({ ... }),
- *     sendNotification: workflow({ ... }),
+ *     processOrder: defineWorkflow({ ... }),
+ *     sendNotification: defineWorkflow({ ... }),
  *   },
  *   activities: {
- *     sendEmail: activity({ ... }),
+ *     sendEmail: defineActivity({ ... }),
  *   },
  * });
  * ```
  */
-export const contract = <
-  TTaskQueue extends string,
-  TWorkflows extends Record<string, WorkflowDefinition>,
-  TActivities extends Record<string, ActivityDefinition> | undefined = undefined
->(definition: {
-  taskQueue: TTaskQueue;
-  workflows: TWorkflows;
-  activities?: TActivities;
-}): ContractDefinition & {
-  taskQueue: TTaskQueue;
-  workflows: TWorkflows;
-  activities: TActivities;
-} => {
-  return definition as any;
+export const defineContract = <TContract extends ContractDefinition>(
+  definition: TContract,
+): TContract => {
+  return definition;
 };

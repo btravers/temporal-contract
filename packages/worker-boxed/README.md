@@ -56,7 +56,7 @@ export const activitiesHandler = createBoxedActivitiesHandler({
     validateInventory: (orderId) => {
       return Future.make(async resolve => {
         const stock = await inventory.check(orderId);
-        
+
         if (stock > 0) {
           resolve(Result.Ok({ available: true, quantity: stock }));
         } else {
@@ -88,9 +88,9 @@ export const processOrder = createWorkflow({
         order.customerId,
         order.total
       );
-      
+
       const inventory = await context.activities.validateInventory(order.id);
-      
+
       return {
         orderId: order.id,
         status: 'completed',

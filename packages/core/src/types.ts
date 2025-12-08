@@ -1,16 +1,15 @@
-import type { z } from 'zod';
+import type { z } from "zod";
 
 /**
  * Base types for validation schemas
  */
 export type AnyZodSchema = z.ZodTypeAny;
-export type AnyZodTuple = z.ZodTuple<any, any>;
 
 /**
  * Definition of an activity
  */
 export interface ActivityDefinition {
-  input: AnyZodTuple;
+  input: AnyZodSchema;
   output: AnyZodSchema;
 }
 
@@ -18,7 +17,7 @@ export interface ActivityDefinition {
  * Definition of a workflow
  */
 export interface WorkflowDefinition {
-  input: AnyZodTuple;
+  input: AnyZodSchema;
   output: AnyZodSchema;
   activities?: Record<string, ActivityDefinition>;
 }
@@ -33,66 +32,62 @@ export interface ContractDefinition {
 }
 
 /**
- * Infer input type from a definition (extract tuple items as array)
+ * Infer input type from a definition
  */
-export type InferInput<T extends { input: AnyZodTuple }> = z.infer<T['input']> extends readonly [...infer Args]
-  ? Args
-  : never;
+export type InferInput<T extends { input: AnyZodSchema }> = z.infer<T["input"]>;
 
 /**
  * Infer output type from a definition
  */
-export type InferOutput<T extends { output: AnyZodSchema }> = z.infer<T['output']>;
+export type InferOutput<T extends { output: AnyZodSchema }> = z.infer<T["output"]>;
 
 /**
  * Infer workflow function signature
+ * Workflow functions receive args as a tuple
  */
 export type InferWorkflow<T extends WorkflowDefinition> = (
-  ...args: InferInput<T>
+  args: InferInput<T>
 ) => Promise<InferOutput<T>>;
 
 /**
  * Infer activity function signature
+ * Activity functions receive args as a tuple
  */
 export type InferActivity<T extends ActivityDefinition> = (
-  ...args: InferInput<T>
+  args: InferInput<T>
 ) => Promise<InferOutput<T>>;
 
 /**
  * Infer all workflows from a contract
  */
 export type InferWorkflows<T extends ContractDefinition> = {
-  [K in keyof T['workflows']]: InferWorkflow<T['workflows'][K]>;
+  [K in keyof T["workflows"]]: InferWorkflow<T["workflows"][K]>;
 };
 
 /**
  * Infer all activities from a contract
  */
-export type InferActivities<T extends ContractDefinition> = T['activities'] extends Record<
-  string,
-  ActivityDefinition
->
-  ? {
-      [K in keyof T['activities']]: InferActivity<T['activities'][K]>;
-    }
-  : {};
+export type InferActivities<T extends ContractDefinition> =
+  T["activities"] extends Record<string, ActivityDefinition>
+    ? {
+        [K in keyof T["activities"]]: InferActivity<T["activities"][K]>;
+      }
+    : {};
 
 /**
  * Infer activities from a workflow definition
  */
-export type InferWorkflowActivities<T extends WorkflowDefinition> = T['activities'] extends Record<
-  string,
-  ActivityDefinition
->
-  ? {
-      [K in keyof T['activities']]: InferActivity<T['activities'][K]>;
-    }
-  : {};
+export type InferWorkflowActivities<T extends WorkflowDefinition> =
+  T["activities"] extends Record<string, ActivityDefinition>
+    ? {
+        [K in keyof T["activities"]]: InferActivity<T["activities"][K]>;
+      }
+    : {};
 
 /**
  * Infer all activities available in a workflow context (workflow activities + global activities)
  */
 export type InferWorkflowContextActivities<
   TWorkflow extends WorkflowDefinition,
-  TContract extends ContractDefinition
+  TContract extends ContractDefinition,
 > = InferWorkflowActivities<TWorkflow> & InferActivities<TContract>;

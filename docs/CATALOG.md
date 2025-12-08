@@ -28,20 +28,20 @@ catalog:
   turbo: 2.6.3
   vitest: 4.0.15
   ts-node: 10.9.2
-  
+
   # Temporal.io
   "@temporalio/client": 1.13.2
   "@temporalio/worker": 1.13.2
   "@temporalio/workflow": 1.13.2
-  
+
   # Build tools
   tsdown: 0.17.0
-  
+
   # Linting & formatting
   oxlint: 1.31.0
   oxfmt: 0.16.0
   lefthook: 2.0.8
-  
+
   # Validation
   zod: 4.1.13
 ```

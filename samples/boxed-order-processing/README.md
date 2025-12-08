@@ -5,6 +5,7 @@ This sample demonstrates using the **Result/Future pattern** from [@swan-io/boxe
 ## Overview
 
 Instead of throwing exceptions, activities return `Future<Result<T, ActivityError>>`:
+
 - ✅ **Explicit error types** in function signatures
 - ✅ **Better testability** (no try/catch in activity code)
 - ✅ **Functional composition** with map/flatMap/match
@@ -15,6 +16,7 @@ The worker automatically unwraps Results into Temporal's native exception behavi
 ## Comparison with Standard Worker
 
 ### Standard Worker (throws exceptions)
+
 ```typescript
 const processPayment = async (customerId: string, amount: number): Promise<PaymentResult> => {
   if (Math.random() > 0.9) {
@@ -25,6 +27,7 @@ const processPayment = async (customerId: string, amount: number): Promise<Payme
 ```
 
 ### Boxed Worker (Result pattern)
+
 ```typescript
 const processPayment = (
   customerId: string,
@@ -49,6 +52,7 @@ const processPayment = (
 ```
 
 **Key benefits:**
+
 - Error types are visible in the function signature
 - Errors are explicit values, not thrown exceptions
 - Better for testing: `result.match({ Ok: ..., Error: ... })`
@@ -76,10 +80,12 @@ boxed-order-processing/
 All activities return `Future<Result<T, ActivityError>>`:
 
 ### Global Activities
+
 - **log**: Logging with severity levels
 - **sendNotification**: Send email notifications (95% success rate)
 
 ### Workflow-Specific Activities
+
 - **processPayment**: Process payment (90% success rate)
 - **reserveInventory**: Reserve products (95% success rate)
 - **releaseInventory**: Release reserved inventory
@@ -99,6 +105,7 @@ The `processOrder` workflow:
 5. **Send confirmation** 📧
 
 **Error handling:**
+
 - Activities automatically unwrap Results
 - Errors are converted to exceptions (Temporal native behavior)
 - Workflow catches exceptions and performs rollback:
@@ -110,11 +117,13 @@ The `processOrder` workflow:
 ## Prerequisites
 
 1. **Temporal Server** running locally:
+
    ```bash
    temporal server start-dev
    ```
 
 2. **Install dependencies** (from workspace root):
+
    ```bash
    pnpm install
    ```
@@ -153,6 +162,7 @@ pnpm dev:client
 ## Expected Output
 
 ### Worker Output
+
 ```
 🚀 Boxed Order Processing Worker started
    Task Queue: boxed-order-processing
@@ -171,6 +181,7 @@ Worker is running... Press Ctrl+C to stop.
 ```
 
 ### Client Output
+
 ```
 🎯 Starting Boxed Order Processing Workflows
 
@@ -194,6 +205,7 @@ in activity implementations, making errors visible in type signatures.
 ## Key Concepts
 
 ### Result Pattern
+
 ```typescript
 // Success
 Result.Ok(value)
@@ -207,6 +219,7 @@ Result.Error({
 ```
 
 ### Future Pattern
+
 ```typescript
 Future.make((resolve) => {
   // Async work
@@ -219,6 +232,7 @@ Future.make((resolve) => {
 ### Automatic Unwrapping
 
 The `createBoxedActivitiesHandler` automatically:
+
 1. Validates activity inputs (Zod)
 2. Executes activity returning `Future<Result<T, E>>`
 3. Unwraps the Future
@@ -231,6 +245,7 @@ This means workflows see normal Promise-based activities while activity implemen
 ## When to Use Boxed Worker vs Standard Worker
 
 **Use Boxed Worker when:**
+
 - You want explicit error types in activity signatures
 - You need better testability for activities
 - You prefer functional programming patterns
@@ -238,6 +253,7 @@ This means workflows see normal Promise-based activities while activity implemen
 - You need railway-oriented programming
 
 **Use Standard Worker when:**
+
 - You prefer traditional exception handling
 - You have simple error cases
 - You want minimal abstraction over Temporal
@@ -254,17 +270,21 @@ Both approaches are valid! The boxed pattern adds a functional programming layer
 ## Troubleshooting
 
 **Worker fails to start:**
+
 - Ensure Temporal Server is running: `temporal server start-dev`
 - Check that all packages are built: `pnpm build`
 
 **Activities fail with validation errors:**
+
 - Check that contract schemas match your data
 - Zod validates at network boundaries
 
 **Type errors:**
+
 - Ensure all packages are built: `pnpm build`
 - Check that imports use `.js` extensions (Node16 module resolution)
 
 **Worker can't find workflows:**
+
 - Verify `workflowsPath` points to compiled workflows
 - Ensure workflows are exported correctly

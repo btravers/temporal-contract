@@ -9,7 +9,7 @@ const __dirname = dirname(__filename);
 
 /**
  * Start the Temporal Worker
- * 
+ *
  * The worker:
  * - Loads workflows from the workflows directory using workflowsPath
  * - Registers activities from the activities handler
@@ -28,10 +28,10 @@ async function run() {
     connection,
     namespace: "default",
     taskQueue: "order-processing",
-    
+
     // Load workflows from the file system
     workflowsPath: join(__dirname, "workflows"),
-    
+
     // Register activities from the handler
     activities: activitiesHandler.activities,
   });

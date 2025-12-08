@@ -29,6 +29,7 @@ In your sample's `tsconfig.json`:
 ### `common.json`
 
 Shared strict configuration used by both base and sample:
+
 - **Module:** Node16 with ES modules
 - **Strict mode:** Full strict + additional strict checks
   - `noUncheckedIndexedAccess`: Indexed access returns `T | undefined`
@@ -45,12 +46,14 @@ Shared strict configuration used by both base and sample:
 ### `base.json`
 
 Extends `common.json` for packages:
+
 - **Target:** ES2020
 - **Declaration files:** Generated for publishing
 
 ### `sample.json`
 
 Extends `common.json` for sample applications:
+
 - **Target:** ES2022 (more modern features)
 - **No declaration files:** Samples don't need type declarations
 

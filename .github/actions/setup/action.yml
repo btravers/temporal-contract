@@ -1,8 +1,8 @@
-name: 'Setup Node.js and pnpm'
-description: 'Checkout code, setup Node.js and pnpm, install dependencies'
+name: "Setup Node.js and pnpm"
+description: "Checkout code, setup Node.js and pnpm, install dependencies"
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Checkout
       uses: actions/checkout@v6
@@ -15,7 +15,7 @@ runs:
     - name: Setup Node.js
       uses: actions/setup-node@v6
       with:
-        cache: 'pnpm'
+        cache: "pnpm"
 
     - name: Install dependencies
       shell: bash

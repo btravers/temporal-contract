@@ -11,4 +11,4 @@ export type {
   InferActivities,
   InferWorkflowActivities,
   InferWorkflowContextActivities,
-} from './types.js';
+} from "./types.js";

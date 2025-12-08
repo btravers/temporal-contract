@@ -30,18 +30,18 @@ export const activitiesHandler = createActivitiesHandler({
       await emailService.send({ to, subject, body });
       return { sent: true };
     },
-    
+
     logEvent: async (eventName, data) => {
       await logger.log(eventName, data);
       return { logged: true };
     },
-    
+
     // Workflow-specific activities
     validateInventory: async (orderId) => {
       const available = await inventoryDB.check(orderId);
       return { available };
     },
-    
+
     chargePayment: async (customerId, amount) => {
       const transactionId = await paymentGateway.charge(customerId, amount);
       return { transactionId, success: true };
@@ -65,22 +65,22 @@ export const processOrder = createWorkflow({
   implementation: async (context, orderId, customerId) => {
     // context.activities: typed activities (workflow + global)
     // context.info: WorkflowInfo
-    
+
     const inventory = await context.activities.validateInventory(orderId);
-    
+
     if (!inventory.available) {
       throw new Error('Out of stock');
     }
-    
+
     const payment = await context.activities.chargePayment(customerId, 100);
-    
+
     // Global activity
     await context.activities.sendEmail(
       customerId,
       'Order processed',
       'Your order has been processed'
     );
-    
+
     return {
       orderId,
       status: payment.success ? 'success' : 'failed',
@@ -107,7 +107,7 @@ export const cancelOrder = createWorkflow({
       'Order cancelled',
       `Order ${orderId} cancelled`
     );
-    
+
     return { orderId, cancelled: true };
   },
 });
@@ -123,10 +123,10 @@ import { activitiesHandler } from './activities';
 const worker = await Worker.create({
   // Workflows are loaded from file system
   workflowsPath: require.resolve('./workflows'),
-  
+
   // Activities from handler
   activities: activitiesHandler.activities,
-  
+
   // Task queue from contract
   taskQueue: activitiesHandler.contract.taskQueue,
 });
@@ -156,11 +156,11 @@ src/
 
 ```typescript
 import { z } from 'zod';
-import { activity, workflow, contract } from '@temporal-contract/contract';
+import { defineActivity, defineWorkflow, defineContract } from '@temporal-contract/contract';
 
 export default contract({
   taskQueue: 'my-service',
-  
+
   // Global activities (available in all workflows)
   activities: {
     sendEmail: activity({
@@ -172,7 +172,7 @@ export default contract({
       output: z.object({ logged: z.boolean() }),
     }),
   },
-  
+
   workflows: {
     processOrder: workflow({
       input: z.tuple([z.string(), z.string()]),
@@ -181,7 +181,7 @@ export default contract({
         status: z.string(),
         transactionId: z.string(),
       }),
-      
+
       // Workflow-specific activities
       activities: {
         validateInventory: activity({
@@ -194,7 +194,7 @@ export default contract({
         }),
       },
     }),
-    
+
     cancelOrder: workflow({
       input: z.tuple([z.string()]),
       output: z.object({ orderId: z.string(), cancelled: z.boolean() }),
@@ -218,7 +218,7 @@ export const activitiesHandler = createActivitiesHandler({
     // Global activities
     sendEmail,
     logEvent,
-    
+
     // Workflow-specific activities
     validateInventory,
     chargePayment,
@@ -251,19 +251,19 @@ export const processOrder = createWorkflow({
   contract: myContract,
   implementation: async (context, orderId, customerId) => {
     const inventory = await context.activities.validateInventory(orderId);
-    
+
     if (!inventory.available) {
       throw new Error('Out of stock');
     }
-    
+
     const payment = await context.activities.chargePayment(customerId, 100);
-    
+
     await context.activities.sendEmail(
       customerId,
       'Order processed',
       'Your order has been processed'
     );
-    
+
     return {
       orderId,
       status: payment.success ? 'success' : 'failed',
@@ -333,7 +333,7 @@ export const processOrder = createWorkflow({
 });
 
 // Option 2: Using WorkflowImplementation type
-const processOrderImpl: WorkflowImplementation<ProcessOrderWorkflow, Contract> = 
+const processOrderImpl: WorkflowImplementation<ProcessOrderWorkflow, Contract> =
   async (context, orderId, customerId) => {
     // Everything typed
   };

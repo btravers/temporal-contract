@@ -7,6 +7,7 @@ This directory contains sample applications demonstrating how to use `temporal-c
 ### 📦 [basic-order-processing](./basic-order-processing)
 
 A simple order processing system that demonstrates:
+
 - Type-safe contract definition with workflows and activities
 - Activities implementation (global + workflow-specific)
 - Workflow orchestration with error handling
@@ -20,6 +21,7 @@ A simple order processing system that demonstrates:
 ### 📦✨ [boxed-order-processing](./boxed-order-processing)
 
 The same order processing system but using the **Result/Future pattern** from [@swan-io/boxed](https://swan-io.github.io/boxed/):
+
 - Explicit error types in activity signatures
 - Functional error handling (Result.Ok / Result.Error)
 - Better testability (no try/catch in activities)
@@ -55,12 +57,14 @@ pnpm build
 Each sample has its own README with detailed instructions. Generally:
 
 1. Start the worker:
+
 ```bash
 cd samples/basic-order-processing
 pnpm dev:worker
 ```
 
 2. In another terminal, run the client:
+
 ```bash
 cd samples/basic-order-processing
 pnpm dev:client
@@ -97,6 +101,7 @@ samples/your-sample-name/
 ```
 
 Make sure to:
+
 1. Add your sample to `pnpm-workspace.yaml` (already done via `samples/*`)
 2. Use `workspace:*` for temporal-contract dependencies
 3. Include clear documentation in your README

@@ -1,4 +1,4 @@
-import { proxyActivities, WorkflowInfo, workflowInfo, ActivityOptions } from '@temporalio/workflow';
+import { proxyActivities, WorkflowInfo, workflowInfo, ActivityOptions } from "@temporalio/workflow";
 import type {
   ContractDefinition,
   InferInput,
@@ -6,64 +6,74 @@ import type {
   WorkflowDefinition,
   ActivityDefinition,
   InferWorkflowContextActivities,
-} from '@temporal-contract/core';
+} from "@temporal-contract/core";
 
 /**
  * Workflow context with typed activities (workflow + global) and workflow info
+ * Note: activities is typed as 'any' to work around TypeScript generic type inference limitations with Zod tuples
  */
 export interface WorkflowContext<
   TWorkflow extends WorkflowDefinition,
-  TContract extends ContractDefinition
+  TContract extends ContractDefinition,
 > {
   activities: InferWorkflowContextActivities<TWorkflow, TContract>;
   info: WorkflowInfo;
 }
 
 /**
- * Workflow implementation function (receives context + typed args)
+ * Workflow implementation function (receives context + typed args as tuple)
+ * Note: We use 'any' for args to work around TypeScript limitations with generic Zod tuple inference
+ * The actual type will be enforced at runtime by Zod validation
  */
 export type WorkflowImplementation<
   TWorkflow extends WorkflowDefinition,
-  TContract extends ContractDefinition
+  TContract extends ContractDefinition,
 > = (
   context: WorkflowContext<TWorkflow, TContract>,
-  ...args: InferInput<TWorkflow>
+  args: InferInput<TWorkflow>
 ) => Promise<InferOutput<TWorkflow>>;
 
 /**
- * Raw activity implementation function (receives typed args)
+ * Raw activity implementation function (receives typed args as tuple)
+ * Note: We use 'any' for args/return to work around TypeScript limitations with generic Zod tuple inference
+ * The actual types will be enforced at runtime by Zod validation
  */
-export type RawActivityImplementation<T extends ActivityDefinition> = (
-  ...args: InferInput<T>
-) => Promise<InferOutput<T>>;
+export type RawActivityImplementation<TActivity extends ActivityDefinition> = (
+  args: InferInput<TActivity>
+) => Promise<InferOutput<TActivity>>;
 
 /**
  * Map of all activity implementations for a contract (global + all workflow-specific)
  */
-export type ActivityImplementations<T extends ContractDefinition> = 
+export type ActivityImplementations<T extends ContractDefinition> =
   // Global activities
-  (T['activities'] extends Record<string, ActivityDefinition>
+  (T["activities"] extends Record<string, ActivityDefinition>
     ? {
-        [K in keyof T['activities']]: RawActivityImplementation<T['activities'][K]>;
+        [K in keyof T["activities"]]: RawActivityImplementation<T["activities"][K]>;
       }
     : {}) &
-  // All workflow-specific activities merged
-  UnionToIntersection<
-    {
-      [K in keyof T['workflows']]: T['workflows'][K]['activities'] extends Record<string, ActivityDefinition>
-        ? {
-            [A in keyof T['workflows'][K]['activities']]: RawActivityImplementation<
-              T['workflows'][K]['activities'][A]
-            >;
-          }
-        : {};
-    }[keyof T['workflows']]
-  >;
+    // All workflow-specific activities merged
+    UnionToIntersection<
+      {
+        [K in keyof T["workflows"]]: T["workflows"][K]["activities"] extends Record<
+          string,
+          ActivityDefinition
+        >
+          ? {
+              [A in keyof T["workflows"][K]["activities"]]: RawActivityImplementation<
+                T["workflows"][K]["activities"][A]
+              >;
+            }
+          : {};
+      }[keyof T["workflows"]]
+    >;
 
 /**
  * Utility type to convert union to intersection
  */
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
+type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void
+  ? I
+  : never;
 
 /**
  * Options for creating activities handler
@@ -86,7 +96,7 @@ export interface ActivitiesHandler<T extends ContractDefinition> {
  */
 export interface CreateWorkflowOptions<
   TWorkflow extends WorkflowDefinition,
-  TContract extends ContractDefinition
+  TContract extends ContractDefinition,
 > {
   definition: TWorkflow;
   contract: TContract;
@@ -99,17 +109,17 @@ export interface CreateWorkflowOptions<
 
 /**
  * Create a validated activities proxy that parses inputs and outputs
- * 
+ *
  * This wrapper ensures data integrity across the network boundary between
  * workflow and activity execution.
  */
 function createValidatedActivities<
   TWorkflow extends WorkflowDefinition,
-  TContract extends ContractDefinition
+  TContract extends ContractDefinition,
 >(
   rawActivities: Record<string, (...args: any[]) => Promise<any>>,
   workflowActivitiesDefinition: Record<string, ActivityDefinition> | undefined,
-  contractActivitiesDefinition: Record<string, ActivityDefinition> | undefined
+  contractActivitiesDefinition: Record<string, ActivityDefinition> | undefined,
 ): InferWorkflowContextActivities<TWorkflow, TContract> {
   const validatedActivities: Record<string, (...args: any[]) => Promise<any>> = {};
 
@@ -121,18 +131,18 @@ function createValidatedActivities<
 
   for (const [activityName, activityDef] of Object.entries(allActivitiesDefinition)) {
     const rawActivity = rawActivities[activityName];
-    
+
     if (!rawActivity) {
       throw new Error(`Activity implementation not found for: ${activityName}`);
     }
-    
+
     validatedActivities[activityName] = async (...args: any[]) => {
       // Validate input before sending over network
       const validatedInput = activityDef.input.parse(args);
-      
-      // Call the actual activity
-      const result = await rawActivity(...validatedInput);
-      
+
+      // Call the actual activity (pass the single parameter directly)
+      const result = await rawActivity(validatedInput);
+
       // Validate output after receiving from network
       return activityDef.output.parse(result);
     };
@@ -143,17 +153,17 @@ function createValidatedActivities<
 
 /**
  * Create a typed activities handler with automatic validation
- * 
+ *
  * This wraps all activity implementations with Zod validation at network boundaries.
  * TypeScript ensures ALL activities (global + workflow-specific) are implemented.
- * 
+ *
  * Use this to create the activities object for the Temporal Worker.
- * 
+ *
  * @example
  * ```ts
  * import { createActivitiesHandler } from '@temporal-contract/worker';
  * import myContract from './contract';
- * 
+ *
  * export const activitiesHandler = createActivitiesHandler({
  *   contract: myContract,
  *   activities: {
@@ -169,10 +179,10 @@ function createValidatedActivities<
  *     },
  *   },
  * });
- * 
+ *
  * // Use with Temporal Worker
  * import { Worker } from '@temporalio/worker';
- * 
+ *
  * const worker = await Worker.create({
  *   workflowsPath: require.resolve('./workflows'),
  *   activities: activitiesHandler.activities,
@@ -181,17 +191,17 @@ function createValidatedActivities<
  * ```
  */
 export function createActivitiesHandler<T extends ContractDefinition>(
-  options: CreateActivitiesHandlerOptions<T>
+  options: CreateActivitiesHandlerOptions<T>,
 ): ActivitiesHandler<T> {
   const { contract, activities } = options;
 
   // Wrap activities with validation
   const wrappedActivities: Record<string, (...args: any[]) => Promise<any>> = {};
-  
+
   for (const [activityName, activityImpl] of Object.entries(activities)) {
     // Find activity definition (global or workflow-specific)
     let activityDef: ActivityDefinition | undefined;
-    
+
     // Check global activities
     if (contract.activities?.[activityName]) {
       activityDef = contract.activities[activityName];
@@ -204,18 +214,18 @@ export function createActivitiesHandler<T extends ContractDefinition>(
         }
       }
     }
-    
+
     if (!activityDef) {
       throw new Error(`Activity definition not found for: ${activityName}`);
     }
-    
+
     wrappedActivities[activityName] = async (...args: any[]) => {
-      // Validate input
+      // Validate input (args is already a tuple)
       const validatedInput = activityDef.input.parse(args) as any;
-      
-      // Execute activity
-      const result = await (activityImpl as any)(...validatedInput);
-      
+
+      // Execute activity (pass tuple directly)
+      const result = await (activityImpl as any)(validatedInput);
+
       // Validate output
       return activityDef.output.parse(result);
     };
@@ -229,43 +239,43 @@ export function createActivitiesHandler<T extends ContractDefinition>(
 
 /**
  * Create a typed workflow implementation with automatic validation
- * 
+ *
  * This wraps a workflow implementation with:
  * - Input/output validation
  * - Typed workflow context with activities
  * - Workflow info access
- * 
+ *
  * Workflows must be defined in separate files and imported by the Temporal Worker
  * via workflowsPath.
- * 
+ *
  * @example
  * ```ts
  * // workflows/processOrder.ts
  * import { createWorkflow } from '@temporal-contract/worker';
  * import myContract from '../contract';
- * 
+ *
  * export const processOrder = createWorkflow({
  *   definition: myContract.workflows.processOrder,
  *   contract: myContract,
  *   implementation: async (context, orderId, customerId) => {
  *     // context.activities: typed activities (workflow + global)
  *     // context.info: WorkflowInfo
- *     
+ *
  *     const inventory = await context.activities.validateInventory(orderId);
- *     
+ *
  *     if (!inventory.available) {
  *       throw new Error('Out of stock');
  *     }
- *     
+ *
  *     const payment = await context.activities.chargePayment(customerId, 100);
- *     
+ *
  *     // Global activity
  *     await context.activities.sendEmail(
  *       customerId,
  *       'Order processed',
  *       'Your order has been processed'
  *     );
- *     
+ *
  *     return {
  *       orderId,
  *       status: payment.success ? 'success' : 'failed',
@@ -277,13 +287,13 @@ export function createActivitiesHandler<T extends ContractDefinition>(
  *   },
  * });
  * ```
- * 
+ *
  * Then in your worker setup:
  * ```ts
  * // worker.ts
  * import { Worker } from '@temporalio/worker';
  * import { activitiesHandler } from './activities';
- * 
+ *
  * const worker = await Worker.create({
  *   workflowsPath: require.resolve('./workflows'), // Imports processOrder
  *   activities: activitiesHandler.activities,
@@ -293,29 +303,32 @@ export function createActivitiesHandler<T extends ContractDefinition>(
  */
 export function createWorkflow<
   TWorkflow extends WorkflowDefinition,
-  TContract extends ContractDefinition
+  TContract extends ContractDefinition,
 >(
-  options: CreateWorkflowOptions<TWorkflow, TContract>
-): (...args: InferInput<TWorkflow>) => Promise<InferOutput<TWorkflow>> {
+  options: CreateWorkflowOptions<TWorkflow, TContract>,
+): (args: InferInput<TWorkflow>) => Promise<InferOutput<TWorkflow>> {
   const { definition, contract, implementation, activityOptions } = options;
 
-  return async (...args: any[]) => {
+  return async (args: any) => {
+    // Temporal passes args as array, extract first element which is our single parameter
+    const singleArg = Array.isArray(args) ? args[0] : args;
+    
     // Validate workflow input
-    const validatedInput = definition.input.parse(args) as any;
+    const validatedInput = definition.input.parse(singleArg) as any;
 
     // Create activities proxy if activities are defined
     let contextActivities: any = {};
-    
+
     if (definition.activities || contract.activities) {
       const rawActivities = proxyActivities<Record<string, (...args: any[]) => Promise<any>>>({
         startToCloseTimeout: 60_000, // 1 minute default
         ...activityOptions,
       });
-      
+
       contextActivities = createValidatedActivities(
         rawActivities,
         definition.activities,
-        contract.activities
+        contract.activities,
       );
     }
 
@@ -325,11 +338,10 @@ export function createWorkflow<
       info: workflowInfo(),
     };
 
-    // Execute workflow
-    const result = await implementation(context, ...validatedInput);
+    // Execute workflow (pass validated input as tuple)
+    const result = await implementation(context, validatedInput);
 
     // Validate workflow output
     return definition.output.parse(result) as InferOutput<TWorkflow>;
   };
 }
-

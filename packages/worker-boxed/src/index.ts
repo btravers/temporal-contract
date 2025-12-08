@@ -9,7 +9,7 @@ export {
   type BoxedActivitiesHandler,
   type CreateWorkflowOptions,
   type ActivityError,
-} from './handler.js';
+} from "./handler.js";
 
 // Re-export boxed utilities for convenience
-export { Result, Future, Option, AsyncData } from '@swan-io/boxed';
+export { Result, Future, Option, AsyncData } from "@swan-io/boxed";

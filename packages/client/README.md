@@ -51,6 +51,7 @@ console.log(result.totalAmount); // number
 Creates a typed Temporal client from a contract.
 
 **Parameters:**
+
 - `contract` - The contract definition
 - `options` - Native Temporal `ClientOptions` (connection, namespace, dataConverter, etc.)
 

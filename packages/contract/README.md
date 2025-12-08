@@ -12,7 +12,7 @@ pnpm add @temporal-contract/contract zod
 
 ```typescript
 import { z } from 'zod';
-import { contract, workflow, activity } from '@temporal-contract/contract';
+import { defineContract, defineWorkflow, defineActivity } from '@temporal-contract/contract';
 
 export const myContract = contract({
   workflows: {

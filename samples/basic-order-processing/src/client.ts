@@ -45,7 +45,7 @@ async function run() {
     // Start the workflow
     const handle = await contractClient.startWorkflow("processOrder", {
       workflowId: order.orderId,
-      args: [order],
+      args: order,
     });
 
     console.log(`✅ Workflow started successfully!`);
@@ -54,7 +54,7 @@ async function run() {
     console.log("⏳ Waiting for workflow result...\n");
 
     // Wait for the result
-    const result = await handle.result() as OrderResult;
+    const result = (await handle.result()) as OrderResult;
 
     console.log("✅ Order processed successfully!");
     console.log("   Result:", JSON.stringify(result, null, 2));

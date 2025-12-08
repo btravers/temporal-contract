@@ -5,7 +5,7 @@ import type { Order, OrderResult } from "./contract.js";
 
 /**
  * Client for Boxed Order Processing
- * 
+ *
  * This demonstrates how to use the type-safe client to start workflows.
  * Note: Client code is identical to the standard worker approach.
  * The Result/Future pattern is internal to activity implementations.
@@ -37,9 +37,7 @@ async function runClient() {
     {
       orderId: "ORD-BOXED-002",
       customerId: "CUST-002",
-      items: [
-        { productId: "PROD-C", quantity: 3, price: 19.99 },
-      ],
+      items: [{ productId: "PROD-C", quantity: 3, price: 19.99 }],
       totalAmount: 59.97,
     },
     {
@@ -66,13 +64,13 @@ async function runClient() {
       // Start workflow with type-safe contract
       const handle = await client.startWorkflow("processOrder", {
         workflowId: order.orderId,
-        args: [order],
+        args: order,
       });
 
       console.log(`   ✓ Workflow started: ${handle.workflowId}\n`);
 
       // Wait for result (optional - for demo purposes)
-      const result = await handle.result() as OrderResult;
+      const result = (await handle.result()) as OrderResult;
 
       console.log(`   📋 Result for ${order.orderId}:`);
       console.log(`      Status: ${result.status}`);

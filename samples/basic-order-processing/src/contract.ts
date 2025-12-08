@@ -1,9 +1,9 @@
-import { contract, workflow, activity } from "@temporal-contract/contract";
+import { defineContract, defineWorkflow, defineActivity } from "@temporal-contract/contract";
 import { z } from "zod";
 
 /**
  * Order Processing Contract
- * 
+ *
  * This contract defines a simple order processing system with:
  * - Global activities for logging and notifications
  * - A workflow for processing orders with payment, inventory, and shipping
@@ -21,7 +21,7 @@ const OrderSchema = z.object({
       productId: z.string(),
       quantity: z.number().positive(),
       price: z.number().positive(),
-    })
+    }),
   ),
   totalAmount: z.number().positive(),
 });
@@ -54,9 +54,9 @@ const OrderResultSchema = z.object({
 // Contract Definition
 // ============================================================================
 
-export const orderProcessingContract = contract({
+export const orderProcessingContract = defineContract({
   taskQueue: "order-processing",
-  
+
   /**
    * Global activities available to all workflows
    */
@@ -64,16 +64,16 @@ export const orderProcessingContract = contract({
     /**
      * Log a message to the console
      */
-    log: activity({
-      input: z.tuple([z.string(), z.string()]), // [level, message]
+    log: defineActivity({
+      input: z.object({ level: z.string(), message: z.string() }),
       output: z.void(),
     }),
 
     /**
      * Send a notification to a customer
      */
-    sendNotification: activity({
-      input: z.tuple([z.string(), z.string(), z.string()]), // [customerId, subject, message]
+    sendNotification: defineActivity({
+      input: z.object({ customerId: z.string(), subject: z.string(), message: z.string() }),
       output: z.void(),
     }),
   },
@@ -85,8 +85,8 @@ export const orderProcessingContract = contract({
     /**
      * Process an order from payment to shipping
      */
-    processOrder: workflow({
-      input: z.tuple([OrderSchema]),
+    processOrder: defineWorkflow({
+      input: OrderSchema,
       output: OrderResultSchema,
 
       /**
@@ -96,39 +96,37 @@ export const orderProcessingContract = contract({
         /**
          * Process payment for the order
          */
-        processPayment: activity({
-          input: z.tuple([z.string(), z.number()]), // [customerId, amount]
+        processPayment: defineActivity({
+          input: z.object({ customerId: z.string(), amount: z.number() }),
           output: PaymentResultSchema,
         }),
 
         /**
          * Reserve inventory for the order items
          */
-        reserveInventory: activity({
-          input: z.tuple([
-            z.array(
-              z.object({
-                productId: z.string(),
-                quantity: z.number(),
-              })
-            ),
-          ]),
+        reserveInventory: defineActivity({
+          input: z.array(
+            z.object({
+              productId: z.string(),
+              quantity: z.number(),
+            }),
+          ),
           output: InventoryResultSchema,
         }),
 
         /**
          * Release reserved inventory
          */
-        releaseInventory: activity({
-          input: z.tuple([z.string()]), // [reservationId]
+        releaseInventory: defineActivity({
+          input: z.string(),
           output: z.void(),
         }),
 
         /**
          * Create a shipment for the order
          */
-        createShipment: activity({
-          input: z.tuple([z.string(), z.string()]), // [orderId, customerId]
+        createShipment: defineActivity({
+          input: z.object({ orderId: z.string(), customerId: z.string() }),
           output: ShippingResultSchema,
         }),
       },

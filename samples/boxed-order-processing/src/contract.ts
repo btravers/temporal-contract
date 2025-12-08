@@ -1,9 +1,9 @@
-import { contract, workflow, activity } from "@temporal-contract/contract";
+import { defineContract, defineWorkflow, defineActivity } from "@temporal-contract/contract";
 import { z } from "zod";
 
 /**
  * Boxed Order Processing Contract
- * 
+ *
  * This contract demonstrates the Result/Future pattern for explicit error handling.
  * Activities return Result<T, E> instead of throwing exceptions.
  */
@@ -20,7 +20,7 @@ const OrderSchema = z.object({
       productId: z.string(),
       quantity: z.number().positive(),
       price: z.number().positive(),
-    })
+    }),
   ),
   totalAmount: z.number().positive(),
 });
@@ -56,9 +56,9 @@ const OrderResultSchema = z.object({
 // Contract Definition
 // ============================================================================
 
-export const boxedOrderContract = contract({
+export const boxedOrderContract = defineContract({
   taskQueue: "boxed-order-processing",
-  
+
   /**
    * Global activities available to all workflows
    */
@@ -66,16 +66,16 @@ export const boxedOrderContract = contract({
     /**
      * Log a message with severity level
      */
-    log: activity({
-      input: z.tuple([z.enum(["info", "warn", "error"]), z.string()]),
+    log: defineActivity({
+      input: z.object({ level: z.enum(["info", "warn", "error"]), message: z.string() }),
       output: z.void(),
     }),
 
     /**
      * Send notification to customer
      */
-    sendNotification: activity({
-      input: z.tuple([z.string(), z.string(), z.string()]), // [customerId, subject, message]
+    sendNotification: defineActivity({
+      input: z.object({ customerId: z.string(), subject: z.string(), message: z.string() }),
       output: z.object({ sent: z.boolean(), messageId: z.string().optional() }),
     }),
   },
@@ -87,8 +87,8 @@ export const boxedOrderContract = contract({
     /**
      * Process an order with explicit error handling using Result pattern
      */
-    processOrder: workflow({
-      input: z.tuple([OrderSchema]),
+    processOrder: defineWorkflow({
+      input: OrderSchema,
       output: OrderResultSchema,
 
       /**
@@ -98,47 +98,45 @@ export const boxedOrderContract = contract({
         /**
          * Process payment - can fail with specific error codes
          */
-        processPayment: activity({
-          input: z.tuple([z.string(), z.number()]), // [customerId, amount]
+        processPayment: defineActivity({
+          input: z.object({ customerId: z.string(), amount: z.number() }),
           output: PaymentResultSchema,
         }),
 
         /**
          * Reserve inventory - can fail if out of stock
          */
-        reserveInventory: activity({
-          input: z.tuple([
-            z.array(
-              z.object({
-                productId: z.string(),
-                quantity: z.number(),
-              })
-            ),
-          ]),
+        reserveInventory: defineActivity({
+          input: z.array(
+            z.object({
+              productId: z.string(),
+              quantity: z.number(),
+            }),
+          ),
           output: InventoryResultSchema,
         }),
 
         /**
          * Release reserved inventory
          */
-        releaseInventory: activity({
-          input: z.tuple([z.string()]), // [reservationId]
+        releaseInventory: defineActivity({
+          input: z.string(),
           output: z.void(),
         }),
 
         /**
          * Create shipment - can fail with carrier issues
          */
-        createShipment: activity({
-          input: z.tuple([z.string(), z.string()]), // [orderId, customerId]
+        createShipment: defineActivity({
+          input: z.object({ orderId: z.string(), customerId: z.string() }),
           output: ShippingResultSchema,
         }),
 
         /**
          * Refund payment - can fail
          */
-        refundPayment: activity({
-          input: z.tuple([z.string()]), // [transactionId]
+        refundPayment: defineActivity({
+          input: z.string(),
           output: z.object({ refunded: z.boolean(), refundId: z.string().optional() }),
         }),
       },

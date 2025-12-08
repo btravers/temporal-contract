@@ -1,4 +1,4 @@
-export { createActivitiesHandler, createWorkflow } from './handler.js';
+export { createActivitiesHandler, createWorkflow } from "./handler.js";
 
 export type {
   WorkflowContext,
@@ -8,4 +8,4 @@ export type {
   CreateActivitiesHandlerOptions,
   ActivitiesHandler,
   CreateWorkflowOptions,
-} from './handler.js';
+} from "./handler.js";

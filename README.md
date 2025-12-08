@@ -35,11 +35,11 @@ pnpm add zod @temporalio/client @temporalio/worker @temporalio/workflow
 ```typescript
 // contract.ts
 import { z } from 'zod';
-import { activity, workflow, contract } from '@temporal-contract/contract';
+import { defineActivity, defineWorkflow, defineContract } from '@temporal-contract/contract';
 
 export default contract({
   taskQueue: 'my-service',
-  
+
   // Global activities (available in all workflows)
   activities: {
     sendEmail: activity({
@@ -47,7 +47,7 @@ export default contract({
       output: z.object({ sent: z.boolean() }),
     }),
   },
-  
+
   workflows: {
     processOrder: workflow({
       input: z.tuple([z.string(), z.string()]), // orderId, customerId
@@ -56,7 +56,7 @@ export default contract({
         status: z.enum(['success', 'failed']),
         transactionId: z.string(),
       }),
-      
+
       // Workflow-specific activities
       activities: {
         validateInventory: activity({
@@ -88,13 +88,13 @@ export const activitiesHandler = createActivitiesHandler({
       await emailService.send({ to, subject, body });
       return { sent: true };
     },
-    
+
     // Workflow-specific activities
     validateInventory: async (orderId) => {
       const available = await inventoryDB.check(orderId);
       return { available };
     },
-    
+
     chargePayment: async (customerId, amount) => {
       const transactionId = await paymentGateway.charge(customerId, amount);
       return { transactionId, success: true };
@@ -116,22 +116,22 @@ export const processOrder = createWorkflow({
   implementation: async (context, orderId, customerId) => {
     // context.activities: typed activities (workflow + global)
     // context.info: WorkflowInfo
-    
+
     const inventory = await context.activities.validateInventory(orderId);
-    
+
     if (!inventory.available) {
       throw new Error('Out of stock');
     }
-    
+
     const payment = await context.activities.chargePayment(customerId, 100);
-    
+
     // Global activity
     await context.activities.sendEmail(
       customerId,
       'Order processed',
       'Your order has been processed'
     );
-    
+
     return {
       orderId,
       status: payment.success ? 'success' : 'failed',
@@ -243,6 +243,7 @@ contract({
 ### Automatic Validation
 
 All inputs and outputs are validated automatically:
+
 - **Workflow input/output**: Validated when entering/exiting workflow
 - **Activity calls**: Validated before serialization and after deserialization
 - **Network boundaries**: All data crossing network is validated

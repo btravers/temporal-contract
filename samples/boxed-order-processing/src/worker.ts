@@ -9,10 +9,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /**
  * Boxed Order Processing Worker
- * 
+ *
  * This worker demonstrates the Result/Future pattern for explicit error handling.
  * Activities return Result<T, ActivityError> instead of throwing exceptions.
- * 
+ *
  * Key features:
  * - Explicit error types in activity signatures
  * - Better testability (no try/catch in activity code)

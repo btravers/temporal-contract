@@ -4,13 +4,13 @@ packages:
   - tools/*
 
 catalog:
-  '@changesets/cli': 2.29.8
-  '@changesets/config': 3.1.2
-  '@swan-io/boxed': 3.2.1
-  '@temporalio/client': 1.13.2
-  '@temporalio/worker': 1.13.2
-  '@temporalio/workflow': 1.13.2
-  '@types/node': 24.10.1
+  "@changesets/cli": 2.29.8
+  "@changesets/config": 3.1.2
+  "@swan-io/boxed": 3.2.1
+  "@temporalio/client": 1.13.2
+  "@temporalio/worker": 1.13.2
+  "@temporalio/workflow": 1.13.2
+  "@types/node": 24.10.1
   lefthook: 2.0.9
   oxfmt: 0.17.0
   oxlint: 1.32.0

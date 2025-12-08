@@ -13,6 +13,7 @@ pnpm changeset
 ```
 
 Suivez les prompts pour :
+
 - Sélectionner les packages affectés (tous les packages partagent la même version)
 - Choisir le type de bump : `major`, `minor`, ou `patch`
 - Décrire les changements
@@ -30,6 +31,7 @@ git push
 ### 3. CI crée automatiquement une PR de release
 
 La CI (workflow `release.yml`) détecte le nouveau changeset et crée automatiquement une **PR de version** qui :
+
 - Met à jour les versions dans tous les `package.json`
 - Génère/met à jour les `CHANGELOG.md`
 - Groupe tous les changesets en attente
@@ -37,6 +39,7 @@ La CI (workflow `release.yml`) détecte le nouveau changeset et crée automatiqu
 ### 4. Review et merge la PR
 
 Une fois la PR de version mergée dans `main`, la CI :
+
 - Build tous les packages
 - Publie automatiquement sur npm avec le `NPM_TOKEN`
 - Crée un tag Git avec la version

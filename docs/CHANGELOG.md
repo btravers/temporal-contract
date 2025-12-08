@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.1] - 2025-12-07
 
 ### Added
+
 - Initial release of temporal-contract
 - `@temporal-contract/core` - Core types and utilities
 - `@temporal-contract/contract` - Contract builder for defining workflows and activities
@@ -22,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation for all packages
 
 ### Features
+
 - Type-safe contract definitions
 - Automatic input/output validation
 - Typed activity proxies in workflows
