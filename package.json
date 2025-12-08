@@ -5,7 +5,7 @@
   "description": "Type-safe contract system for Temporal.io workflows and activities",
   "author": "Benoit TRAVERS <benoit.travers.frgmail.com>",
   "license": "MIT",
-  "packageManager": "pnpm@10.24.0",
+  "packageManager": "pnpm@10.25.0",
   "scripts": {
     "prepare": "lefthook install",
     "lint": "oxlint .",
