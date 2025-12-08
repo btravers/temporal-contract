@@ -1,4 +1,13 @@
-import { proxyActivities, WorkflowInfo, workflowInfo, ActivityOptions, setHandler, defineQuery, defineSignal, defineUpdate } from "@temporalio/workflow";
+import {
+  proxyActivities,
+  WorkflowInfo,
+  workflowInfo,
+  ActivityOptions,
+  setHandler,
+  defineQuery,
+  defineSignal,
+  defineUpdate,
+} from "@temporalio/workflow";
 import type {
   ContractDefinition,
   InferInput,
@@ -355,7 +364,8 @@ export function createWorkflow<
 >(
   options: CreateWorkflowOptions<TWorkflow, TContract>,
 ): (args: InferInput<TWorkflow>) => Promise<InferOutput<TWorkflow>> {
-  const { definition, contract, implementation, activityOptions, signals, queries, updates } = options;
+  const { definition, contract, implementation, activityOptions, signals, queries, updates } =
+    options;
 
   return async (args: any) => {
     // Temporal passes args as array, extract first element which is our single parameter
@@ -368,7 +378,7 @@ export function createWorkflow<
     if (definition.signals && signals) {
       const signalDefs = definition.signals as Record<string, SignalDefinition>;
       const signalHandlers = signals as Record<string, any>;
-      
+
       for (const [signalName, signalDef] of Object.entries(signalDefs)) {
         const handler = signalHandlers[signalName];
         if (handler) {
@@ -387,7 +397,7 @@ export function createWorkflow<
     if (definition.queries && queries) {
       const queryDefs = definition.queries as Record<string, QueryDefinition>;
       const queryHandlers = queries as Record<string, any>;
-      
+
       for (const [queryName, queryDef] of Object.entries(queryDefs)) {
         const handler = queryHandlers[queryName];
         if (handler) {
@@ -407,7 +417,7 @@ export function createWorkflow<
     if (definition.updates && updates) {
       const updateDefs = definition.updates as Record<string, UpdateDefinition>;
       const updateHandlers = updates as Record<string, any>;
-      
+
       for (const [updateName, updateDef] of Object.entries(updateDefs)) {
         const handler = updateHandlers[updateName];
         if (handler) {

@@ -88,7 +88,7 @@ export interface BoxedActivitiesHandler<T extends ContractDefinition> {
 export interface CreateWorkflowOptions<
   TWorkflow extends WorkflowDefinition,
   TContract extends ContractDefinition,
-> extends Omit<BaseCreateWorkflowOptions<TWorkflow, TContract>, 'implementation'> {
+> extends Omit<BaseCreateWorkflowOptions<TWorkflow, TContract>, "implementation"> {
   implementation: WorkflowImplementation<TWorkflow, TContract>;
 }
 
@@ -204,7 +204,7 @@ export function createBoxedActivitiesHandler<T extends ContractDefinition>(
 
 /**
  * Create a typed workflow implementation with automatic validation
- * 
+ *
  * This is a re-export of the base createWorkflow from @temporal-contract/worker.
  * Workflows in worker-boxed work the same as in worker - only activities use the Result pattern.
  *
