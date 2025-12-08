@@ -14,12 +14,38 @@ export interface ActivityDefinition {
 }
 
 /**
+ * Definition of a signal
+ */
+export interface SignalDefinition {
+  input: AnyZodSchema;
+}
+
+/**
+ * Definition of a query
+ */
+export interface QueryDefinition {
+  input: AnyZodSchema;
+  output: AnyZodSchema;
+}
+
+/**
+ * Definition of an update
+ */
+export interface UpdateDefinition {
+  input: AnyZodSchema;
+  output: AnyZodSchema;
+}
+
+/**
  * Definition of a workflow
  */
 export interface WorkflowDefinition {
   input: AnyZodSchema;
   output: AnyZodSchema;
   activities?: Record<string, ActivityDefinition>;
+  signals?: Record<string, SignalDefinition>;
+  queries?: Record<string, QueryDefinition>;
+  updates?: Record<string, UpdateDefinition>;
 }
 
 /**
@@ -43,18 +69,40 @@ export type InferOutput<T extends { output: AnyZodSchema }> = z.infer<T["output"
 
 /**
  * Infer workflow function signature
- * Workflow functions receive args as a tuple
+ * Workflow functions receive a single argument and return a Promise
  */
 export type InferWorkflow<T extends WorkflowDefinition> = (
-  args: InferInput<T>
+  args: InferInput<T>,
 ) => Promise<InferOutput<T>>;
 
 /**
  * Infer activity function signature
- * Activity functions receive args as a tuple
+ * Activity functions receive a single argument and return a Promise
  */
 export type InferActivity<T extends ActivityDefinition> = (
-  args: InferInput<T>
+  args: InferInput<T>,
+) => Promise<InferOutput<T>>;
+
+/**
+ * Infer signal handler signature
+ * Signal handlers receive args and return void
+ */
+export type InferSignal<T extends SignalDefinition> = (args: InferInput<T>) => void;
+
+/**
+ * Infer query handler signature
+ * Query handlers receive args and return output synchronously
+ */
+export type InferQuery<T extends QueryDefinition> = (
+  args: InferInput<T>,
+) => Promise<InferOutput<T>>;
+
+/**
+ * Infer update handler signature
+ * Update handlers receive args and return output as a Promise
+ */
+export type InferUpdate<T extends UpdateDefinition> = (
+  args: InferInput<T>,
 ) => Promise<InferOutput<T>>;
 
 /**
@@ -81,6 +129,36 @@ export type InferWorkflowActivities<T extends WorkflowDefinition> =
   T["activities"] extends Record<string, ActivityDefinition>
     ? {
         [K in keyof T["activities"]]: InferActivity<T["activities"][K]>;
+      }
+    : {};
+
+/**
+ * Infer signals from a workflow definition
+ */
+export type InferWorkflowSignals<T extends WorkflowDefinition> =
+  T["signals"] extends Record<string, SignalDefinition>
+    ? {
+        [K in keyof T["signals"]]: InferSignal<T["signals"][K]>;
+      }
+    : {};
+
+/**
+ * Infer queries from a workflow definition
+ */
+export type InferWorkflowQueries<T extends WorkflowDefinition> =
+  T["queries"] extends Record<string, QueryDefinition>
+    ? {
+        [K in keyof T["queries"]]: InferQuery<T["queries"][K]>;
+      }
+    : {};
+
+/**
+ * Infer updates from a workflow definition
+ */
+export type InferWorkflowUpdates<T extends WorkflowDefinition> =
+  T["updates"] extends Record<string, UpdateDefinition>
+    ? {
+        [K in keyof T["updates"]]: InferUpdate<T["updates"][K]>;
       }
     : {};
 

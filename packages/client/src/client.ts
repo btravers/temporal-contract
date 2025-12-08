@@ -4,16 +4,41 @@ import type {
   ContractDefinition,
   InferOutput,
   WorkflowDefinition,
+  InferWorkflowSignals,
+  InferWorkflowQueries,
+  InferWorkflowUpdates,
+  InferInput,
 } from "@temporal-contract/core";
+import { Entries } from "type-fest";
+
+declare global {
+  interface ObjectConstructor {
+    entries<T extends object>(o: T): Entries<T>;
+  }
+}
 
 /**
- * Typed workflow handle with validated results
+ * Typed workflow handle with validated results, queries, signals and updates
  */
 export interface TypedWorkflowHandle<TWorkflow extends WorkflowDefinition> {
   workflowId: string;
+
+  /**
+   * Type-safe queries based on workflow definition
+   */
+  queries: InferWorkflowQueries<TWorkflow>;
+
+  /**
+   * Type-safe signals based on workflow definition
+   */
+  signals: InferWorkflowSignals<TWorkflow>;
+
+  /**
+   * Type-safe updates based on workflow definition
+   */
+  updates: InferWorkflowUpdates<TWorkflow>;
+
   result: () => Promise<InferOutput<TWorkflow>>;
-  query: <TQuery>(queryType: string, ...args: unknown[]) => Promise<TQuery>;
-  signal: (signalName: string, ...args: unknown[]) => Promise<void>;
   terminate: (reason?: string) => Promise<void>;
   cancel: () => Promise<void>;
 }
@@ -72,7 +97,7 @@ export class TypedClient<TContract extends ContractDefinition> {
     workflowName: TWorkflowName,
     options: {
       workflowId: string;
-      args: any; // Use 'any' due to TypeScript generic limitations with Zod tuple inference
+      args: InferInput<TContract["workflows"][TWorkflowName]>;
     },
   ): Promise<TypedWorkflowHandle<TContract["workflows"][TWorkflowName]>> {
     const definition = this.contract.workflows[workflowName];
@@ -91,7 +116,9 @@ export class TypedClient<TContract extends ContractDefinition> {
       args: [validatedInput],
     });
 
-    return this.createTypedHandle(handle, definition);
+    return this.createTypedHandle(handle, definition) as TypedWorkflowHandle<
+      TContract["workflows"][TWorkflowName]
+    >;
   }
 
   /**
@@ -111,7 +138,7 @@ export class TypedClient<TContract extends ContractDefinition> {
     workflowName: TWorkflowName,
     options: {
       workflowId: string;
-      args: any; // Use 'any' due to TypeScript generic limitations with Zod tuple inference
+      args: InferInput<TContract["workflows"][TWorkflowName]>;
     },
   ): Promise<InferOutput<TContract["workflows"][TWorkflowName]>> {
     const definition = this.contract.workflows[workflowName];
@@ -154,22 +181,63 @@ export class TypedClient<TContract extends ContractDefinition> {
     }
 
     const handle = this.client.workflow.getHandle(workflowId);
-    return this.createTypedHandle(handle, definition);
+    return this.createTypedHandle(handle, definition) as TypedWorkflowHandle<
+      TContract["workflows"][TWorkflowName]
+    >;
   }
 
   private createTypedHandle<TWorkflow extends WorkflowDefinition>(
     handle: WorkflowHandle,
     definition: TWorkflow,
   ): TypedWorkflowHandle<TWorkflow> {
+    // Create typed queries proxy
+    const queries = {} as InferWorkflowQueries<TWorkflow>;
+    if (definition.queries) {
+      for (const [queryName, queryDef] of Object.entries(definition.queries)) {
+        // @ts-expect-error fixme later
+        queries[queryName] = async (args: InferInput<typeof queryDef>) => {
+          const validatedInput = queryDef.input.parse(args);
+          const result = await handle.query(queryName, validatedInput);
+          return queryDef.output.parse(result);
+        };
+      }
+    }
+
+    // Create typed signals proxy
+    const signals = {} as InferWorkflowSignals<TWorkflow>;
+    if (definition.signals) {
+      for (const [signalName, signalDef] of Object.entries(definition.signals)) {
+        // @ts-expect-error fixme later
+        signals[signalName] = async (args: InferInput<typeof signalDef>) => {
+          const validatedInput = signalDef.input.parse(args);
+          await handle.signal(signalName, validatedInput);
+        };
+      }
+    }
+
+    // Create typed updates proxy
+    const updates = {} as InferWorkflowUpdates<TWorkflow>;
+    if (definition.updates) {
+      for (const [updateName, updateDef] of Object.entries(definition.updates)) {
+        // @ts-expect-error fixme later
+        updates[updateName] = async (args: InferInput<typeof updateDef>) => {
+          const validatedInput = updateDef.input.parse(args);
+          const result = await handle.executeUpdate(updateName, { args: [validatedInput] });
+          return updateDef.output.parse(result);
+        };
+      }
+    }
+
     return {
       workflowId: handle.workflowId,
+      queries,
+      signals,
+      updates,
       result: async () => {
         const result = await handle.result();
         // Validate output with Zod schema
         return definition.output.parse(result) as InferOutput<TWorkflow>;
       },
-      query: (queryType: string, ...args: unknown[]) => handle.query(queryType, ...args),
-      signal: (signalName: string, ...args: unknown[]) => handle.signal(signalName, ...args),
       terminate: async (reason?: string) => {
         await handle.terminate(reason);
       },

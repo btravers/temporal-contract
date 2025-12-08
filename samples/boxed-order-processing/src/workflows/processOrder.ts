@@ -73,7 +73,10 @@ export const processOrderWorkflow: WorkflowImplementation<
     }
 
     inventoryReservationId = inventoryResult.reservationId;
-    await activities.log({ level: "info", message: `Inventory reserved: ${inventoryReservationId}` });
+    await activities.log({
+      level: "info",
+      message: `Inventory reserved: ${inventoryReservationId}`,
+    });
 
     // Step 4: Create shipment
     await activities.log({ level: "info", message: "Creating shipment" });
@@ -86,7 +89,10 @@ export const processOrderWorkflow: WorkflowImplementation<
       customerId: order.customerId,
     })) as ShippingResult;
 
-    await activities.log({ level: "info", message: `Shipment created: ${shippingResult.trackingNumber}` });
+    await activities.log({
+      level: "info",
+      message: `Shipment created: ${shippingResult.trackingNumber}`,
+    });
 
     // Step 5: Send success notification
     try {
@@ -97,11 +103,17 @@ export const processOrderWorkflow: WorkflowImplementation<
       });
     } catch (error) {
       // Non-critical: log but continue
-      await activities.log({ level: "warn", message: `Failed to send confirmation notification: ${error}` });
+      await activities.log({
+        level: "warn",
+        message: `Failed to send confirmation notification: ${error}`,
+      });
     }
 
     // Success!
-    await activities.log({ level: "info", message: `Order ${order.orderId} processed successfully` });
+    await activities.log({
+      level: "info",
+      message: `Order ${order.orderId} processed successfully`,
+    });
 
     return {
       orderId: order.orderId,
@@ -143,7 +155,10 @@ export const processOrderWorkflow: WorkflowImplementation<
         await releaseInventoryFn(inventoryReservationId);
         await activities.log({ level: "info", message: "Inventory released successfully" });
       } catch (releaseError) {
-        await activities.log({ level: "error", message: `Failed to release inventory: ${releaseError}` });
+        await activities.log({
+          level: "error",
+          message: `Failed to release inventory: ${releaseError}`,
+        });
       }
     }
 
@@ -160,10 +175,16 @@ export const processOrderWorkflow: WorkflowImplementation<
           refundId?: string;
         };
         if (refundResult.refunded) {
-          await activities.log({ level: "info", message: `Payment refunded: ${refundResult.refundId}` });
+          await activities.log({
+            level: "info",
+            message: `Payment refunded: ${refundResult.refundId}`,
+          });
         }
       } catch (refundError) {
-        await activities.log({ level: "error", message: `Failed to refund payment: ${refundError}` });
+        await activities.log({
+          level: "error",
+          message: `Failed to refund payment: ${refundError}`,
+        });
       }
     }
 
@@ -175,7 +196,10 @@ export const processOrderWorkflow: WorkflowImplementation<
         message: `We're sorry, but your order ${order.orderId} could not be processed. Reason: ${failureReason}. Any charges have been refunded.`,
       });
     } catch (notificationError) {
-      await activities.log({ level: "warn", message: `Failed to send failure notification: ${notificationError}` });
+      await activities.log({
+        level: "warn",
+        message: `Failed to send failure notification: ${notificationError}`,
+      });
     }
 
     await activities.log({ level: "info", message: `Order ${order.orderId} processing cancelled` });

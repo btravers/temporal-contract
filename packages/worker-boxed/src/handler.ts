@@ -1,5 +1,5 @@
 import { Result, Future } from "@swan-io/boxed";
-import { proxyActivities, WorkflowInfo, workflowInfo, ActivityOptions } from "@temporalio/workflow";
+import { proxyActivities, WorkflowInfo, workflowInfo, ActivityOptions, setHandler, defineQuery, defineSignal, defineUpdate } from "@temporalio/workflow";
 import type {
   ContractDefinition,
   InferInput,
@@ -7,6 +7,9 @@ import type {
   WorkflowDefinition,
   ActivityDefinition,
   InferWorkflowContextActivities,
+  SignalDefinition,
+  QueryDefinition,
+  UpdateDefinition,
 } from "@temporal-contract/core";
 
 /**
@@ -31,7 +34,7 @@ export type WorkflowImplementation<
   TContract extends ContractDefinition,
 > = (
   context: WorkflowContext<TWorkflow, TContract>,
-  args: InferInput<TWorkflow>
+  args: InferInput<TWorkflow>,
 ) => Promise<InferOutput<TWorkflow>>;
 
 /**
@@ -51,8 +54,29 @@ export interface ActivityError {
  * The actual types will be enforced at runtime by Zod validation
  */
 export type BoxedActivityImplementation<TActivity extends ActivityDefinition> = (
-  args: InferInput<TActivity>
+  args: InferInput<TActivity>,
 ) => Future<Result<InferOutput<TActivity>, ActivityError>>;
+
+/**
+ * Signal handler implementation
+ */
+export type SignalHandlerImplementation<TSignal extends SignalDefinition> = (
+  args: InferInput<TSignal>,
+) => void | Promise<void>;
+
+/**
+ * Query handler implementation
+ */
+export type QueryHandlerImplementation<TQuery extends QueryDefinition> = (
+  args: InferInput<TQuery>,
+) => InferOutput<TQuery>;
+
+/**
+ * Update handler implementation
+ */
+export type UpdateHandlerImplementation<TUpdate extends UpdateDefinition> = (
+  args: InferInput<TUpdate>,
+) => Promise<InferOutput<TUpdate>>;
 
 /**
  * Workflow implementation function (receives context + typed args)
@@ -121,6 +145,30 @@ export interface CreateWorkflowOptions<
    * Default activity options
    */
   activityOptions?: ActivityOptions;
+  /**
+   * Signal handlers (if defined in workflow)
+   */
+  signals?: TWorkflow["signals"] extends Record<string, SignalDefinition>
+    ? {
+        [K in keyof TWorkflow["signals"]]: SignalHandlerImplementation<TWorkflow["signals"][K]>;
+      }
+    : never;
+  /**
+   * Query handlers (if defined in workflow)
+   */
+  queries?: TWorkflow["queries"] extends Record<string, QueryDefinition>
+    ? {
+        [K in keyof TWorkflow["queries"]]: QueryHandlerImplementation<TWorkflow["queries"][K]>;
+      }
+    : never;
+  /**
+   * Update handlers (if defined in workflow)
+   */
+  updates?: TWorkflow["updates"] extends Record<string, UpdateDefinition>
+    ? {
+        [K in keyof TWorkflow["updates"]]: UpdateHandlerImplementation<TWorkflow["updates"][K]>;
+      }
+    : never;
 }
 
 /**
@@ -352,14 +400,73 @@ export function createWorkflow<
 >(
   options: CreateWorkflowOptions<TWorkflow, TContract>,
 ): (args: InferInput<TWorkflow>) => Promise<InferOutput<TWorkflow>> {
-  const { definition, contract, implementation, activityOptions } = options;
+  const { definition, contract, implementation, activityOptions, signals, queries, updates } = options;
 
   return async (args: any) => {
     // Temporal passes args as array, extract first element which is our single parameter
     const singleArg = Array.isArray(args) ? args[0] : args;
-    
+
     // Validate workflow input
     const validatedInput = definition.input.parse(singleArg) as any;
+
+    // Register signal handlers
+    if (definition.signals && signals) {
+      const signalDefs = definition.signals as Record<string, SignalDefinition>;
+      const signalHandlers = signals as Record<string, any>;
+      
+      for (const [signalName, signalDef] of Object.entries(signalDefs)) {
+        const handler = signalHandlers[signalName];
+        if (handler) {
+          const signal = defineSignal(signalName);
+          setHandler(signal, async (...args: any[]) => {
+            // Extract single parameter (Temporal passes as args array)
+            const input = args.length === 1 ? args[0] : args;
+            const validatedInput = signalDef.input.parse(input);
+            await handler(validatedInput);
+          });
+        }
+      }
+    }
+
+    // Register query handlers
+    if (definition.queries && queries) {
+      const queryDefs = definition.queries as Record<string, QueryDefinition>;
+      const queryHandlers = queries as Record<string, any>;
+      
+      for (const [queryName, queryDef] of Object.entries(queryDefs)) {
+        const handler = queryHandlers[queryName];
+        if (handler) {
+          const query = defineQuery(queryName);
+          setHandler(query, (...args: any[]) => {
+            // Extract single parameter (Temporal passes as args array)
+            const input = args.length === 1 ? args[0] : args;
+            const validatedInput = queryDef.input.parse(input);
+            const result = handler(validatedInput);
+            return queryDef.output.parse(result);
+          });
+        }
+      }
+    }
+
+    // Register update handlers
+    if (definition.updates && updates) {
+      const updateDefs = definition.updates as Record<string, UpdateDefinition>;
+      const updateHandlers = updates as Record<string, any>;
+      
+      for (const [updateName, updateDef] of Object.entries(updateDefs)) {
+        const handler = updateHandlers[updateName];
+        if (handler) {
+          const update = defineUpdate(updateName);
+          setHandler(update, async (...args: any[]) => {
+            // Extract single parameter (Temporal passes as args array)
+            const input = args.length === 1 ? args[0] : args;
+            const validatedInput = updateDef.input.parse(input);
+            const result = await handler(validatedInput);
+            return updateDef.output.parse(result);
+          });
+        }
+      }
+    }
 
     // Create activities proxy if activities are defined
     let contextActivities: any = {};

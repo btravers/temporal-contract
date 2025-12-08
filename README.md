@@ -16,7 +16,7 @@
 ✅ **Complete type safety** - Full TypeScript inference from contract to implementation  
 ✅ **Compile-time validation** - Errors if workflows/activities are missing or incorrectly typed  
 ✅ **Automatic runtime validation** - Zod validation at all network boundaries  
-✅ **Tuple-based arguments** - Support for multiple arguments (matching Temporal's native API)  
+✅ **Flexible arguments** - Single parameter: objects, primitives, or arrays  
 ✅ **Global activities** - Share activities across all workflows in a contract  
 ✅ **Contract-level task queue** - Configure once, use everywhere  
 ✅ **Workflow context** - Type-safe access to activities and workflow info
@@ -37,20 +37,20 @@ pnpm add zod @temporalio/client @temporalio/worker @temporalio/workflow
 import { z } from 'zod';
 import { defineActivity, defineWorkflow, defineContract } from '@temporal-contract/contract';
 
-export default contract({
+export default defineContract({
   taskQueue: 'my-service',
 
   // Global activities (available in all workflows)
   activities: {
-    sendEmail: activity({
-      input: z.tuple([z.string(), z.string(), z.string()]), // to, subject, body
+    sendEmail: defineActivity({
+      input: z.object({ to: z.string(), subject: z.string(), body: z.string() }),
       output: z.object({ sent: z.boolean() }),
     }),
   },
 
   workflows: {
-    processOrder: workflow({
-      input: z.tuple([z.string(), z.string()]), // orderId, customerId
+    processOrder: defineWorkflow({
+      input: z.object({ orderId: z.string(), customerId: z.string() }),
       output: z.object({
         orderId: z.string(),
         status: z.enum(['success', 'failed']),
@@ -59,12 +59,12 @@ export default contract({
 
       // Workflow-specific activities
       activities: {
-        validateInventory: activity({
-          input: z.tuple([z.string()]),
+        validateInventory: defineActivity({
+          input: z.string(), // Single orderId parameter
           output: z.object({ available: z.boolean() }),
         }),
-        chargePayment: activity({
-          input: z.tuple([z.string(), z.number()]),
+        chargePayment: defineActivity({
+          input: z.object({ customerId: z.string(), amount: z.number() }),
           output: z.object({ transactionId: z.string(), success: z.boolean() }),
         }),
       },
@@ -84,7 +84,7 @@ export const activitiesHandler = createActivitiesHandler({
   contract: myContract,
   activities: {
     // Global activities
-    sendEmail: async (to, subject, body) => {
+    sendEmail: async ({ to, subject, body }) => {
       await emailService.send({ to, subject, body });
       return { sent: true };
     },
@@ -95,7 +95,7 @@ export const activitiesHandler = createActivitiesHandler({
       return { available };
     },
 
-    chargePayment: async (customerId, amount) => {
+    chargePayment: async ({ customerId, amount }) => {
       const transactionId = await paymentGateway.charge(customerId, amount);
       return { transactionId, success: true };
     },
@@ -113,7 +113,7 @@ import myContract from '../contract';
 export const processOrder = createWorkflow({
   definition: myContract.workflows.processOrder,
   contract: myContract,
-  implementation: async (context, orderId, customerId) => {
+  implementation: async (context, { orderId, customerId }) => {
     // context.activities: typed activities (workflow + global)
     // context.info: WorkflowInfo
 
@@ -123,14 +123,14 @@ export const processOrder = createWorkflow({
       throw new Error('Out of stock');
     }
 
-    const payment = await context.activities.chargePayment(customerId, 100);
+    const payment = await context.activities.chargePayment({ customerId, amount: 100 });
 
     // Global activity
-    await context.activities.sendEmail(
-      customerId,
-      'Order processed',
-      'Your order has been processed'
-    );
+    await context.activities.sendEmail({
+      to: customerId,
+      subject: 'Order processed',
+      body: 'Your order has been processed',
+    });
 
     return {
       orderId,
@@ -179,7 +179,7 @@ const client = TypedClient.create(myContract, {
 
 const result = await client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
-  args: ['ORD-123', 'CUST-456'],
+  args: { orderId: 'ORD-123', customerId: 'CUST-456' },
 });
 
 console.log(result.status); // 'success' | 'failed'
@@ -204,22 +204,32 @@ The worker implementation is split into two functions:
 
 This follows Temporal's architecture where workflows must be loaded from the file system.
 
-### Arguments as Tuples
+### Single Parameter Pattern
 
-Workflows and activities use tuples for arguments to match Temporal's native API:
+Workflows and activities accept a single parameter following Temporal's recommendation:
 
 ```typescript
-// Define with tuple
-input: z.tuple([z.string(), z.number()])
+// For multiple values, use an object
+input: z.object({ orderId: z.string(), amount: z.number() })
 
-// Implement with spread parameters
-async (context, orderId: string, amount: number) => { ... }
+// Implement with destructuring
+async (context, { orderId, amount }) => { ... }
 
-// Call with array
-args: ['ORD-123', 100]
+// Call with object
+args: { orderId: 'ORD-123', amount: 100 }
+
+// For single primitives, pass directly
+input: z.string()
+async (orderId) => { ... }
+args: 'ORD-123'
+
+// For arrays, pass directly
+input: z.array(z.object({ ... }))
+async (items) => { ... }
+args: [{ ... }]
 ```
 
-This allows multiple arguments while maintaining full type safety.
+This follows Temporal's best practices and simplifies the API.
 
 ### Global Activities
 
@@ -278,7 +288,7 @@ console.log(result.status); // No autocomplete, runtime errors possible
 // ✅ Full type safety
 const result = await client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
-  args: ['ORD-123', 'CUST-456'], // TypeScript knows what's required
+  args: { orderId: 'ORD-123', customerId: 'CUST-456' }, // TypeScript knows what's required
 });
 
 // ✅ Result is fully typed

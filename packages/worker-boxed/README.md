@@ -106,6 +106,28 @@ export const processOrder = createWorkflow({
       };
     }
   },
+  // Optional: Define signal handlers
+  signals: {
+    cancelOrder: (reason) => {
+      // Handle cancellation signal
+      // reason is fully typed from contract definition
+    },
+  },
+  // Optional: Define query handlers
+  queries: {
+    getOrderStatus: () => {
+      // Return current status synchronously
+      return { status: 'processing', updatedAt: Date.now() };
+    },
+  },
+  // Optional: Define update handlers
+  updates: {
+    updateShippingAddress: async (newAddress) => {
+      // Update order and return confirmation
+      // newAddress is fully typed from contract definition
+      return { updated: true, address: newAddress };
+    },
+  },
 });
 ```
 
@@ -202,7 +224,19 @@ type BoxedActivityImplementation<T> = (
 
 ### `createWorkflow(options)`
 
-Same as standard worker - workflows remain unchanged.
+Creates a typed workflow implementation with validation and typed activities.
+
+**Parameters:**
+
+- `definition` - Workflow definition from contract
+- `contract` - The full contract definition
+- `implementation` - Workflow implementation function (receives context and validated input)
+- `activityOptions` - Optional default activity options
+- `signals` - Optional signal handler implementations (must match definitions in workflow)
+- `queries` - Optional query handler implementations (must match definitions in workflow)
+- `updates` - Optional update handler implementations (must match definitions in workflow)
+
+All handlers receive validated inputs and return validated outputs based on the Zod schemas defined in the contract.
 
 ### `ActivityError`
 

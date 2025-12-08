@@ -34,9 +34,12 @@ import { myContract } from './contract';
 
 const processOrder = createWorkflow({
   definition: myContract.workflows.processOrder,
-  implementation: async (input, context) => {
-    // input is fully typed
-    // context.activities are fully typed
+  contract: myContract,
+  implementation: async (context, input) => {
+    // input is fully typed based on the contract
+    // context.activities are fully typed (workflow + global activities)
+    // context.info: WorkflowInfo
+
     const payment = await context.activities.processPayment({
       amount: input.totalAmount,
     });
@@ -49,6 +52,29 @@ const processOrder = createWorkflow({
   activityOptions: {
     startToCloseTimeout: '1 minute',
   },
+  // Optional: Define signal handlers
+  signals: {
+    addItem: (item) => {
+      // Handle signal - update workflow state
+      // item is fully typed from contract definition
+    },
+  },
+  // Optional: Define query handlers
+  queries: {
+    getStatus: (args) => {
+      // Return current status synchronously
+      // args is fully typed from contract definition
+      return { status: 'processing' };
+    },
+  },
+  // Optional: Define update handlers
+  updates: {
+    updateDiscount: async (discount) => {
+      // Update workflow state and return result
+      // discount is fully typed from contract definition
+      return { newTotal: 100 };
+    },
+  },
 });
 ```
 
@@ -58,6 +84,9 @@ const processOrder = createWorkflow({
 - ✅ Automatic output validation with Zod schemas
 - ✅ Full TypeScript type inference
 - ✅ Typed activity proxies in workflows
+- ✅ Type-safe signal handlers with validation
+- ✅ Type-safe query handlers with validation
+- ✅ Type-safe update handlers with validation
 
 ## API
 
@@ -65,9 +94,26 @@ const processOrder = createWorkflow({
 
 Creates a typed activity implementation with validation.
 
+**Parameters:**
+
+- `definition` - Activity definition from contract
+- `implementation` - Activity implementation function (receives validated input, returns validated output)
+
 ### `createWorkflow(options)`
 
 Creates a typed workflow implementation with validation and typed activities.
+
+**Parameters:**
+
+- `definition` - Workflow definition from contract
+- `contract` - The full contract definition
+- `implementation` - Workflow implementation function (receives context and validated input)
+- `activityOptions` - Optional default activity options
+- `signals` - Optional signal handler implementations (must match definitions in workflow)
+- `queries` - Optional query handler implementations (must match definitions in workflow)
+- `updates` - Optional update handler implementations (must match definitions in workflow)
+
+All handlers receive validated inputs and return validated outputs based on the Zod schemas defined in the contract.
 
 ## License
 

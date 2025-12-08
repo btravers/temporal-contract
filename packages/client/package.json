@@ -47,6 +47,7 @@
     "@temporal-contract/tsconfig": "workspace:*",
     "@temporalio/client": "catalog:",
     "tsdown": "catalog:",
+    "type-fest": "5.3.1",
     "typescript": "catalog:",
     "zod": "catalog:"
   },

@@ -14,9 +14,10 @@ pnpm add @temporal-contract/contract zod
 import { z } from 'zod';
 import { defineContract, defineWorkflow, defineActivity } from '@temporal-contract/contract';
 
-export const myContract = contract({
+export const myContract = defineContract({
+  taskQueue: 'my-service',
   workflows: {
-    processOrder: workflow({
+    processOrder: defineWorkflow({
       input: z.object({
         orderId: z.string(),
         items: z.array(z.object({
@@ -29,7 +30,7 @@ export const myContract = contract({
         totalAmount: z.number(),
       }),
       activities: {
-        processPayment: activity({
+        processPayment: defineActivity({
           input: z.object({ amount: z.number() }),
           output: z.object({ transactionId: z.string() }),
         }),

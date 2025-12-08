@@ -25,7 +25,10 @@ const implementation: WorkflowImplementation<
 > = async (context, order: Order): Promise<OrderResult> => {
   const { activities } = context;
 
-  await activities.log({ level: "info", message: `Starting order processing for ${order.orderId}` });
+  await activities.log({
+    level: "info",
+    message: `Starting order processing for ${order.orderId}`,
+  });
 
   let reservationId: string | undefined;
 
@@ -36,9 +39,10 @@ const implementation: WorkflowImplementation<
     if (!processPaymentFn) {
       throw new Error("processPayment activity not found");
     }
-    const paymentResult = (await processPaymentFn(
-      { customerId: order.customerId, amount: order.totalAmount },
-    )) as PaymentResult;
+    const paymentResult = (await processPaymentFn({
+      customerId: order.customerId,
+      amount: order.totalAmount,
+    })) as PaymentResult;
 
     if (paymentResult.status === "failed") {
       await activities.log({ level: "error", message: "Payment failed" });
@@ -55,7 +59,10 @@ const implementation: WorkflowImplementation<
       };
     }
 
-    await activities.log({ level: "info", message: `Payment successful: ${paymentResult.transactionId}` });
+    await activities.log({
+      level: "info",
+      message: `Payment successful: ${paymentResult.transactionId}`,
+    });
 
     // Step 2: Reserve inventory
     await activities.log({ level: "info", message: "Reserving inventory..." });
@@ -95,7 +102,10 @@ const implementation: WorkflowImplementation<
       customerId: order.customerId,
     })) as ShippingResult;
 
-    await activities.log({ level: "info", message: `Shipment created: ${shipmentResult.trackingNumber}` });
+    await activities.log({
+      level: "info",
+      message: `Shipment created: ${shipmentResult.trackingNumber}`,
+    });
 
     // Step 4: Send success notification
     await activities.sendNotification({
@@ -104,7 +114,10 @@ const implementation: WorkflowImplementation<
       message: `Your order ${order.orderId} has been confirmed! Tracking number: ${shipmentResult.trackingNumber}. Estimated delivery: ${shipmentResult.estimatedDelivery}`,
     });
 
-    await activities.log({ level: "info", message: `Order ${order.orderId} completed successfully` });
+    await activities.log({
+      level: "info",
+      message: `Order ${order.orderId} completed successfully`,
+    });
 
     return {
       orderId: order.orderId,
