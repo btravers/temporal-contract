@@ -1,41 +1,20 @@
 import { Result, Future } from "@swan-io/boxed";
-import { proxyActivities, WorkflowInfo, workflowInfo, ActivityOptions, setHandler, defineQuery, defineSignal, defineUpdate } from "@temporalio/workflow";
 import type {
   ContractDefinition,
   InferInput,
   InferOutput,
   WorkflowDefinition,
   ActivityDefinition,
-  InferWorkflowContextActivities,
-  SignalDefinition,
-  QueryDefinition,
-  UpdateDefinition,
 } from "@temporal-contract/core";
-
-/**
- * Workflow context with typed activities (workflow + global) and workflow info
- * Note: activities is typed as 'any' to work around TypeScript generic type inference limitations with Zod tuples
- */
-export interface WorkflowContext<
-  TWorkflow extends WorkflowDefinition,
-  TContract extends ContractDefinition,
-> {
-  activities: InferWorkflowContextActivities<TWorkflow, TContract>;
-  info: WorkflowInfo;
-}
-
-/**
- * Workflow implementation function (receives context + typed args as tuple)
- * Note: We use 'any' for args to work around TypeScript limitations with generic Zod tuple inference
- * The actual type will be enforced at runtime by Zod validation
- */
-export type WorkflowImplementation<
-  TWorkflow extends WorkflowDefinition,
-  TContract extends ContractDefinition,
-> = (
-  context: WorkflowContext<TWorkflow, TContract>,
-  args: InferInput<TWorkflow>,
-) => Promise<InferOutput<TWorkflow>>;
+import {
+  createWorkflow as createBaseWorkflow,
+  type WorkflowContext,
+  type WorkflowImplementation,
+  type CreateWorkflowOptions as BaseCreateWorkflowOptions,
+  type SignalHandlerImplementation,
+  type QueryHandlerImplementation,
+  type UpdateHandlerImplementation,
+} from "@temporal-contract/worker";
 
 /**
  * Activity error type
@@ -49,38 +28,10 @@ export interface ActivityError {
 /**
  * Boxed activity implementation using Result pattern
  * Returns Result<Output, ActivityError> instead of throwing exceptions
- * Receives args as a tuple
- * Note: We use 'any' for args/return to work around TypeScript limitations with generic Zod tuple inference
- * The actual types will be enforced at runtime by Zod validation
  */
 export type BoxedActivityImplementation<TActivity extends ActivityDefinition> = (
   args: InferInput<TActivity>,
 ) => Future<Result<InferOutput<TActivity>, ActivityError>>;
-
-/**
- * Signal handler implementation
- */
-export type SignalHandlerImplementation<TSignal extends SignalDefinition> = (
-  args: InferInput<TSignal>,
-) => void | Promise<void>;
-
-/**
- * Query handler implementation
- */
-export type QueryHandlerImplementation<TQuery extends QueryDefinition> = (
-  args: InferInput<TQuery>,
-) => InferOutput<TQuery>;
-
-/**
- * Update handler implementation
- */
-export type UpdateHandlerImplementation<TUpdate extends UpdateDefinition> = (
-  args: InferInput<TUpdate>,
-) => Promise<InferOutput<TUpdate>>;
-
-/**
- * Workflow implementation function (receives context + typed args)
- */
 
 /**
  * Map of all boxed activity implementations for a contract (global + all workflow-specific)
@@ -132,88 +83,23 @@ export interface BoxedActivitiesHandler<T extends ContractDefinition> {
 }
 
 /**
- * Options for creating a workflow implementation
+ * Options for creating a workflow implementation with boxed pattern
  */
 export interface CreateWorkflowOptions<
   TWorkflow extends WorkflowDefinition,
   TContract extends ContractDefinition,
-> {
-  definition: TWorkflow;
-  contract: TContract;
+> extends Omit<BaseCreateWorkflowOptions<TWorkflow, TContract>, 'implementation'> {
   implementation: WorkflowImplementation<TWorkflow, TContract>;
-  /**
-   * Default activity options
-   */
-  activityOptions?: ActivityOptions;
-  /**
-   * Signal handlers (if defined in workflow)
-   */
-  signals?: TWorkflow["signals"] extends Record<string, SignalDefinition>
-    ? {
-        [K in keyof TWorkflow["signals"]]: SignalHandlerImplementation<TWorkflow["signals"][K]>;
-      }
-    : never;
-  /**
-   * Query handlers (if defined in workflow)
-   */
-  queries?: TWorkflow["queries"] extends Record<string, QueryDefinition>
-    ? {
-        [K in keyof TWorkflow["queries"]]: QueryHandlerImplementation<TWorkflow["queries"][K]>;
-      }
-    : never;
-  /**
-   * Update handlers (if defined in workflow)
-   */
-  updates?: TWorkflow["updates"] extends Record<string, UpdateDefinition>
-    ? {
-        [K in keyof TWorkflow["updates"]]: UpdateHandlerImplementation<TWorkflow["updates"][K]>;
-      }
-    : never;
 }
 
-/**
- * Create a validated activities proxy that parses inputs and outputs
- *
- * This wrapper ensures data integrity across the network boundary between
- * workflow and activity execution.
- */
-function createValidatedActivities<
-  TWorkflow extends WorkflowDefinition,
-  TContract extends ContractDefinition,
->(
-  rawActivities: Record<string, (...args: any[]) => Promise<any>>,
-  workflowActivitiesDefinition: Record<string, ActivityDefinition> | undefined,
-  contractActivitiesDefinition: Record<string, ActivityDefinition> | undefined,
-): InferWorkflowContextActivities<TWorkflow, TContract> {
-  const validatedActivities: Record<string, (...args: any[]) => Promise<any>> = {};
-
-  // Merge workflow activities and global contract activities
-  const allActivitiesDefinition = {
-    ...contractActivitiesDefinition,
-    ...workflowActivitiesDefinition, // Workflow activities override global ones
-  };
-
-  for (const [activityName, activityDef] of Object.entries(allActivitiesDefinition)) {
-    const rawActivity = rawActivities[activityName];
-
-    if (!rawActivity) {
-      throw new Error(`Activity implementation not found for: ${activityName}`);
-    }
-
-    validatedActivities[activityName] = async (...args: any[]) => {
-      // Validate input before sending over network
-      const validatedInput = activityDef.input.parse(args);
-
-      // Call the actual activity (pass tuple directly)
-      const result = await rawActivity(validatedInput);
-
-      // Validate output after receiving from network
-      return activityDef.output.parse(result);
-    };
-  }
-
-  return validatedActivities as InferWorkflowContextActivities<TWorkflow, TContract>;
-}
+// Re-export types from base worker
+export type {
+  WorkflowContext,
+  WorkflowImplementation,
+  SignalHandlerImplementation,
+  QueryHandlerImplementation,
+  UpdateHandlerImplementation,
+};
 
 /**
  * Create a typed boxed activities handler with automatic validation and Result pattern
@@ -251,30 +137,7 @@ function createValidatedActivities<
  *         }
  *       });
  *     },
- *
- *     validateInventory: (orderId) => {
- *       return Future.make(async resolve => {
- *         const available = await inventory.check(orderId);
- *         if (available) {
- *           resolve(Result.Ok({ available: true }));
- *         } else {
- *           resolve(Result.Error({
- *             code: 'OUT_OF_STOCK',
- *             message: `Product ${orderId} is out of stock`
- *           }));
- *         }
- *       });
- *     },
  *   },
- * });
- *
- * // Use with Temporal Worker
- * import { Worker } from '@temporalio/worker';
- *
- * const worker = await Worker.create({
- *   workflowsPath: require.resolve('./workflows'),
- *   activities: activitiesHandler.activities,
- *   taskQueue: activitiesHandler.contract.taskQueue,
  * });
  * ```
  */
@@ -311,7 +174,7 @@ export function createBoxedActivitiesHandler<T extends ContractDefinition>(
       // Validate input
       const validatedInput = activityDef.input.parse(args) as any;
 
-      // Execute boxed activity (pass tuple directly, returns Future<Result<T, E>>)
+      // Execute boxed activity (pass single parameter, returns Future<Result<T, E>>)
       const futureResult = await (activityImpl as any)(validatedInput);
 
       // Unwrap Future and Result
@@ -341,55 +204,27 @@ export function createBoxedActivitiesHandler<T extends ContractDefinition>(
 
 /**
  * Create a typed workflow implementation with automatic validation
- *
- * This wraps a workflow implementation with:
- * - Input/output validation
- * - Typed workflow context with activities
- * - Workflow info access
- *
- * Workflows must be defined in separate files and imported by the Temporal Worker
- * via workflowsPath.
+ * 
+ * This is a re-export of the base createWorkflow from @temporal-contract/worker.
+ * Workflows in worker-boxed work the same as in worker - only activities use the Result pattern.
  *
  * @example
  * ```ts
- * // workflows/processOrder.ts
  * import { createWorkflow } from '@temporal-contract/worker-boxed';
  * import myContract from '../contract';
  *
  * export const processOrder = createWorkflow({
  *   definition: myContract.workflows.processOrder,
  *   contract: myContract,
- *   implementation: async (context, orderId, customerId) => {
- *     // context.activities: typed activities (workflow + global)
- *     // context.info: WorkflowInfo
- *
- *     // Activities still throw on error (Result is unwrapped in handler)
- *     try {
- *       const inventory = await context.activities.validateInventory(orderId);
- *       const payment = await context.activities.chargePayment(customerId, 100);
- *
- *       await context.activities.sendEmail(
- *         customerId,
- *         'Order processed',
- *         'Your order has been processed'
- *       );
- *
- *       return {
- *         orderId,
- *         status: payment.success ? 'success' : 'failed',
- *         transactionId: payment.transactionId,
- *       };
- *     } catch (error) {
- *       // Handle activity errors
- *       return {
- *         orderId,
- *         status: 'failed',
- *         error: error.message,
- *       };
- *     }
+ *   implementation: async (context, order) => {
+ *     // Activities throw on error (Result is unwrapped in handler)
+ *     const payment = await context.activities.processPayment(order);
+ *     return { status: 'success' };
  *   },
- *   activityOptions: {
- *     startToCloseTimeout: '1 minute',
+ *   signals: {
+ *     cancel: () => {
+ *       // Handle cancellation
+ *     },
  *   },
  * });
  * ```
@@ -400,100 +235,6 @@ export function createWorkflow<
 >(
   options: CreateWorkflowOptions<TWorkflow, TContract>,
 ): (args: InferInput<TWorkflow>) => Promise<InferOutput<TWorkflow>> {
-  const { definition, contract, implementation, activityOptions, signals, queries, updates } = options;
-
-  return async (args: any) => {
-    // Temporal passes args as array, extract first element which is our single parameter
-    const singleArg = Array.isArray(args) ? args[0] : args;
-
-    // Validate workflow input
-    const validatedInput = definition.input.parse(singleArg) as any;
-
-    // Register signal handlers
-    if (definition.signals && signals) {
-      const signalDefs = definition.signals as Record<string, SignalDefinition>;
-      const signalHandlers = signals as Record<string, any>;
-      
-      for (const [signalName, signalDef] of Object.entries(signalDefs)) {
-        const handler = signalHandlers[signalName];
-        if (handler) {
-          const signal = defineSignal(signalName);
-          setHandler(signal, async (...args: any[]) => {
-            // Extract single parameter (Temporal passes as args array)
-            const input = args.length === 1 ? args[0] : args;
-            const validatedInput = signalDef.input.parse(input);
-            await handler(validatedInput);
-          });
-        }
-      }
-    }
-
-    // Register query handlers
-    if (definition.queries && queries) {
-      const queryDefs = definition.queries as Record<string, QueryDefinition>;
-      const queryHandlers = queries as Record<string, any>;
-      
-      for (const [queryName, queryDef] of Object.entries(queryDefs)) {
-        const handler = queryHandlers[queryName];
-        if (handler) {
-          const query = defineQuery(queryName);
-          setHandler(query, (...args: any[]) => {
-            // Extract single parameter (Temporal passes as args array)
-            const input = args.length === 1 ? args[0] : args;
-            const validatedInput = queryDef.input.parse(input);
-            const result = handler(validatedInput);
-            return queryDef.output.parse(result);
-          });
-        }
-      }
-    }
-
-    // Register update handlers
-    if (definition.updates && updates) {
-      const updateDefs = definition.updates as Record<string, UpdateDefinition>;
-      const updateHandlers = updates as Record<string, any>;
-      
-      for (const [updateName, updateDef] of Object.entries(updateDefs)) {
-        const handler = updateHandlers[updateName];
-        if (handler) {
-          const update = defineUpdate(updateName);
-          setHandler(update, async (...args: any[]) => {
-            // Extract single parameter (Temporal passes as args array)
-            const input = args.length === 1 ? args[0] : args;
-            const validatedInput = updateDef.input.parse(input);
-            const result = await handler(validatedInput);
-            return updateDef.output.parse(result);
-          });
-        }
-      }
-    }
-
-    // Create activities proxy if activities are defined
-    let contextActivities: any = {};
-
-    if (definition.activities || contract.activities) {
-      const rawActivities = proxyActivities<Record<string, (...args: any[]) => Promise<any>>>({
-        startToCloseTimeout: 60_000, // 1 minute default
-        ...activityOptions,
-      });
-
-      contextActivities = createValidatedActivities(
-        rawActivities,
-        definition.activities,
-        contract.activities,
-      );
-    }
-
-    // Create workflow context
-    const context: WorkflowContext<TWorkflow, TContract> = {
-      activities: contextActivities,
-      info: workflowInfo(),
-    };
-
-    // Execute workflow (pass tuple directly)
-    const result = await implementation(context, validatedInput);
-
-    // Validate workflow output
-    return definition.output.parse(result) as InferOutput<TWorkflow>;
-  };
+  // Delegate to base worker implementation - workflows are the same
+  return createBaseWorkflow(options as any);
 }

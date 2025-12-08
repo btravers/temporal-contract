@@ -38,6 +38,7 @@
   "dependencies": {
     "@swan-io/boxed": "^3.2.1",
     "@temporal-contract/core": "workspace:*",
+    "@temporal-contract/worker": "workspace:*",
     "@temporalio/workflow": "catalog:",
     "zod": "catalog:"
   },
