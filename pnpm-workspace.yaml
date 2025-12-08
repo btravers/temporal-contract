@@ -14,7 +14,7 @@ catalog:
   oxfmt: 0.17.0
   oxlint: 1.32.0
   ts-node: 10.9.2
-  tsdown: 0.17.1
+  tsdown: 0.17.2
   tsx: 4.21.0
   turbo: 2.6.3
   typescript: 5.9.3
