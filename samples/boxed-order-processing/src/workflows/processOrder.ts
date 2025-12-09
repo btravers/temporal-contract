@@ -1,6 +1,5 @@
 import { boxedOrderContract } from "../contract.js";
 import type { WorkflowImplementation } from "@temporal-contract/worker-boxed";
-import type { InventoryResult, PaymentResult, ShippingResult } from "../contract.js";
 
 /**
  * Process Order Workflow Implementation
@@ -26,8 +25,8 @@ import type { InventoryResult, PaymentResult, ShippingResult } from "../contract
  * - Return failed status with reason
  */
 export const processOrderWorkflow: WorkflowImplementation<
-  typeof boxedOrderContract.workflows.processOrder,
-  typeof boxedOrderContract
+  typeof boxedOrderContract,
+  "processOrder"
 > = async (context, order) => {
   const { activities, info } = context;
 
@@ -44,14 +43,10 @@ export const processOrderWorkflow: WorkflowImplementation<
 
     // Step 2: Process payment
     await activities.log({ level: "info", message: `Processing payment of $${order.totalAmount}` });
-    const processPaymentFn = activities["processPayment"];
-    if (!processPaymentFn) {
-      throw new Error("processPayment activity not found");
-    }
-    const paymentResult = (await processPaymentFn({
+    const paymentResult = await activities.processPayment({
       customerId: order.customerId,
       amount: order.totalAmount,
-    })) as PaymentResult;
+    });
 
     if (paymentResult.status === "failed") {
       throw new Error("Payment failed: Card declined");
@@ -62,11 +57,7 @@ export const processOrderWorkflow: WorkflowImplementation<
 
     // Step 3: Reserve inventory
     await activities.log({ level: "info", message: "Reserving inventory" });
-    const reserveInventoryFn = activities["reserveInventory"];
-    if (!reserveInventoryFn) {
-      throw new Error("reserveInventory activity not found");
-    }
-    const inventoryResult = (await reserveInventoryFn(order.items)) as InventoryResult;
+    const inventoryResult = await activities.reserveInventory(order.items);
 
     if (!inventoryResult.reserved) {
       throw new Error("Inventory reservation failed");
@@ -80,14 +71,10 @@ export const processOrderWorkflow: WorkflowImplementation<
 
     // Step 4: Create shipment
     await activities.log({ level: "info", message: "Creating shipment" });
-    const createShipmentFn = activities["createShipment"];
-    if (!createShipmentFn) {
-      throw new Error("createShipment activity not found");
-    }
-    const shippingResult = (await createShipmentFn({
+    const shippingResult = await activities.createShipment({
       orderId: order.orderId,
       customerId: order.customerId,
-    })) as ShippingResult;
+    });
 
     await activities.log({
       level: "info",
@@ -148,11 +135,7 @@ export const processOrderWorkflow: WorkflowImplementation<
     if (inventoryReservationId) {
       try {
         await activities.log({ level: "info", message: "Rolling back: releasing inventory" });
-        const releaseInventoryFn = activities["releaseInventory"];
-        if (!releaseInventoryFn) {
-          throw new Error("releaseInventory activity not found");
-        }
-        await releaseInventoryFn(inventoryReservationId);
+        await activities.releaseInventory(inventoryReservationId);
         await activities.log({ level: "info", message: "Inventory released successfully" });
       } catch (releaseError) {
         await activities.log({
@@ -166,19 +149,11 @@ export const processOrderWorkflow: WorkflowImplementation<
     if (paymentTransactionId) {
       try {
         await activities.log({ level: "info", message: "Rolling back: refunding payment" });
-        const refundPaymentFn = activities["refundPayment"];
-        if (!refundPaymentFn) {
-          throw new Error("refundPayment activity not found");
-        }
-        const refundResult = await refundPaymentFn(paymentTransactionId);
-        // @ts-expect-error fixme later
-        if (refundResult.refunded) {
-          await activities.log({
-            level: "info",
-            // @ts-expect-error fixme later
-            message: `Payment refunded: ${refundResult.refundId}`,
-          });
-        }
+        await activities.refundPayment(paymentTransactionId);
+        await activities.log({
+          level: "info",
+          message: `Payment refunded: ${paymentTransactionId}`,
+        });
       } catch (refundError) {
         await activities.log({
           level: "error",

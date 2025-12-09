@@ -1,12 +1,6 @@
 import { type WorkflowImplementation, declareWorkflow } from "@temporal-contract/worker";
 import { orderProcessingContract } from "../contract.js";
-import type {
-  InventoryResult,
-  Order,
-  OrderResult,
-  PaymentResult,
-  ShippingResult,
-} from "../contract.js";
+import type { OrderResult } from "../contract.js";
 
 /**
  * Process Order Workflow Implementation
@@ -20,9 +14,9 @@ import type {
  * It handles failures by releasing inventory if needed.
  */
 const implementation: WorkflowImplementation<
-  typeof orderProcessingContract.workflows.processOrder,
-  typeof orderProcessingContract
-> = async (context, order: Order): Promise<OrderResult> => {
+  typeof orderProcessingContract,
+  "processOrder"
+> = async (context, order): Promise<OrderResult> => {
   const { activities } = context;
 
   await activities.log({
@@ -35,14 +29,10 @@ const implementation: WorkflowImplementation<
   try {
     // Step 1: Process payment
     await activities.log({ level: "info", message: "Processing payment..." });
-    const processPaymentFn = activities["processPayment"];
-    if (!processPaymentFn) {
-      throw new Error("processPayment activity not found");
-    }
-    const paymentResult = (await processPaymentFn({
+    const paymentResult = await activities.processPayment({
       customerId: order.customerId,
       amount: order.totalAmount,
-    })) as PaymentResult;
+    });
 
     if (paymentResult.status === "failed") {
       await activities.log({ level: "error", message: "Payment failed" });
@@ -66,11 +56,7 @@ const implementation: WorkflowImplementation<
 
     // Step 2: Reserve inventory
     await activities.log({ level: "info", message: "Reserving inventory..." });
-    const reserveInventoryFn = activities["reserveInventory"];
-    if (!reserveInventoryFn) {
-      throw new Error("reserveInventory activity not found");
-    }
-    const inventoryResult = (await reserveInventoryFn(order.items)) as InventoryResult;
+    const inventoryResult = await activities.reserveInventory(order.items);
 
     if (!inventoryResult.reserved) {
       await activities.log({ level: "error", message: "Inventory not available" });
@@ -93,14 +79,10 @@ const implementation: WorkflowImplementation<
 
     // Step 3: Create shipment
     await activities.log({ level: "info", message: "Creating shipment..." });
-    const createShipmentFn = activities["createShipment"];
-    if (!createShipmentFn) {
-      throw new Error("createShipment activity not found");
-    }
-    const shipmentResult = (await createShipmentFn({
+    const shipmentResult = await activities.createShipment({
       orderId: order.orderId,
       customerId: order.customerId,
-    })) as ShippingResult;
+    });
 
     await activities.log({
       level: "info",
@@ -129,11 +111,7 @@ const implementation: WorkflowImplementation<
     // If something goes wrong, release inventory if it was reserved
     if (reservationId) {
       await activities.log({ level: "error", message: "Workflow failed, releasing inventory" });
-      const releaseInventoryFn = activities["releaseInventory"];
-      if (!releaseInventoryFn) {
-        throw new Error("releaseInventory activity not found");
-      }
-      await releaseInventoryFn(reservationId);
+      await activities.releaseInventory(reservationId);
     }
 
     const errorMessage = error instanceof Error ? error.message : "Unknown error";

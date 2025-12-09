@@ -25,7 +25,7 @@ const log = ({
   level,
   message,
 }: {
-  level: "info" | "warn" | "error";
+  level: string;
   message: string;
 }): Future<Result<void, ActivityError>> => {
   return Future.make((resolve) => {
@@ -43,31 +43,35 @@ const sendNotification = ({
   customerId: string;
   subject: string;
   message: string;
-}): Future<Result<{ sent: boolean; messageId?: string }, ActivityError>> => {
+}): Future<Result<void, ActivityError>> => {
   return Future.make((resolve) => {
-    // Simulate email service
-    console.log(`📧 Sending notification to customer ${customerId}: ${subject}`);
+    console.log(`📧 Sending notification to customer ${customerId}`);
+    console.log(`   Subject: ${subject}`);
     console.log(`   Message: ${message}`);
 
-    // 95% success rate
-    const success = Math.random() > 0.05;
+    setTimeout(() => {
+      // 98% success rate for notifications
+      const success = Math.random() > 0.02;
 
-    if (success) {
-      resolve(
-        Result.Ok({
-          sent: true,
-          messageId: `msg-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-        }),
-      );
-    } else {
-      resolve(
-        Result.Error({
-          code: "NOTIFICATION_FAILED",
-          message: "Failed to send notification via email service",
-          details: { customerId, subject },
-        }),
-      );
-    }
+      if (success) {
+        const messageId = `msg-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+        console.log(`✓ Notification sent successfully: ${messageId}`);
+
+        resolve(Result.Ok(undefined));
+      } else {
+        console.log(`✗ Failed to send notification to ${customerId}`);
+        resolve(
+          Result.Error({
+            code: "NOTIFICATION_FAILED",
+            message: "Failed to send customer notification",
+            details: {
+              customerId,
+              subject,
+            },
+          }),
+        );
+      }
+    }, 100);
   });
 };
 
@@ -234,9 +238,7 @@ const createShipment = ({
   });
 };
 
-const refundPayment = (
-  transactionId: string,
-): Future<Result<{ refunded: boolean; refundId?: string }, ActivityError>> => {
+const refundPayment = (transactionId: string): Future<Result<void, ActivityError>> => {
   return Future.make((resolve) => {
     console.log(`💰 Processing refund for transaction ${transactionId}`);
 
@@ -248,12 +250,7 @@ const refundPayment = (
         const refundId = `rfnd-${Date.now()}-${Math.random().toString(36).substring(7)}`;
         console.log(`✓ Refund successful: ${refundId}`);
 
-        resolve(
-          Result.Ok({
-            refunded: true,
-            refundId,
-          }),
-        );
+        resolve(Result.Ok(undefined));
       } else {
         console.log(`✗ Refund failed for transaction ${transactionId}`);
         resolve(
