@@ -154,7 +154,9 @@ export class TypedClient<TContract extends ContractDefinition> {
     });
 
     // Validate output with Zod schema
-    return definition.output.parse(result) as any;
+    return definition.output.parse(result) as ClientInferOutput<
+      TContract["workflows"][TWorkflowName]
+    >;
   }
 
   /**

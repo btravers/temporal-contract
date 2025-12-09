@@ -3,6 +3,7 @@
 Contract builder and type definitions for Temporal workflows and activities with complete type safety.
 
 This package contains:
+
 - Contract builder (`defineContract`)
 - Core type definitions and inference utilities
 - Helper functions for defining activities, workflows, signals, queries, and updates

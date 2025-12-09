@@ -26,9 +26,9 @@ const log: ActivityHandler<typeof myContract, "log"> = async ({ level, message }
 };
 
 // ❌ Sans le type utilitaire (verbeux)
-const log = async ({ 
-  level, 
-  message 
+const log = async ({
+  level,
+  message
 }: WorkerInferInput<typeof myContract.activities.log>): Promise<WorkerInferOutput<typeof myContract.activities.log>> => {
   logger[level](message);
 };
@@ -115,7 +115,7 @@ const processPayment: BoxedWorkflowActivityHandler<
   return Future.make((resolve) => {
     // Simulate payment processing
     const transactionId = `txn-${Date.now()}`;
-    
+
     resolve(
       Result.Ok({
         transactionId,

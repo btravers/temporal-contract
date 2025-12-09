@@ -8,32 +8,41 @@ export type AnyZodSchema = z.ZodTypeAny;
 /**
  * Definition of an activity
  */
-export interface ActivityDefinition {
-  input: AnyZodSchema;
-  output: AnyZodSchema;
+export interface ActivityDefinition<
+  TInput extends AnyZodSchema = AnyZodSchema,
+  TOutput extends AnyZodSchema = AnyZodSchema,
+> {
+  input: TInput;
+  output: TOutput;
 }
 
 /**
  * Definition of a signal
  */
-export interface SignalDefinition {
-  input: AnyZodSchema;
+export interface SignalDefinition<TInput extends AnyZodSchema = AnyZodSchema> {
+  input: TInput;
 }
 
 /**
  * Definition of a query
  */
-export interface QueryDefinition {
-  input: AnyZodSchema;
-  output: AnyZodSchema;
+export interface QueryDefinition<
+  TInput extends AnyZodSchema = AnyZodSchema,
+  TOutput extends AnyZodSchema = AnyZodSchema,
+> {
+  input: TInput;
+  output: TOutput;
 }
 
 /**
  * Definition of an update
  */
-export interface UpdateDefinition {
-  input: AnyZodSchema;
-  output: AnyZodSchema;
+export interface UpdateDefinition<
+  TInput extends AnyZodSchema = AnyZodSchema,
+  TOutput extends AnyZodSchema = AnyZodSchema,
+> {
+  input: TInput;
+  output: TOutput;
 }
 
 /**
