@@ -280,6 +280,54 @@ interface ActivityError {
 }
 ```
 
+## Error Handling
+
+The worker-boxed package provides custom error classes for better error handling during worker setup and validation:
+
+### Error Classes
+
+- **`WorkerBoxedError`** - Base error class for all worker-boxed errors
+- **`ActivityDefinitionNotFoundError`** - Thrown when an activity is not defined in the contract, includes list of available activities
+- **`ActivityInputValidationError`** - Thrown when activity input validation fails, includes Zod error details
+- **`ActivityOutputValidationError`** - Thrown when activity output validation fails, includes Zod error details
+
+### Example
+
+```typescript
+import {
+  ActivityDefinitionNotFoundError,
+  ActivityInputValidationError,
+} from '@temporal-contract/worker-boxed';
+
+// Activity definition error includes helpful context
+try {
+  // ...worker setup
+} catch (error) {
+  if (error instanceof ActivityDefinitionNotFoundError) {
+    console.error('Activity not found:', error.activityName);
+    console.error('Available activities:', error.availableActivities);
+  }
+}
+
+// Validation errors include Zod error details (wrapped in Result)
+const activity = (input) => {
+  return Future.make(async (resolve) => {
+    try {
+      // Activity logic
+      resolve(Result.Ok(output));
+    } catch (error) {
+      // ActivityInputValidationError is automatically wrapped in Result.Error
+      if (error instanceof ActivityInputValidationError) {
+        console.error('Activity:', error.activityName);
+        console.error('Validation errors:', error.zodError.errors);
+      }
+    }
+  });
+};
+```
+
+**Note:** Activity errors during execution should use the `ActivityError` interface pattern for functional error handling, while validation errors are thrown during worker setup.
+
 ## License
 
 MIT

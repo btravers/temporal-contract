@@ -16,6 +16,8 @@
 ✅ **Complete type safety** - Full TypeScript inference from contract to implementation  
 ✅ **Compile-time validation** - Errors if workflows/activities are missing or incorrectly typed  
 ✅ **Automatic runtime validation** - Zod validation at all network boundaries  
+✅ **Rich error handling** - Custom error classes with contextual information  
+✅ **Type utilities** - Helper types for cleaner activity implementations and contract introspection  
 ✅ **Flexible arguments** - Single parameter: objects, primitives, or arrays  
 ✅ **Global activities** - Share activities across all workflows in a contract  
 ✅ **Contract-level task queue** - Configure once, use everywhere  
@@ -281,6 +283,65 @@ All inputs and outputs are validated automatically:
 
 This ensures data integrity and catches errors early.
 
+### Error Handling
+
+All packages provide custom error classes with rich contextual information:
+
+#### Client Errors
+```typescript
+import { WorkflowValidationError, WorkflowNotFoundError } from '@temporal-contract/client';
+
+try {
+  await client.executeWorkflow('processOrder', { args: invalidData });
+} catch (error) {
+  if (error instanceof WorkflowValidationError) {
+    console.error('Validation errors:', error.zodError.errors);
+  } else if (error instanceof WorkflowNotFoundError) {
+    console.error('Available workflows:', error.availableWorkflows);
+  }
+}
+```
+
+#### Worker Errors
+```typescript
+import { ActivityDefinitionNotFoundError } from '@temporal-contract/worker';
+
+// Errors include helpful context like available activities
+if (error instanceof ActivityDefinitionNotFoundError) {
+  console.error('Activity not found:', error.activityName);
+  console.error('Did you mean:', error.availableActivities);
+}
+```
+
+### Type Utilities
+
+Helper types for cleaner implementations:
+
+```typescript
+import type { 
+  ActivityHandler, 
+  WorkflowActivityHandler,
+  InferWorkflowNames,
+  InferActivityNames,
+} from '@temporal-contract/contract';
+
+// Type-safe activity handler (no manual type annotations needed)
+const sendEmail: ActivityHandler<typeof myContract, 'sendEmail'> = 
+  async ({ to, subject, body }) => {
+    // Fully typed without explicit parameter types
+    return { sent: true };
+  };
+
+// Extract workflow/activity names as union types
+type WorkflowNames = InferWorkflowNames<typeof myContract>;
+// "processOrder" | "cancelOrder" | ...
+
+type ActivityNames = InferActivityNames<typeof myContract>;
+// "sendEmail" | "logEvent" | ...
+```
+
+See package READMEs for complete error handling and type utility documentation.
+
 ## Why temporal-contract?
 
 ### Before
@@ -379,6 +440,7 @@ Each sample demonstrates real-world usage patterns with full documentation.
 Essential documentation:
 
 - **[Worker Implementation](./docs/CONTRACT_HANDLER.md)** - Complete guide to implementing workers with type safety
+- **[Activity Handlers](./docs/ACTIVITY_HANDLERS.md)** - Type utility helpers for cleaner activity implementations
 - **[Changesets](./docs/CHANGESETS.md)** - Release and publishing workflow
 - **[PNPM Catalog](./docs/CATALOG.md)** - Centralized dependency management
 

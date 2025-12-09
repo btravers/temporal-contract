@@ -139,6 +139,56 @@ Creates a typed workflow implementation with validation and typed activities.
 
 All handlers receive validated inputs and return validated outputs based on the Zod schemas defined in the contract.
 
+## Error Handling
+
+The worker package provides custom error classes for better error handling:
+
+### Error Classes
+
+- **`WorkerError`** - Base error class for all worker errors
+- **`ActivityImplementationNotFoundError`** - Thrown when an activity implementation is missing
+- **`ActivityDefinitionNotFoundError`** - Thrown when an activity is not defined in the contract, includes list of available activities
+- **`ActivityInputValidationError`** - Thrown when activity input validation fails, includes Zod error details
+- **`ActivityOutputValidationError`** - Thrown when activity output validation fails, includes Zod error details
+- **`WorkflowInputValidationError`** - Thrown when workflow input validation fails
+- **`WorkflowOutputValidationError`** - Thrown when workflow output validation fails
+- **`SignalInputValidationError`** - Thrown when signal input validation fails
+- **`QueryInputValidationError`** - Thrown when query input validation fails
+- **`QueryOutputValidationError`** - Thrown when query output validation fails
+- **`UpdateInputValidationError`** - Thrown when update input validation fails
+- **`UpdateOutputValidationError`** - Thrown when update output validation fails
+
+### Example
+
+```typescript
+import {
+  ActivityDefinitionNotFoundError,
+  ActivityInputValidationError,
+} from '@temporal-contract/worker';
+
+// Activity definition error includes helpful context
+try {
+  // ...worker setup
+} catch (error) {
+  if (error instanceof ActivityDefinitionNotFoundError) {
+    console.error('Activity not found:', error.activityName);
+    console.error('Available activities:', error.availableActivities);
+  }
+}
+
+// Validation errors include Zod error details
+try {
+  // ...activity implementation
+} catch (error) {
+  if (error instanceof ActivityInputValidationError) {
+    console.error('Activity input validation failed:', error.activityName);
+    console.error('Validation errors:', error.zodError.errors);
+  }
+}
+```
+
+All errors include rich contextual information to help identify and fix issues quickly.
+
 ## License
 
 MIT

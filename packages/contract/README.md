@@ -153,6 +153,44 @@ const processPayment: WorkflowActivityHandler<
 };
 ```
 
+### Contract Introspection Types
+
+#### `InferWorkflowNames<TContract>`
+
+Extract workflow names from a contract as a union type:
+
+```typescript
+import type { InferWorkflowNames } from '@temporal-contract/contract';
+import type { myContract } from './contract';
+
+type MyWorkflowNames = InferWorkflowNames<typeof myContract>;
+// "processOrder" | "cancelOrder" | ...
+```
+
+#### `InferActivityNames<TContract>`
+
+Extract global activity names from a contract as a union type:
+
+```typescript
+import type { InferActivityNames } from '@temporal-contract/contract';
+import type { myContract } from './contract';
+
+type MyActivityNames = InferActivityNames<typeof myContract>;
+// "sendEmail" | "logEvent" | ...
+```
+
+#### `InferContractWorkflows<TContract>`
+
+Extract all workflows from a contract with their definitions:
+
+```typescript
+import type { InferContractWorkflows } from '@temporal-contract/contract';
+import type { myContract } from './contract';
+
+type MyWorkflows = InferContractWorkflows<typeof myContract>;
+// { processOrder: WorkflowDefinition<...>, ... }
+```
+
 See the [Activity Handlers documentation](../../docs/ACTIVITY_HANDLERS.md) for more details.
 
 ## License

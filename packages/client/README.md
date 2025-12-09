@@ -123,6 +123,8 @@ A typed workflow handle provides:
 
 - `workflowId: string` - The workflow ID
 - `result(): Promise<Output>` - Wait for the workflow result (validated)
+- `describe(): Promise<WorkflowExecutionDescription>` - Get workflow execution description
+- `fetchHistory(): Promise<History>` - Get workflow execution history
 - `queries: { [name: string]: (args) => Promise<Output> }` - Type-safe queries
 - `signals: { [name: string]: (args) => Promise<void> }` - Type-safe signals
 - `updates: { [name: string]: (args) => Promise<Output> }` - Type-safe updates
@@ -130,6 +132,44 @@ A typed workflow handle provides:
 - `cancel(): Promise<void>` - Cancel the workflow
 
 All queries, signals, and updates are validated with their Zod schemas.
+
+## Error Handling
+
+The client package provides custom error classes for better error handling:
+
+### Error Classes
+
+- **`ClientError`** - Base error class for all client errors
+- **`WorkflowNotFoundError`** - Thrown when a workflow is not found in the contract
+- **`WorkflowValidationError`** - Thrown when workflow input/output validation fails
+- **`QueryValidationError`** - Thrown when query input/output validation fails
+- **`SignalValidationError`** - Thrown when signal input validation fails
+- **`UpdateValidationError`** - Thrown when update input/output validation fails
+
+### Example
+
+```typescript
+import {
+  WorkflowValidationError,
+  WorkflowNotFoundError
+} from '@temporal-contract/client';
+
+try {
+  const result = await client.executeWorkflow('processOrder', {
+    workflowId: 'order-123',
+    args: { orderId: 'ORD-123', items: [] }
+  });
+} catch (error) {
+  if (error instanceof WorkflowValidationError) {
+    console.error('Validation failed:', error.zodError.errors);
+  } else if (error instanceof WorkflowNotFoundError) {
+    console.error('Workflow not found:', error.workflowName);
+    console.error('Available workflows:', error.availableWorkflows);
+  } else {
+    console.error('Unexpected error:', error);
+  }
+}
+```
 
 ## License
 
