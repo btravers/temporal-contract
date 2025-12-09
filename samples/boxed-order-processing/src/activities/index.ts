@@ -1,10 +1,10 @@
 import { Future, Result } from "@swan-io/boxed";
-import { boxedOrderContract } from "../contract.js";
+import { declareActivitiesHandler } from "@temporal-contract/worker-boxed";
 import type {
   BoxedActivityHandler,
   BoxedWorkflowActivityHandler,
-  BoxedActivityImplementations,
 } from "@temporal-contract/worker-boxed";
+import { boxedOrderContract } from "../contract.js";
 import { pino } from "pino";
 
 const logger = pino({
@@ -310,15 +310,22 @@ const refundPayment: BoxedWorkflowActivityHandler<
 };
 
 // ============================================================================
-// Export Activity Implementations
+// Activities Handler
 // ============================================================================
 
-export const activities: BoxedActivityImplementations<typeof boxedOrderContract> = {
-  log,
-  sendNotification,
-  processPayment,
-  reserveInventory,
-  releaseInventory,
-  createShipment,
-  refundPayment,
-};
+/**
+ * Create the activities handler with Result/Future pattern
+ * All activities return Future<Result<T, ActivityError>>
+ */
+export const activitiesHandler = declareActivitiesHandler({
+  contract: boxedOrderContract,
+  activities: {
+    log,
+    sendNotification,
+    processPayment,
+    reserveInventory,
+    releaseInventory,
+    createShipment,
+    refundPayment,
+  },
+});

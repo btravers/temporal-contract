@@ -1,7 +1,7 @@
 import { Connection } from "@temporalio/client";
 import { TypedClient } from "@temporal-contract/client";
 import { orderProcessingContract } from "./contract.js";
-import type { Order, OrderResult } from "./contract.js";
+import type { Order } from "./contract.js";
 import pino from "pino";
 
 const logger = pino({
@@ -64,8 +64,8 @@ async function run() {
 
     logger.info("⌛ Waiting for workflow result...");
 
-    // Wait for the result
-    const result = (await handle.result()) as OrderResult;
+    // Wait for the result (fully typed)
+    const result = await handle.result();
 
     logger.info({ result }, "✅ Order processed successfully!");
 

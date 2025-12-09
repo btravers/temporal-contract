@@ -1,8 +1,7 @@
 import { Worker } from "@temporalio/worker";
-import { declareActivitiesHandler } from "@temporal-contract/worker-boxed";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { activities } from "./activities/index.js";
+import { activitiesHandler } from "./activities/index.js";
 import { boxedOrderContract } from "./contract.js";
 import pino from "pino";
 
@@ -33,12 +32,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  */
 
 async function run() {
-  // Create activities handler with Result pattern
-  const activitiesHandler = declareActivitiesHandler({
-    contract: boxedOrderContract,
-    activities,
-  });
-
   // Create Temporal Worker
   const worker = await Worker.create({
     workflowsPath: resolve(__dirname, "workflows"),
