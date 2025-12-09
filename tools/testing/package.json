@@ -1,0 +1,34 @@
+{
+  "name": "@temporal-contract/testing",
+  "version": "0.0.1",
+  "description": "Shared testing utilities for temporal-contract",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm --dts --clean",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@temporalio/client": "catalog:",
+    "@temporalio/worker": "catalog:",
+    "testcontainers": "catalog:"
+  },
+  "devDependencies": {
+    "@temporal-contract/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "vitest": "^4"
+  }
+}

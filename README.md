@@ -288,6 +288,7 @@ This ensures data integrity and catches errors early.
 All packages provide custom error classes with rich contextual information:
 
 #### Client Errors
+
 ```typescript
 import { WorkflowValidationError, WorkflowNotFoundError } from '@temporal-contract/client';
 
@@ -303,6 +304,7 @@ try {
 ```
 
 #### Worker Errors
+
 ```typescript
 import { ActivityDefinitionNotFoundError } from '@temporal-contract/worker';
 
@@ -318,15 +320,15 @@ if (error instanceof ActivityDefinitionNotFoundError) {
 Helper types for cleaner implementations:
 
 ```typescript
-import type { 
-  ActivityHandler, 
+import type {
+  ActivityHandler,
   WorkflowActivityHandler,
   InferWorkflowNames,
   InferActivityNames,
 } from '@temporal-contract/contract';
 
 // Type-safe activity handler (no manual type annotations needed)
-const sendEmail: ActivityHandler<typeof myContract, 'sendEmail'> = 
+const sendEmail: ActivityHandler<typeof myContract, 'sendEmail'> =
   async ({ to, subject, body }) => {
     // Fully typed without explicit parameter types
     return { sent: true };

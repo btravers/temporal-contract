@@ -48,6 +48,9 @@ catalog:
 
   # Validation
   zod: 4.1.13
+
+  # Testing
+  testcontainers: 11.9.0
 ```
 
 ### package.json

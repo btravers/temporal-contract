@@ -7,8 +7,9 @@
   "scripts": {
     "dev:worker": "tsx watch src/worker.ts",
     "dev:client": "tsx src/client.ts",
-    "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@temporal-contract/client": "workspace:*",
@@ -22,9 +23,11 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@temporal-contract/testing": "workspace:*",
     "@temporal-contract/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "tsx": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
