@@ -48,4 +48,8 @@ export type {
   // Activity handler utility types
   ActivityHandler,
   WorkflowActivityHandler,
+  // Contract utility types
+  InferWorkflowNames,
+  InferActivityNames,
+  InferContractWorkflows,
 } from "./types.js";

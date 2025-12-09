@@ -549,4 +549,89 @@ describe("Core Types", () => {
       });
     });
   });
+
+  describe("Utility Type Helpers", () => {
+    it("should infer workflow names correctly", () => {
+      const contract = {
+        taskQueue: "test-queue",
+        workflows: {
+          processOrder: {
+            input: z.object({ orderId: z.string() }),
+            output: z.object({ status: z.string() }),
+          },
+          sendNotification: {
+            input: z.object({ userId: z.string() }),
+            output: z.object({ sent: z.boolean() }),
+          },
+        },
+      } satisfies ContractDefinition;
+
+      // This should compile without errors
+      type WorkflowNames = import("./types.js").InferWorkflowNames<typeof contract>;
+      const workflowName: WorkflowNames = "processOrder";
+      const workflowName2: WorkflowNames = "sendNotification";
+
+      expect(workflowName).toBe("processOrder");
+      expect(workflowName2).toBe("sendNotification");
+
+      // @ts-expect-error Invalid workflow name
+      const invalidWorkflow: WorkflowNames = "nonExistent";
+    });
+
+    it("should infer activity names correctly", () => {
+      const contract = {
+        taskQueue: "test-queue",
+        workflows: {
+          test: {
+            input: z.object({}),
+            output: z.object({}),
+          },
+        },
+        activities: {
+          sendEmail: {
+            input: z.object({ to: z.string() }),
+            output: z.object({ sent: z.boolean() }),
+          },
+          logEvent: {
+            input: z.object({ event: z.string() }),
+            output: z.object({ logged: z.boolean() }),
+          },
+        },
+      } satisfies ContractDefinition;
+
+      type ActivityNames = import("./types.js").InferActivityNames<typeof contract>;
+      const activityName: ActivityNames = "sendEmail";
+      const activityName2: ActivityNames = "logEvent";
+
+      expect(activityName).toBe("sendEmail");
+      expect(activityName2).toBe("logEvent");
+
+      // @ts-expect-error Invalid activity name
+      const invalidActivity: ActivityNames = "nonExistent";
+    });
+
+    it("should infer contract workflows type correctly", () => {
+      const contract = {
+        taskQueue: "test-queue",
+        workflows: {
+          processOrder: {
+            input: z.object({ orderId: z.string() }),
+            output: z.object({ status: z.string() }),
+          },
+        },
+      } satisfies ContractDefinition;
+
+      type Workflows = import("./types.js").InferContractWorkflows<typeof contract>;
+      type ProcessOrder = Workflows["processOrder"];
+
+      // Should have input and output properties
+      const workflow: ProcessOrder = {
+        input: z.object({ orderId: z.string() }),
+        output: z.object({ status: z.string() }),
+      };
+
+      expect(workflow.input).toBeDefined();
+      expect(workflow.output).toBeDefined();
+    });
+  });
 });

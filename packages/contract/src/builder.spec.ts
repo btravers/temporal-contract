@@ -317,7 +317,7 @@ describe("Contract Builder", () => {
           },
         }),
       ).toThrow(
-        'workflow "processOrder" has activity "sendEmail" that conflicts with a global activity',
+        'workflow "processOrder" has activity "sendEmail" that conflicts with a global activity. Consider renaming the workflow-specific activity or removing the global activity "sendEmail".',
       );
     });
 

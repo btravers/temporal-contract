@@ -336,6 +336,42 @@ export type ClientInferWorkflowContextActivities<
  */
 
 /**
+ * Extract workflow names from a contract as a union type
+ *
+ * @example
+ * ```typescript
+ * type MyWorkflowNames = InferWorkflowNames<typeof myContract>;
+ * // "processOrder" | "sendNotification"
+ * ```
+ */
+export type InferWorkflowNames<TContract extends ContractDefinition> =
+  keyof TContract["workflows"] & string;
+
+/**
+ * Extract activity names from a contract (global activities) as a union type
+ *
+ * @example
+ * ```typescript
+ * type MyActivityNames = InferActivityNames<typeof myContract>;
+ * // "log" | "sendEmail"
+ * ```
+ */
+export type InferActivityNames<TContract extends ContractDefinition> =
+  TContract["activities"] extends Record<string, ActivityDefinition>
+    ? keyof TContract["activities"] & string
+    : never;
+
+/**
+ * Extract all workflows from a contract with their definitions
+ *
+ * @example
+ * ```typescript
+ * type MyWorkflows = InferContractWorkflows<typeof myContract>;
+ * ```
+ */
+export type InferContractWorkflows<TContract extends ContractDefinition> = TContract["workflows"];
+
+/**
  * Infer the handler type for a global activity from a contract
  *
  * @example

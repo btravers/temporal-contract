@@ -244,7 +244,8 @@ export const defineContract = <TContract extends ContractDefinition>(
         for (const activityName of Object.keys(workflow.activities)) {
           if (activityName in definition.activities) {
             throw new Error(
-              `Contract error: workflow "${workflowName}" has activity "${activityName}" that conflicts with a global activity`,
+              `Contract error: workflow "${workflowName}" has activity "${activityName}" that conflicts with a global activity. ` +
+                `Consider renaming the workflow-specific activity or removing the global activity "${activityName}".`,
             );
           }
         }
