@@ -41,9 +41,6 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "dependencies": {
-    "@temporal-contract/core": "workspace:*"
-  },
   "devDependencies": {
     "@temporal-contract/tsconfig": "workspace:*",
     "tsdown": "catalog:",

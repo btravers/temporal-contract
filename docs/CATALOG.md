@@ -34,6 +34,10 @@ catalog:
   "@temporalio/worker": 1.13.2
   "@temporalio/workflow": 1.13.2
 
+  # Logging
+  pino: 10.1.0
+  pino-pretty: 13.1.3
+
   # Build tools
   tsdown: 0.17.0
 

@@ -1,6 +1,12 @@
 # @temporal-contract/contract
 
-Contract builder for defining Temporal workflows and activities with type safety.
+Contract builder and type definitions for Temporal workflows and activities with complete type safety.
+
+This package contains:
+- Contract builder (`defineContract`)
+- Core type definitions and inference utilities
+- Helper functions for defining activities, workflows, signals, queries, and updates
+- Type utilities for worker and client implementations
 
 ## Installation
 
@@ -109,6 +115,44 @@ const processOrder = defineWorkflow({
   updates: { /* ... */ },
 });
 ```
+
+## Type Utilities
+
+This package also exports utility types for cleaner handler implementations:
+
+### `ActivityHandler<TContract, TActivityName>`
+
+Utility type for implementing global activities with full type inference:
+
+```typescript
+import type { ActivityHandler } from '@temporal-contract/contract';
+import type { myContract } from './contract';
+
+const sendEmail: ActivityHandler<typeof myContract, 'sendEmail'> = async ({ to, subject, body }) => {
+  await emailService.send({ to, subject, body });
+  return { sent: true };
+};
+```
+
+### `WorkflowActivityHandler<TContract, TWorkflowName, TActivityName>`
+
+Utility type for implementing workflow-specific activities:
+
+```typescript
+import type { WorkflowActivityHandler } from '@temporal-contract/contract';
+import type { myContract } from './contract';
+
+const processPayment: WorkflowActivityHandler<
+  typeof myContract,
+  'processOrder',
+  'processPayment'
+> = async ({ amount }) => {
+  const transactionId = await paymentGateway.charge(amount);
+  return { transactionId };
+};
+```
+
+See the [Activity Handlers documentation](../../docs/ACTIVITY_HANDLERS.md) for more details.
 
 ## License
 

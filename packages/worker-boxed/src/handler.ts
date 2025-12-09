@@ -14,7 +14,7 @@ import type {
   WorkerInferInput,
   WorkerInferOutput,
   WorkflowDefinition,
-} from "@temporal-contract/core";
+} from "@temporal-contract/contract";
 
 /**
  * Activity error type
@@ -32,6 +32,62 @@ export interface ActivityError {
 export type BoxedActivityImplementation<TActivity extends ActivityDefinition> = (
   args: WorkerInferInput<TActivity>,
 ) => Future<Result<WorkerInferOutput<TActivity>, ActivityError>>;
+
+/**
+ * Boxed activity handler for a global activity from a contract
+ *
+ * @example
+ * ```typescript
+ * const log: BoxedActivityHandler<typeof myContract, "log"> = ({ level, message }) => {
+ *   return Future.make((resolve) => {
+ *     logger[level](message);
+ *     resolve(Result.Ok(undefined));
+ *   });
+ * };
+ * ```
+ */
+export type BoxedActivityHandler<
+  TContract extends ContractDefinition,
+  TActivityName extends keyof TContract["activities"],
+> =
+  TContract["activities"] extends Record<string, ActivityDefinition>
+    ? (
+        args: WorkerInferInput<TContract["activities"][TActivityName]>,
+      ) => Future<Result<WorkerInferOutput<TContract["activities"][TActivityName]>, ActivityError>>
+    : never;
+
+/**
+ * Boxed activity handler for a workflow-specific activity from a contract
+ *
+ * @example
+ * ```typescript
+ * const processPayment: BoxedWorkflowActivityHandler<
+ *   typeof myContract,
+ *   "processOrder",
+ *   "processPayment"
+ * > = ({ customerId, amount }) => {
+ *   return Future.make((resolve) => {
+ *     // Implementation
+ *     resolve(Result.Ok({ transactionId, status: "success" as const, paidAmount: amount }));
+ *   });
+ * };
+ * ```
+ */
+export type BoxedWorkflowActivityHandler<
+  TContract extends ContractDefinition,
+  TWorkflowName extends keyof TContract["workflows"],
+  TActivityName extends keyof TContract["workflows"][TWorkflowName]["activities"],
+> =
+  TContract["workflows"][TWorkflowName]["activities"] extends Record<string, ActivityDefinition>
+    ? (
+        args: WorkerInferInput<TContract["workflows"][TWorkflowName]["activities"][TActivityName]>,
+      ) => Future<
+        Result<
+          WorkerInferOutput<TContract["workflows"][TWorkflowName]["activities"][TActivityName]>,
+          ActivityError
+        >
+      >
+    : never;
 
 /**
  * Map of all boxed activity implementations for a contract (global + all workflow-specific)

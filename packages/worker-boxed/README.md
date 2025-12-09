@@ -27,7 +27,23 @@ pnpm add @temporalio/worker @temporalio/workflow zod
 
 ```typescript
 import { declareActivitiesHandler, Result, Future } from '@temporal-contract/worker-boxed';
+import type { BoxedActivityHandler, BoxedWorkflowActivityHandler } from '@temporal-contract/worker-boxed';
 import { orderContract } from './contract';
+
+// Using utility types for cleaner signatures
+const sendEmail: BoxedActivityHandler<typeof orderContract, 'sendEmail'> = ({ to, subject, body }) => {
+  return Future.make(async resolve => {
+    try {
+      await emailService.send({ to, subject, body });
+      resolve(Result.Ok({ sent: true }));
+    } catch (error) {
+      resolve(Result.Error({
+        code: 'EMAIL_FAILED',
+        message: error.message,
+      }));
+    }
+  });
+};
 
 export const activitiesHandler = declareActivitiesHandler({
   contract: orderContract,
@@ -210,11 +226,25 @@ This package re-exports key utilities from [@swan-io/boxed](https://github.com/s
 
 See the [boxed documentation](https://swan-io.github.io/boxed/) for full API.
 
+## Utility Types
+
+For cleaner activity implementations with the Result pattern, use the utility types exported by this package:
+
+- `BoxedActivityHandler<TContract, TActivityName>` - For global activities
+- `BoxedWorkflowActivityHandler<TContract, TWorkflowName, TActivityName>` - For workflow-specific activities
+
+See the [Activity Handlers documentation](../../docs/ACTIVITY_HANDLERS.md) for more details.
+
 ## API
 
 ### `declareActivitiesHandler(options)`
 
 Creates an activities handler where implementations use Result pattern.
+
+**Parameters:**
+
+- `contract` - The full contract definition
+- `activities` - Object mapping activity names to Result-based implementations
 
 ```typescript
 type BoxedActivityImplementation<T> = (

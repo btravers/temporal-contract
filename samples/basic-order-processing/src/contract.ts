@@ -65,7 +65,10 @@ export const orderProcessingContract = defineContract({
      * Log a message to the console
      */
     log: {
-      input: z.object({ level: z.string(), message: z.string() }),
+      input: z.object({
+        level: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]),
+        message: z.string(),
+      }),
       output: z.void(),
     },
 

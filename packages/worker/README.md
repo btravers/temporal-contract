@@ -13,15 +13,30 @@ pnpm add @temporal-contract/worker @temporal-contract/contract @temporalio/workf
 ### Implementing Activities
 
 ```typescript
-import { createActivity } from '@temporal-contract/worker';
+import { declareActivitiesHandler } from '@temporal-contract/worker';
+import type { ActivityHandler, WorkflowActivityHandler } from '@temporal-contract/contract';
 import { myContract } from './contract';
 
-const processPayment = createActivity({
-  definition: myContract.workflows.processOrder.activities!.processPayment,
-  implementation: async (input) => {
-    // input is fully typed based on the contract
-    const transactionId = await paymentGateway.charge(input.amount);
-    return { transactionId, success: true };
+// Using utility types for cleaner signatures
+const sendEmail: ActivityHandler<typeof myContract, 'sendEmail'> = async ({ to, subject, body }) => {
+  await emailService.send({ to, subject, body });
+  return { sent: true };
+};
+
+const processPayment: WorkflowActivityHandler<
+  typeof myContract,
+  'processOrder',
+  'processPayment'
+> = async ({ amount }) => {
+  const transactionId = await paymentGateway.charge(amount);
+  return { transactionId, success: true };
+};
+
+export const activitiesHandler = declareActivitiesHandler({
+  contract: myContract,
+  activities: {
+    sendEmail,
+    processPayment,
   },
 });
 ```
@@ -88,16 +103,25 @@ const processOrder = declareWorkflow({
 - ✅ Type-safe query handlers with validation
 - ✅ Type-safe update handlers with validation
 
+## Utility Types
+
+For cleaner activity implementations without explicit type annotations, use the utility types from `@temporal-contract/contract`:
+
+- `ActivityHandler<TContract, TActivityName>` - For global activities
+- `WorkflowActivityHandler<TContract, TWorkflowName, TActivityName>` - For workflow-specific activities
+
+See the [Activity Handlers documentation](../../docs/ACTIVITY_HANDLERS.md) for more details.
+
 ## API
 
-### `createActivity(options)`
+### `declareActivitiesHandler(options)`
 
-Creates a typed activity implementation with validation.
+Creates an activities handler with validation for all activities (global + workflow-specific).
 
 **Parameters:**
 
-- `definition` - Activity definition from contract
-- `implementation` - Activity implementation function (receives validated input, returns validated output)
+- `contract` - The full contract definition
+- `activities` - Object mapping activity names to implementations
 
 ### `declareWorkflow(options)`
 

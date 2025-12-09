@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Future, Result } from "@swan-io/boxed";
 import { z } from "zod";
 import { declareActivitiesHandler } from "./handler.js";
-import type { ContractDefinition } from "@temporal-contract/core";
+import type { ContractDefinition } from "@temporal-contract/contract";
 
 describe("Worker-Boxed Package", () => {
   describe("declareActivitiesHandler", () => {

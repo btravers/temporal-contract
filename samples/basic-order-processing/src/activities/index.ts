@@ -1,45 +1,51 @@
 import { declareActivitiesHandler } from "@temporal-contract/worker";
+import type { ActivityHandler, WorkflowActivityHandler } from "@temporal-contract/contract";
 import { orderProcessingContract } from "../contract.js";
-import type { InventoryResult, PaymentResult, ShippingResult } from "../contract.js";
+import { pino } from "pino";
+
+const logger = pino({
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      translateTime: "SYS:standard",
+      ignore: "pid,hostname",
+    },
+  },
+});
 
 // ============================================================================
 // Global Activities Implementation
 // ============================================================================
 
-const log = async ({ level, message }: { level: string; message: string }): Promise<void> => {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] [${level.toUpperCase()}] ${message}`);
+const log: ActivityHandler<typeof orderProcessingContract, "log"> = async ({ level, message }) => {
+  logger[level](message);
 };
 
-const sendNotification = async ({
-  customerId,
-  subject,
-  message,
-}: {
-  customerId: string;
-  subject: string;
-  message: string;
-}): Promise<void> => {
-  console.log(`\uD83D\uDCE7 Sending notification to ${customerId}`);
-  console.log(`   Subject: ${subject}`);
-  console.log(`   Message: ${message}`);
+const sendNotification: ActivityHandler<
+  typeof orderProcessingContract,
+  "sendNotification"
+> = async ({ customerId, subject, message }) => {
+  logger.info({ customerId, subject }, `📧 Sending notification to ${customerId}`);
+  logger.info({ subject, message }, `   Subject: ${subject}`);
   // Simulate API call delay
   await new Promise((resolve) => setTimeout(resolve, 500));
-  console.log(`\u2705 Notification sent to ${customerId}`);
+  logger.info({ customerId }, `✅ Notification sent to ${customerId}`);
 };
 
 // ============================================================================
 // Workflow-Specific Activities Implementation
 // ============================================================================
 
-const processPayment = async ({
-  customerId,
-  amount,
-}: {
-  customerId: string;
-  amount: number;
-}): Promise<PaymentResult> => {
-  console.log(`\uD83D\uDCB3 Processing payment of $${amount} for customer ${customerId}`);
+const processPayment: WorkflowActivityHandler<
+  typeof orderProcessingContract,
+  "processOrder",
+  "processPayment"
+> = async ({ customerId, amount }) => {
+  logger.info(
+    { customerId, amount },
+    `💳 Processing payment of $${amount} for customer ${customerId}`,
+  );
 
   // Simulate payment processing delay
   await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -47,54 +53,61 @@ const processPayment = async ({
   // Simulate random payment failure (10% chance)
   const success = Math.random() > 0.1;
 
-  const result: PaymentResult = {
+  const result = {
     transactionId: `TXN${Date.now()}`,
-    status: success ? "success" : "failed",
+    status: success ? ("success" as const) : ("failed" as const),
     paidAmount: success ? amount : 0,
   };
 
   if (success) {
-    console.log(`\u2705 Payment processed: ${result.transactionId}`);
+    logger.info(
+      { transactionId: result.transactionId },
+      `✅ Payment processed: ${result.transactionId}`,
+    );
   } else {
-    console.log(`\u274C Payment failed`);
+    logger.error(`❌ Payment failed`);
   }
 
   return result;
 };
 
-const reserveInventory = async (
-  items: Array<{ productId: string; quantity: number }>,
-): Promise<InventoryResult> => {
-  console.log(`\uD83D\uDCE6 Reserving inventory for ${items.length} items`);
+const reserveInventory: WorkflowActivityHandler<
+  typeof orderProcessingContract,
+  "processOrder",
+  "reserveInventory"
+> = async (items) => {
+  logger.info({ itemCount: items.length }, `📦 Reserving inventory for ${items.length} items`);
 
   // Simulate inventory check delay
   await new Promise((resolve) => setTimeout(resolve, 600));
 
   // All items available
   const reservationId = `RES${Date.now()}`;
-  const result: InventoryResult = {
+  const result = {
     reserved: true,
     reservationId,
   };
 
-  console.log(`\u2705 Inventory reserved: ${reservationId}`);
+  logger.info({ reservationId }, `✅ Inventory reserved: ${reservationId}`);
   return result;
 };
 
-const releaseInventory = async (reservationId: string): Promise<void> => {
-  console.log(`\uD83D\uDD13 Releasing inventory reservation: ${reservationId}`);
+const releaseInventory: WorkflowActivityHandler<
+  typeof orderProcessingContract,
+  "processOrder",
+  "releaseInventory"
+> = async (reservationId) => {
+  logger.info({ reservationId }, `🔓 Releasing inventory reservation: ${reservationId}`);
   await new Promise((resolve) => setTimeout(resolve, 300));
-  console.log(`\u2705 Inventory released`);
+  logger.info(`✅ Inventory released`);
 };
 
-const createShipment = async ({
-  orderId,
-  customerId: _customerId,
-}: {
-  orderId: string;
-  customerId: string;
-}): Promise<ShippingResult> => {
-  console.log(`📮 Creating shipment for order ${orderId}`);
+const createShipment: WorkflowActivityHandler<
+  typeof orderProcessingContract,
+  "processOrder",
+  "createShipment"
+> = async ({ orderId, customerId: _customerId }) => {
+  logger.info({ orderId }, `📮 Creating shipment for order ${orderId}`);
 
   // Simulate shipment creation delay
   await new Promise((resolve) => setTimeout(resolve, 800));
@@ -102,12 +115,12 @@ const createShipment = async ({
   const trackingNumber = `TRACK${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
   const estimatedDelivery = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
 
-  const result: ShippingResult = {
+  const result = {
     trackingNumber,
     estimatedDelivery,
   };
 
-  console.log(`✅ Shipment created: ${trackingNumber}`);
+  logger.info({ trackingNumber }, `✅ Shipment created: ${trackingNumber}`);
   return result;
 };
 

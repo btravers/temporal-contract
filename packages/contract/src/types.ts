@@ -319,3 +319,55 @@ export type ClientInferWorkflowContextActivities<
   TContract extends ContractDefinition,
   TWorkflow extends TContract["workflows"][keyof TContract["workflows"]],
 > = ClientInferWorkflowActivities<TWorkflow> & ClientInferActivities<TContract>;
+
+/**
+ * UTILITY TYPES FOR ACTIVITY HANDLERS
+ */
+
+/**
+ * Infer the handler type for a global activity from a contract
+ *
+ * @example
+ * ```typescript
+ * const log: ActivityHandler<typeof myContract, "log"> = async ({ level, message }) => {
+ *   logger[level](message);
+ * };
+ * ```
+ */
+export type ActivityHandler<
+  TContract extends ContractDefinition,
+  TActivityName extends keyof TContract["activities"],
+> =
+  TContract["activities"] extends Record<string, ActivityDefinition>
+    ? (
+        args: WorkerInferInput<TContract["activities"][TActivityName]>,
+      ) => Promise<WorkerInferOutput<TContract["activities"][TActivityName]>>
+    : never;
+
+/**
+ * Infer the handler type for a workflow-specific activity from a contract
+ *
+ * @example
+ * ```typescript
+ * const processPayment: WorkflowActivityHandler<
+ *   typeof myContract,
+ *   "processOrder",
+ *   "processPayment"
+ * > = async ({ customerId, amount }) => {
+ *   // Implementation
+ *   return { transactionId, status: "success" as const, paidAmount: amount };
+ * };
+ * ```
+ */
+export type WorkflowActivityHandler<
+  TContract extends ContractDefinition,
+  TWorkflowName extends keyof TContract["workflows"],
+  TActivityName extends keyof TContract["workflows"][TWorkflowName]["activities"],
+> =
+  TContract["workflows"][TWorkflowName]["activities"] extends Record<string, ActivityDefinition>
+    ? (
+        args: WorkerInferInput<TContract["workflows"][TWorkflowName]["activities"][TActivityName]>,
+      ) => Promise<
+        WorkerInferOutput<TContract["workflows"][TWorkflowName]["activities"][TActivityName]>
+      >
+    : never;

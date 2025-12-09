@@ -41,7 +41,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@temporal-contract/core": "workspace:*"
+    "@temporal-contract/contract": "workspace:*"
   },
   "devDependencies": {
     "@temporalio/client": "catalog:",

@@ -4,6 +4,18 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { activities } from "./activities/index.js";
 import { boxedOrderContract } from "./contract.js";
+import pino from "pino";
+
+const logger = pino({
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      translateTime: "SYS:standard",
+      ignore: "pid,hostname",
+    },
+  },
+});
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -34,16 +46,22 @@ async function run() {
     taskQueue: boxedOrderContract.taskQueue,
   });
 
-  console.log("🚀 Boxed Order Processing Worker started");
-  console.log(`   Task Queue: ${boxedOrderContract.taskQueue}`);
-  console.log(`   Workflows Path: ${resolve(__dirname, "workflows")}`);
-  console.log(`   Pattern: Result/Future for explicit error handling`);
-  console.log("\nWorker is running... Press Ctrl+C to stop.\n");
+  logger.info("🚀 Boxed Order Processing Worker started");
+  logger.info(
+    { taskQueue: boxedOrderContract.taskQueue },
+    `   Task Queue: ${boxedOrderContract.taskQueue}`,
+  );
+  logger.info(
+    { workflowsPath: resolve(__dirname, "workflows") },
+    `   Workflows Path: ${resolve(__dirname, "workflows")}`,
+  );
+  logger.info("   Pattern: Result/Future for explicit error handling");
+  logger.info("Worker is running... Press Ctrl+C to stop.");
 
   await worker.run();
 }
 
 run().catch((err) => {
-  console.error("Worker failed:", err);
+  logger.error({ err }, "Worker failed");
   process.exit(1);
 });

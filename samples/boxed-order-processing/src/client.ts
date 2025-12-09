@@ -2,6 +2,18 @@ import { Connection } from "@temporalio/client";
 import { TypedClient } from "@temporal-contract/client";
 import { boxedOrderContract } from "./contract.js";
 import type { Order, OrderResult } from "./contract.js";
+import pino from "pino";
+
+const logger = pino({
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      translateTime: "SYS:standard",
+      ignore: "pid,hostname",
+    },
+  },
+});
 
 /**
  * Client for Boxed Order Processing
@@ -51,15 +63,20 @@ async function runClient() {
     },
   ];
 
-  console.log("🎯 Starting Boxed Order Processing Workflows\n");
+  logger.info("🎯 Starting Boxed Order Processing Workflows");
 
   // Start workflows for each order
   for (const order of orders) {
     try {
-      console.log(`📦 Processing order: ${order.orderId}`);
-      console.log(`   Customer: ${order.customerId}`);
-      console.log(`   Total: $${order.totalAmount}`);
-      console.log(`   Items: ${order.items.length}`);
+      logger.info(
+        {
+          orderId: order.orderId,
+          customerId: order.customerId,
+          totalAmount: order.totalAmount,
+          itemCount: order.items.length,
+        },
+        `📦 Processing order: ${order.orderId}`,
+      );
 
       // Start workflow with type-safe contract
       const handle = await client.startWorkflow("processOrder", {
@@ -67,33 +84,46 @@ async function runClient() {
         args: order,
       });
 
-      console.log(`   ✓ Workflow started: ${handle.workflowId}\n`);
+      logger.info({ workflowId: handle.workflowId }, `   ✓ Workflow started: ${handle.workflowId}`);
 
       // Wait for result (optional - for demo purposes)
       const result = (await handle.result()) as OrderResult;
 
-      console.log(`   📋 Result for ${order.orderId}:`);
-      console.log(`      Status: ${result.status}`);
       if (result.status === "completed") {
-        console.log(`      Transaction: ${result.transactionId}`);
-        console.log(`      Tracking: ${result.trackingNumber}`);
+        logger.info(
+          {
+            orderId: order.orderId,
+            status: result.status,
+            transactionId: result.transactionId,
+            trackingNumber: result.trackingNumber,
+          },
+          `   📋 Result for ${order.orderId}`,
+        );
       } else {
-        console.log(`      Reason: ${result.failureReason}`);
-        console.log(`      Error Code: ${result.errorCode}`);
+        logger.warn(
+          {
+            orderId: order.orderId,
+            status: result.status,
+            failureReason: result.failureReason,
+            errorCode: result.errorCode,
+          },
+          `   📋 Result for ${order.orderId}`,
+        );
       }
-      console.log();
     } catch (error) {
-      console.error(`   ✗ Error processing order ${order.orderId}:`, error);
-      console.log();
+      logger.error(
+        { orderId: order.orderId, error },
+        `   ✗ Error processing order ${order.orderId}`,
+      );
     }
   }
 
-  console.log("✅ All workflows completed!");
-  console.log("\nNote: The Result/Future pattern provides explicit error handling");
-  console.log("in activity implementations, making errors visible in type signatures.");
+  logger.info("✅ All workflows completed!");
+  logger.info("Note: The Result/Future pattern provides explicit error handling");
+  logger.info("in activity implementations, making errors visible in type signatures.");
 }
 
 runClient().catch((err) => {
-  console.error("Client error:", err);
+  logger.error({ err }, "Client error");
   process.exit(1);
 });

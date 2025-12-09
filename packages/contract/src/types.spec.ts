@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import type {
   ActivityDefinition,
+  ActivityHandler,
   ContractDefinition,
   WorkerInferActivity,
   WorkerInferInput,
@@ -10,6 +11,7 @@ import type {
   WorkerInferSignal,
   WorkerInferUpdate,
   WorkerInferWorkflow,
+  WorkflowActivityHandler,
   ClientInferActivity,
   ClientInferInput,
   ClientInferOutput,
@@ -441,6 +443,109 @@ describe("Core Types", () => {
         };
 
         await expect(clientActivity({ amount: "100" })).resolves.toEqual({ total: "200" });
+      });
+    });
+  });
+
+  describe("Activity Handler Utility Types", () => {
+    it("should correctly type a global activity handler", async () => {
+      const contract = {
+        taskQueue: "test",
+        activities: {
+          log: {
+            input: z.object({ level: z.string(), message: z.string() }),
+            output: z.void(),
+          },
+          sendEmail: {
+            input: z.object({ to: z.string(), subject: z.string() }),
+            output: z.object({ messageId: z.string() }),
+          },
+        },
+        workflows: {},
+      } satisfies ContractDefinition;
+
+      const log: ActivityHandler<typeof contract, "log"> = async ({ level, message }) => {
+        expect(level).toBe("info");
+        expect(message).toBe("test");
+      };
+
+      const sendEmail: ActivityHandler<typeof contract, "sendEmail"> = async ({ to, subject }) => {
+        expect(to).toBe("user@example.com");
+        expect(subject).toBe("Test");
+        return { messageId: "123" };
+      };
+
+      await expect(log({ level: "info", message: "test" })).resolves.toBeUndefined();
+      await expect(sendEmail({ to: "user@example.com", subject: "Test" })).resolves.toEqual({
+        messageId: "123",
+      });
+    });
+
+    it("should correctly type a workflow-specific activity handler", async () => {
+      const contract = {
+        taskQueue: "test",
+        workflows: {
+          processOrder: {
+            input: z.object({ orderId: z.string() }),
+            output: z.object({ success: z.boolean() }),
+            activities: {
+              processPayment: {
+                input: z.object({ customerId: z.string(), amount: z.number() }),
+                output: z.object({
+                  transactionId: z.string(),
+                  status: z.enum(["success", "failed"]),
+                  paidAmount: z.number(),
+                }),
+              },
+              reserveInventory: {
+                input: z.array(z.object({ productId: z.string(), quantity: z.number() })),
+                output: z.object({ reserved: z.boolean(), reservationId: z.string() }),
+              },
+            },
+          },
+        },
+      } satisfies ContractDefinition;
+
+      const processPayment: WorkflowActivityHandler<
+        typeof contract,
+        "processOrder",
+        "processPayment"
+      > = async ({ customerId, amount }) => {
+        expect(customerId).toBe("cust123");
+        expect(amount).toBe(100);
+        return {
+          transactionId: "txn123",
+          status: "success" as const,
+          paidAmount: amount,
+        };
+      };
+
+      const reserveInventory: WorkflowActivityHandler<
+        typeof contract,
+        "processOrder",
+        "reserveInventory"
+      > = async (items) => {
+        expect(items).toHaveLength(2);
+        return {
+          reserved: true,
+          reservationId: "res123",
+        };
+      };
+
+      await expect(processPayment({ customerId: "cust123", amount: 100 })).resolves.toEqual({
+        transactionId: "txn123",
+        status: "success",
+        paidAmount: 100,
+      });
+
+      await expect(
+        reserveInventory([
+          { productId: "prod1", quantity: 2 },
+          { productId: "prod2", quantity: 3 },
+        ]),
+      ).resolves.toEqual({
+        reserved: true,
+        reservationId: "res123",
       });
     });
   });

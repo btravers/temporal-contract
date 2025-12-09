@@ -2,12 +2,24 @@ import { Connection } from "@temporalio/client";
 import { TypedClient } from "@temporal-contract/client";
 import { orderProcessingContract } from "./contract.js";
 import type { Order, OrderResult } from "./contract.js";
+import pino from "pino";
+
+const logger = pino({
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      translateTime: "SYS:standard",
+      ignore: "pid,hostname",
+    },
+  },
+});
 
 /**
  * Example client to start order processing workflows
  */
 async function run() {
-  console.log("🚀 Starting Order Processing Client...\n");
+  logger.info("🚀 Starting Order Processing Client...");
 
   // Connect to Temporal server
   const connection = await Connection.connect({
@@ -39,7 +51,7 @@ async function run() {
     totalAmount: 109.97,
   };
 
-  console.log("📦 Creating order:", JSON.stringify(order, null, 2), "\n");
+  logger.info({ order }, "📦 Creating order");
 
   try {
     // Start the workflow
@@ -48,35 +60,43 @@ async function run() {
       args: order,
     });
 
-    console.log(`✅ Workflow started successfully!`);
-    console.log(`   Workflow ID: ${handle.workflowId}\n`);
+    logger.info({ workflowId: handle.workflowId }, `✅ Workflow started successfully!`);
 
-    console.log("⏳ Waiting for workflow result...\n");
+    logger.info("⌛ Waiting for workflow result...");
 
     // Wait for the result
     const result = (await handle.result()) as OrderResult;
 
-    console.log("✅ Order processed successfully!");
-    console.log("   Result:", JSON.stringify(result, null, 2));
+    logger.info({ result }, "✅ Order processed successfully!");
 
     if (result.status === "completed") {
-      console.log(`\n🎉 Order ${result.orderId} completed!`);
-      console.log(`   Transaction ID: ${result.transactionId}`);
-      console.log(`   Tracking Number: ${result.trackingNumber}`);
+      logger.info(
+        {
+          orderId: result.orderId,
+          transactionId: result.transactionId,
+          trackingNumber: result.trackingNumber,
+        },
+        `🎉 Order ${result.orderId} completed!`,
+      );
     } else {
-      console.log(`\n❌ Order ${result.orderId} failed`);
-      console.log(`   Reason: ${result.failureReason}`);
+      logger.error(
+        {
+          orderId: result.orderId,
+          failureReason: result.failureReason,
+        },
+        `❌ Order ${result.orderId} failed`,
+      );
     }
   } catch (error) {
-    console.error("❌ Error:", error);
+    logger.error({ error }, "❌ Error");
     process.exit(1);
   }
 
-  console.log("\n✨ Done!");
+  logger.info("✨ Done!");
   process.exit(0);
 }
 
 run().catch((err) => {
-  console.error("❌ Client failed:", err);
+  logger.error({ err }, "❌ Client failed");
   process.exit(1);
 });

@@ -6,9 +6,9 @@
 
 ## Packages
 
-- **`@temporal-contract/core`** - Core types and utilities
-- **`@temporal-contract/contract`** - Contract builder for defining workflows and activities
+- **`@temporal-contract/contract`** - Contract builder and type definitions for workflows and activities
 - **`@temporal-contract/worker`** - Type-safe worker implementation with automatic validation
+- **`@temporal-contract/worker-boxed`** - Worker with Result/Future pattern for explicit error handling
 - **`@temporal-contract/client`** - Type-safe client for consuming workflows
 
 ## Features
@@ -353,12 +353,13 @@ pnpm lint
 ```
 temporal-contract/
 ├── packages/
-│   ├── core/           # Core types
-│   ├── contract/       # Contract builder
+│   ├── contract/       # Contract builder and type definitions
 │   ├── worker/         # Worker implementation (handler)
+│   ├── worker-boxed/   # Worker with Result/Future pattern
 │   └── client/         # Typed client
 ├── samples/            # Sample applications
-│   └── basic-order-processing/  # Order processing example
+│   ├── basic-order-processing/  # Standard Promise-based example
+│   └── boxed-order-processing/  # Result/Future pattern example
 ├── docs/               # Documentation
 ├── .github/
 │   └── workflows/      # CI/CD

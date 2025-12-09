@@ -18,7 +18,7 @@ import type {
   WorkerInferOutput,
   WorkerInferWorkflowContextActivities,
   WorkflowDefinition,
-} from "@temporal-contract/core";
+} from "@temporal-contract/contract";
 
 /**
  * Workflow context with typed activities (workflow + global) and workflow info

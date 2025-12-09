@@ -11,7 +11,7 @@ import type {
   QueryDefinition,
   SignalDefinition,
   UpdateDefinition,
-} from "@temporal-contract/core";
+} from "@temporal-contract/contract";
 
 /**
  * Typed workflow handle with validated results, queries, signals and updates

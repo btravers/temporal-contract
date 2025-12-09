@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { declareActivitiesHandler, declareWorkflow } from "./handler.js";
-import type { ContractDefinition, WorkflowDefinition } from "@temporal-contract/core";
+import type { ContractDefinition, WorkflowDefinition } from "@temporal-contract/contract";
 
 // Mock Temporal workflow functions
 vi.mock("@temporalio/workflow", () => ({

@@ -14,11 +14,12 @@
     "@swan-io/boxed": "catalog:",
     "@temporal-contract/client": "workspace:*",
     "@temporal-contract/contract": "workspace:*",
-    "@temporal-contract/core": "workspace:*",
     "@temporal-contract/worker-boxed": "workspace:*",
     "@temporalio/client": "catalog:",
     "@temporalio/worker": "catalog:",
     "@temporalio/workflow": "catalog:",
+    "pino": "catalog:",
+    "pino-pretty": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

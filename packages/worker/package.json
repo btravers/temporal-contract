@@ -43,7 +43,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@temporal-contract/core": "workspace:*"
+    "@temporal-contract/contract": "workspace:*"
   },
   "devDependencies": {
     "@temporalio/workflow": "catalog:",

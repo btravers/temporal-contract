@@ -2,6 +2,18 @@ import { NativeConnection, Worker } from "@temporalio/worker";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { activitiesHandler } from "./activities/index.js";
+import pino from "pino";
+
+const logger = pino({
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      translateTime: "SYS:standard",
+      ignore: "pid,hostname",
+    },
+  },
+});
 
 // Get the directory path for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -16,7 +28,7 @@ const __dirname = dirname(__filename);
  * - Listens on the 'order-processing' task queue
  */
 async function run() {
-  console.log("🚀 Starting Order Processing Worker...\n");
+  logger.info("🚀 Starting Order Processing Worker...");
 
   // Create connection to Temporal server
   const connection = await NativeConnection.connect({
@@ -36,17 +48,23 @@ async function run() {
     activities: activitiesHandler.activities,
   });
 
-  console.log("✅ Worker registered successfully");
-  console.log(`📝 Task Queue: order-processing`);
-  console.log(`📂 Workflows: ${join(__dirname, "workflows")}`);
-  console.log(`⚙️  Activities: ${Object.keys(activitiesHandler.activities).length} registered\n`);
-  console.log("👂 Worker is now listening for tasks...\n");
+  logger.info("✅ Worker registered successfully");
+  logger.info({ taskQueue: "order-processing" }, `📝 Task Queue: order-processing`);
+  logger.info(
+    { workflowsPath: join(__dirname, "workflows") },
+    `📂 Workflows: ${join(__dirname, "workflows")}`,
+  );
+  logger.info(
+    { activitiesCount: Object.keys(activitiesHandler.activities).length },
+    `⚙️  Activities: ${Object.keys(activitiesHandler.activities).length} registered`,
+  );
+  logger.info("👂 Worker is now listening for tasks...");
 
   // Run the worker
   await worker.run();
 }
 
 run().catch((err) => {
-  console.error("❌ Worker failed:", err);
+  logger.error({ err }, "❌ Worker failed");
   process.exit(1);
 });

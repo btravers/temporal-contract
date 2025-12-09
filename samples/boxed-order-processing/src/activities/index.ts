@@ -1,7 +1,22 @@
 import { Future, Result } from "@swan-io/boxed";
 import { boxedOrderContract } from "../contract.js";
-import type { ActivityError, BoxedActivityImplementations } from "@temporal-contract/worker-boxed";
-import type { InventoryResult, PaymentResult, ShippingResult } from "../contract.js";
+import type {
+  BoxedActivityHandler,
+  BoxedWorkflowActivityHandler,
+  BoxedActivityImplementations,
+} from "@temporal-contract/worker-boxed";
+import { pino } from "pino";
+
+const logger = pino({
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      translateTime: "SYS:standard",
+      ignore: "pid,hostname",
+    },
+  },
+});
 
 /**
  * Activity implementations using the Result/Future pattern from @swan-io/boxed
@@ -21,21 +36,33 @@ import type { InventoryResult, PaymentResult, ShippingResult } from "../contract
 // Global Activities
 // ============================================================================
 
-const log = ({
+const log: BoxedActivityHandler<typeof boxedOrderContract, "log"> = ({
   level,
   message,
 }: {
   level: string;
   message: string;
-}): Future<Result<void, ActivityError>> => {
+}) => {
   return Future.make((resolve) => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] [${level.toUpperCase()}] ${message}`);
+    const logLevel = level.toLowerCase();
+    // Type guard pour vérifier que logLevel est un niveau valide
+    if (
+      logLevel === "info" ||
+      logLevel === "warn" ||
+      logLevel === "error" ||
+      logLevel === "debug" ||
+      logLevel === "fatal" ||
+      logLevel === "trace"
+    ) {
+      logger[logLevel](message);
+    } else {
+      logger.info(message);
+    }
     resolve(Result.Ok(undefined));
   });
 };
 
-const sendNotification = ({
+const sendNotification: BoxedActivityHandler<typeof boxedOrderContract, "sendNotification"> = ({
   customerId,
   subject,
   message,
@@ -43,11 +70,10 @@ const sendNotification = ({
   customerId: string;
   subject: string;
   message: string;
-}): Future<Result<void, ActivityError>> => {
+}) => {
   return Future.make((resolve) => {
-    console.log(`📧 Sending notification to customer ${customerId}`);
-    console.log(`   Subject: ${subject}`);
-    console.log(`   Message: ${message}`);
+    logger.info({ customerId, subject }, `📧 Sending notification to customer ${customerId}`);
+    logger.info({ subject, message }, `   Subject: ${subject}`);
 
     setTimeout(() => {
       // 98% success rate for notifications
@@ -55,11 +81,11 @@ const sendNotification = ({
 
       if (success) {
         const messageId = `msg-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-        console.log(`✓ Notification sent successfully: ${messageId}`);
+        logger.info({ messageId }, `✓ Notification sent successfully: ${messageId}`);
 
         resolve(Result.Ok(undefined));
       } else {
-        console.log(`✗ Failed to send notification to ${customerId}`);
+        logger.error({ customerId }, `✗ Failed to send notification to ${customerId}`);
         resolve(
           Result.Error({
             code: "NOTIFICATION_FAILED",
@@ -79,15 +105,16 @@ const sendNotification = ({
 // Workflow-Specific Activities
 // ============================================================================
 
-const processPayment = ({
-  customerId,
-  amount,
-}: {
-  customerId: string;
-  amount: number;
-}): Future<Result<PaymentResult, ActivityError>> => {
+const processPayment: BoxedWorkflowActivityHandler<
+  typeof boxedOrderContract,
+  "processOrder",
+  "processPayment"
+> = ({ customerId, amount }: { customerId: string; amount: number }) => {
   return Future.make((resolve) => {
-    console.log(`💳 Processing payment of $${amount} for customer ${customerId}`);
+    logger.info(
+      { customerId, amount },
+      `💳 Processing payment of $${amount} for customer ${customerId}`,
+    );
 
     // Simulate processing time
     setTimeout(() => {
@@ -96,7 +123,7 @@ const processPayment = ({
 
       if (success) {
         const transactionId = `txn-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-        console.log(`✓ Payment successful: ${transactionId}`);
+        logger.info({ transactionId }, `✓ Payment successful: ${transactionId}`);
 
         resolve(
           Result.Ok({
@@ -106,7 +133,7 @@ const processPayment = ({
           }),
         );
       } else {
-        console.log(`✗ Payment failed for customer ${customerId}`);
+        logger.error({ customerId }, `✗ Payment failed for customer ${customerId}`);
         resolve(
           Result.Error({
             code: "PAYMENT_FAILED",
@@ -123,11 +150,13 @@ const processPayment = ({
   });
 };
 
-const reserveInventory = (
-  items: Array<{ productId: string; quantity: number }>,
-): Future<Result<InventoryResult, ActivityError>> => {
+const reserveInventory: BoxedWorkflowActivityHandler<
+  typeof boxedOrderContract,
+  "processOrder",
+  "reserveInventory"
+> = (items: { productId: string; quantity: number }[]) => {
   return Future.make((resolve) => {
-    console.log(`📦 Reserving inventory for ${items.length} products`);
+    logger.info({ itemCount: items.length }, `📦 Reserving inventory for ${items.length} products`);
 
     // Simulate inventory check
     setTimeout(() => {
@@ -136,7 +165,7 @@ const reserveInventory = (
 
       if (available) {
         const reservationId = `res-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-        console.log(`✓ Inventory reserved: ${reservationId}`);
+        logger.info({ reservationId }, `✓ Inventory reserved: ${reservationId}`);
 
         resolve(
           Result.Ok({
@@ -157,7 +186,10 @@ const reserveInventory = (
           );
           return;
         }
-        console.log(`✗ Product ${outOfStockItem.productId} is out of stock`);
+        logger.error(
+          { productId: outOfStockItem.productId },
+          `✗ Product ${outOfStockItem.productId} is out of stock`,
+        );
 
         resolve(
           Result.Error({
@@ -175,23 +207,25 @@ const reserveInventory = (
   });
 };
 
-const releaseInventory = (reservationId: string): Future<Result<void, ActivityError>> => {
+const releaseInventory: BoxedWorkflowActivityHandler<
+  typeof boxedOrderContract,
+  "processOrder",
+  "releaseInventory"
+> = (reservationId: string) => {
   return Future.make((resolve) => {
-    console.log(`🔓 Releasing inventory reservation: ${reservationId}`);
+    logger.info({ reservationId }, `🔓 Releasing inventory reservation: ${reservationId}`);
     // Inventory release rarely fails
     resolve(Result.Ok(undefined));
   });
 };
 
-const createShipment = ({
-  orderId,
-  customerId,
-}: {
-  orderId: string;
-  customerId: string;
-}): Future<Result<ShippingResult, ActivityError>> => {
+const createShipment: BoxedWorkflowActivityHandler<
+  typeof boxedOrderContract,
+  "processOrder",
+  "createShipment"
+> = ({ orderId, customerId }: { orderId: string; customerId: string }) => {
   return Future.make((resolve) => {
-    console.log(`📮 Creating shipment for order ${orderId}`);
+    logger.info({ orderId }, `📮 Creating shipment for order ${orderId}`);
 
     setTimeout(() => {
       // 98% success rate
@@ -211,7 +245,10 @@ const createShipment = ({
           Date.now() + daysToDeliver * 24 * 60 * 60 * 1000,
         ).toISOString();
 
-        console.log(`✓ Shipment created: ${trackingNumber} via ${carrier}`);
+        logger.info(
+          { trackingNumber, carrier },
+          `✓ Shipment created: ${trackingNumber} via ${carrier}`,
+        );
 
         resolve(
           Result.Ok({
@@ -221,7 +258,7 @@ const createShipment = ({
           }),
         );
       } else {
-        console.log(`✗ Failed to create shipment for order ${orderId}`);
+        logger.error({ orderId }, `✗ Failed to create shipment for order ${orderId}`);
         resolve(
           Result.Error({
             code: "SHIPMENT_FAILED",
@@ -238,9 +275,13 @@ const createShipment = ({
   });
 };
 
-const refundPayment = (transactionId: string): Future<Result<void, ActivityError>> => {
+const refundPayment: BoxedWorkflowActivityHandler<
+  typeof boxedOrderContract,
+  "processOrder",
+  "refundPayment"
+> = (transactionId: string) => {
   return Future.make((resolve) => {
-    console.log(`💰 Processing refund for transaction ${transactionId}`);
+    logger.info({ transactionId }, `💰 Processing refund for transaction ${transactionId}`);
 
     setTimeout(() => {
       // 99% success rate (refunds rarely fail)
@@ -248,11 +289,11 @@ const refundPayment = (transactionId: string): Future<Result<void, ActivityError
 
       if (success) {
         const refundId = `rfnd-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-        console.log(`✓ Refund successful: ${refundId}`);
+        logger.info({ refundId }, `✓ Refund successful: ${refundId}`);
 
         resolve(Result.Ok(undefined));
       } else {
-        console.log(`✗ Refund failed for transaction ${transactionId}`);
+        logger.error({ transactionId }, `✗ Refund failed for transaction ${transactionId}`);
         resolve(
           Result.Error({
             code: "REFUND_FAILED",

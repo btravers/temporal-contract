@@ -3,6 +3,8 @@ export {
   declareWorkflow,
   type BoxedActivityImplementation,
   type BoxedActivityImplementations,
+  type BoxedActivityHandler,
+  type BoxedWorkflowActivityHandler,
   type WorkflowImplementation,
   type WorkflowContext,
   type DeclareActivitiesHandlerOptions,

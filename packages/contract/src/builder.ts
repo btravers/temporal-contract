@@ -5,7 +5,7 @@ import type {
   SignalDefinition,
   UpdateDefinition,
   WorkflowDefinition,
-} from "@temporal-contract/core";
+} from "./types.js";
 
 /**
  * Builder for creating activity definitions
