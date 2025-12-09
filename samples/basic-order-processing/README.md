@@ -72,11 +72,11 @@ The contract defines the structure of your workflows and activities with Zod sch
 
 ### Activities Handler
 
-All activities (global + workflow-specific) are implemented together using `createActivitiesHandler`.
+All activities (global + workflow-specific) are implemented together using `declareActivitiesHandler`.
 
 ### Workflow Implementation
 
-Each workflow is implemented in a separate file using `createWorkflow`, receiving a typed context with activities.
+Each workflow is implemented in a separate file using `declareWorkflow`, receiving a typed context with activities.
 
 ### Worker Setup
 

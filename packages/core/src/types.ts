@@ -39,133 +39,283 @@ export interface UpdateDefinition {
 /**
  * Definition of a workflow
  */
-export interface WorkflowDefinition {
+export interface WorkflowDefinition<
+  TActivities extends Record<string, ActivityDefinition> = Record<string, ActivityDefinition>,
+  TSignals extends Record<string, SignalDefinition> = Record<string, SignalDefinition>,
+  TQueries extends Record<string, QueryDefinition> = Record<string, QueryDefinition>,
+  TUpdates extends Record<string, UpdateDefinition> = Record<string, UpdateDefinition>,
+> {
   input: AnyZodSchema;
   output: AnyZodSchema;
-  activities?: Record<string, ActivityDefinition>;
-  signals?: Record<string, SignalDefinition>;
-  queries?: Record<string, QueryDefinition>;
-  updates?: Record<string, UpdateDefinition>;
+  activities?: TActivities;
+  signals?: TSignals;
+  queries?: TQueries;
+  updates?: TUpdates;
 }
 
 /**
  * Contract definition containing workflows and optional global activities
  */
-export interface ContractDefinition {
+export interface ContractDefinition<
+  TWorkflows extends Record<string, WorkflowDefinition> = Record<string, WorkflowDefinition>,
+  TActivities extends Record<string, ActivityDefinition> = Record<string, ActivityDefinition>,
+> {
   taskQueue: string;
-  workflows: Record<string, WorkflowDefinition>;
-  activities?: Record<string, ActivityDefinition>;
+  workflows: TWorkflows;
+  activities?: TActivities;
 }
 
 /**
- * Infer input type from a definition
+ * Infer input type from a definition (worker perspective)
+ * Worker receives z.output (after input schema parsing/transformation)
  */
-export type InferInput<T extends { input: AnyZodSchema }> = z.infer<T["input"]>;
+export type WorkerInferInput<T extends { input: AnyZodSchema }> = z.output<T["input"]>;
 
 /**
- * Infer output type from a definition
+ * Infer output type from a definition (worker perspective)
+ * Worker returns z.input (before output schema parsing/transformation)
  */
-export type InferOutput<T extends { output: AnyZodSchema }> = z.infer<T["output"]>;
+export type WorkerInferOutput<T extends { output: AnyZodSchema }> = z.input<T["output"]>;
 
 /**
- * Infer workflow function signature
- * Workflow functions receive a single argument and return a Promise
+ * Infer input type from a definition (client perspective)
+ * Client sends z.input (before input schema parsing/transformation)
  */
-export type InferWorkflow<T extends WorkflowDefinition> = (
-  args: InferInput<T>,
-) => Promise<InferOutput<T>>;
+export type ClientInferInput<T extends { input: AnyZodSchema }> = z.input<T["input"]>;
 
 /**
- * Infer activity function signature
- * Activity functions receive a single argument and return a Promise
+ * Infer output type from a definition (client perspective)
+ * Client receives z.output (after output schema parsing/transformation)
  */
-export type InferActivity<T extends ActivityDefinition> = (
-  args: InferInput<T>,
-) => Promise<InferOutput<T>>;
+export type ClientInferOutput<T extends { output: AnyZodSchema }> = z.output<T["output"]>;
 
 /**
- * Infer signal handler signature
- * Signal handlers receive args and return void
+ * WORKER PERSPECTIVE
+ * Worker receives z.output of input (parsed data) and returns z.input of output (raw data)
  */
-export type InferSignal<T extends SignalDefinition> = (args: InferInput<T>) => void;
 
 /**
- * Infer query handler signature
- * Query handlers receive args and return output synchronously
+ * Infer workflow function signature from worker perspective
+ * Worker receives z.input and returns z.output
  */
-export type InferQuery<T extends QueryDefinition> = (
-  args: InferInput<T>,
-) => Promise<InferOutput<T>>;
+export type WorkerInferWorkflow<TWorkflow extends WorkflowDefinition> = (
+  args: WorkerInferInput<TWorkflow>,
+) => Promise<WorkerInferOutput<TWorkflow>>;
 
 /**
- * Infer update handler signature
- * Update handlers receive args and return output as a Promise
+ * Infer activity function signature from worker perspective
+ * Worker receives z.input and returns z.output
  */
-export type InferUpdate<T extends UpdateDefinition> = (
-  args: InferInput<T>,
-) => Promise<InferOutput<T>>;
+export type WorkerInferActivity<TActivity extends ActivityDefinition> = (
+  args: WorkerInferInput<TActivity>,
+) => Promise<WorkerInferOutput<TActivity>>;
 
 /**
- * Infer all workflows from a contract
+ * Infer signal handler signature from worker perspective
+ * Worker receives z.input
  */
-export type InferWorkflows<T extends ContractDefinition> = {
-  [K in keyof T["workflows"]]: InferWorkflow<T["workflows"][K]>;
+export type WorkerInferSignal<TSignal extends SignalDefinition> = (
+  args: WorkerInferInput<TSignal>,
+) => Promise<void>;
+
+/**
+ * Infer query handler signature from worker perspective
+ * Worker receives z.input and returns z.output
+ */
+export type WorkerInferQuery<TQuery extends QueryDefinition> = (
+  args: WorkerInferInput<TQuery>,
+) => Promise<WorkerInferOutput<TQuery>>;
+
+/**
+ * Infer update handler signature from worker perspective
+ * Worker receives z.input and returns z.output
+ */
+export type WorkerInferUpdate<TUpdate extends UpdateDefinition> = (
+  args: WorkerInferInput<TUpdate>,
+) => Promise<WorkerInferOutput<TUpdate>>;
+
+/**
+ * CLIENT PERSPECTIVE
+ * Client sends z.output and receives z.input
+ */
+
+/**
+ * Infer workflow function signature from client perspective
+ * Client sends z.output and receives z.input
+ */
+export type ClientInferWorkflow<TWorkflow extends WorkflowDefinition> = (
+  args: ClientInferInput<TWorkflow>,
+) => Promise<ClientInferOutput<TWorkflow>>;
+
+/**
+ * Infer activity function signature from client perspective
+ * Client sends z.output and receives z.input
+ */
+export type ClientInferActivity<TActivity extends ActivityDefinition> = (
+  args: ClientInferInput<TActivity>,
+) => Promise<ClientInferOutput<TActivity>>;
+
+/**
+ * Infer signal handler signature from client perspective
+ * Client sends z.output
+ */
+export type ClientInferSignal<TSignal extends SignalDefinition> = (
+  args: ClientInferInput<TSignal>,
+) => Promise<void>;
+
+/**
+ * Infer query handler signature from client perspective
+ * Client sends z.output and receives z.input
+ */
+export type ClientInferQuery<TQuery extends QueryDefinition> = (
+  args: ClientInferInput<TQuery>,
+) => Promise<ClientInferOutput<TQuery>>;
+
+/**
+ * Infer update handler signature from client perspective
+ * Client sends z.output and receives z.input
+ */
+export type ClientInferUpdate<TUpdate extends UpdateDefinition> = (
+  args: ClientInferInput<TUpdate>,
+) => Promise<ClientInferOutput<TUpdate>>;
+
+/**
+ * WORKER PERSPECTIVE - Contract-level types
+ */
+
+/**
+ * Infer all workflows from a contract (worker perspective)
+ */
+export type WorkerInferWorkflows<TContract extends ContractDefinition> = {
+  [K in keyof TContract["workflows"]]: WorkerInferWorkflow<TContract["workflows"][K]>;
 };
 
 /**
- * Infer all activities from a contract
+ * Infer all activities from a contract (worker perspective)
  */
-export type InferActivities<T extends ContractDefinition> =
-  T["activities"] extends Record<string, ActivityDefinition>
+export type WorkerInferActivities<TContract extends ContractDefinition> =
+  TContract["activities"] extends Record<string, ActivityDefinition>
     ? {
-        [K in keyof T["activities"]]: InferActivity<T["activities"][K]>;
+        [K in keyof TContract["activities"]]: WorkerInferActivity<TContract["activities"][K]>;
       }
     : {};
 
 /**
- * Infer activities from a workflow definition
+ * Infer activities from a workflow definition (worker perspective)
  */
-export type InferWorkflowActivities<T extends WorkflowDefinition> =
+export type WorkerInferWorkflowActivities<T extends WorkflowDefinition> =
   T["activities"] extends Record<string, ActivityDefinition>
     ? {
-        [K in keyof T["activities"]]: InferActivity<T["activities"][K]>;
+        [K in keyof T["activities"]]: WorkerInferActivity<T["activities"][K]>;
       }
     : {};
 
 /**
- * Infer signals from a workflow definition
+ * Infer signals from a workflow definition (worker perspective)
  */
-export type InferWorkflowSignals<T extends WorkflowDefinition> =
+export type WorkerInferWorkflowSignals<T extends WorkflowDefinition> =
   T["signals"] extends Record<string, SignalDefinition>
     ? {
-        [K in keyof T["signals"]]: InferSignal<T["signals"][K]>;
+        [K in keyof T["signals"]]: WorkerInferSignal<T["signals"][K]>;
       }
     : {};
 
 /**
- * Infer queries from a workflow definition
+ * Infer queries from a workflow definition (worker perspective)
  */
-export type InferWorkflowQueries<T extends WorkflowDefinition> =
+export type WorkerInferWorkflowQueries<T extends WorkflowDefinition> =
   T["queries"] extends Record<string, QueryDefinition>
     ? {
-        [K in keyof T["queries"]]: InferQuery<T["queries"][K]>;
+        [K in keyof T["queries"]]: WorkerInferQuery<T["queries"][K]>;
       }
     : {};
 
 /**
- * Infer updates from a workflow definition
+ * Infer updates from a workflow definition (worker perspective)
  */
-export type InferWorkflowUpdates<T extends WorkflowDefinition> =
+export type WorkerInferWorkflowUpdates<T extends WorkflowDefinition> =
   T["updates"] extends Record<string, UpdateDefinition>
     ? {
-        [K in keyof T["updates"]]: InferUpdate<T["updates"][K]>;
+        [K in keyof T["updates"]]: WorkerInferUpdate<T["updates"][K]>;
       }
     : {};
 
 /**
- * Infer all activities available in a workflow context (workflow activities + global activities)
+ * Infer all activities available in a workflow context (worker perspective)
+ * Combines workflow-specific activities with global activities
  */
-export type InferWorkflowContextActivities<
-  TWorkflow extends WorkflowDefinition,
+export type WorkerInferWorkflowContextActivities<
   TContract extends ContractDefinition,
-> = InferWorkflowActivities<TWorkflow> & InferActivities<TContract>;
+  TWorkflowName extends keyof TContract["workflows"],
+> = WorkerInferWorkflowActivities<TContract["workflows"][TWorkflowName]> &
+  WorkerInferActivities<TContract>;
+
+/**
+ * CLIENT PERSPECTIVE - Contract-level types
+ */
+
+/**
+ * Infer all workflows from a contract (client perspective)
+ */
+export type ClientInferWorkflows<TContract extends ContractDefinition> = {
+  [K in keyof TContract["workflows"]]: ClientInferWorkflow<TContract["workflows"][K]>;
+};
+
+/**
+ * Infer all activities from a contract (client perspective)
+ */
+export type ClientInferActivities<TContract extends ContractDefinition> =
+  TContract["activities"] extends Record<string, ActivityDefinition>
+    ? {
+        [K in keyof TContract["activities"]]: ClientInferActivity<TContract["activities"][K]>;
+      }
+    : {};
+
+/**
+ * Infer activities from a workflow definition (client perspective)
+ */
+export type ClientInferWorkflowActivities<T extends WorkflowDefinition> =
+  T["activities"] extends Record<string, ActivityDefinition>
+    ? {
+        [K in keyof T["activities"]]: ClientInferActivity<T["activities"][K]>;
+      }
+    : {};
+
+/**
+ * Infer signals from a workflow definition (client perspective)
+ */
+export type ClientInferWorkflowSignals<T extends WorkflowDefinition> =
+  T["signals"] extends Record<string, SignalDefinition>
+    ? {
+        [K in keyof T["signals"]]: ClientInferSignal<T["signals"][K]>;
+      }
+    : {};
+
+/**
+ * Infer queries from a workflow definition (client perspective)
+ */
+export type ClientInferWorkflowQueries<T extends WorkflowDefinition> =
+  T["queries"] extends Record<string, QueryDefinition>
+    ? {
+        [K in keyof T["queries"]]: ClientInferQuery<T["queries"][K]>;
+      }
+    : {};
+
+/**
+ * Infer updates from a workflow definition (client perspective)
+ */
+export type ClientInferWorkflowUpdates<T extends WorkflowDefinition> =
+  T["updates"] extends Record<string, UpdateDefinition>
+    ? {
+        [K in keyof T["updates"]]: ClientInferUpdate<T["updates"][K]>;
+      }
+    : {};
+
+/**
+ * Infer all activities available in a workflow context (client perspective)
+ * Combines workflow-specific activities with global activities
+ */
+export type ClientInferWorkflowContextActivities<
+  TContract extends ContractDefinition,
+  TWorkflow extends TContract["workflows"][keyof TContract["workflows"]],
+> = ClientInferWorkflowActivities<TWorkflow> & ClientInferActivities<TContract>;

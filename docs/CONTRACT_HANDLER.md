@@ -6,8 +6,8 @@ The `@temporal-contract/worker` package provides two main functions for implemen
 
 ### Two-Part Architecture
 
-1. **`createActivitiesHandler`** - Implements all activities (global + workflow-specific) for the Temporal Worker
-2. **`createWorkflow`** - Implements individual workflows in separate files with typed context
+1. **`declareActivitiesHandler`** - Implements all activities (global + workflow-specific) for the Temporal Worker
+2. **`declareWorkflow`** - Implements individual workflows in separate files with typed context
 
 This separation follows Temporal's architecture where workflows must be loaded via `workflowsPath`.
 
@@ -19,10 +19,10 @@ Create a handler for all activities (used by the Worker):
 
 ```typescript
 // activities/index.ts
-import { createActivitiesHandler } from '@temporal-contract/worker';
+import { declareActivitiesHandler } from '@temporal-contract/worker';
 import myContract from '../contract';
 
-export const activitiesHandler = createActivitiesHandler({
+export const activitiesHandler = declareActivitiesHandler({
   contract: myContract,
   activities: {
     // Global activities (available in all workflows)
@@ -56,10 +56,10 @@ Create each workflow in its own file:
 
 ```typescript
 // workflows/processOrder.ts
-import { createWorkflow } from '@temporal-contract/worker';
+import { declareWorkflow } from '@temporal-contract/worker';
 import myContract from '../contract';
 
-export const processOrder = createWorkflow({
+export const processOrder = declareWorkflow({
   definition: myContract.workflows.processOrder,
   contract: myContract,
   implementation: async (context, orderId, customerId) => {
@@ -95,10 +95,10 @@ export const processOrder = createWorkflow({
 
 ```typescript
 // workflows/cancelOrder.ts
-import { createWorkflow } from '@temporal-contract/worker';
+import { declareWorkflow } from '@temporal-contract/worker';
 import myContract from '../contract';
 
-export const cancelOrder = createWorkflow({
+export const cancelOrder = declareWorkflow({
   definition: myContract.workflows.cancelOrder,
   contract: myContract,
   implementation: async (context, orderId) => {
@@ -206,13 +206,13 @@ export default contract({
 ### activities/index.ts
 
 ```typescript
-import { createActivitiesHandler } from '@temporal-contract/worker';
+import { declareActivitiesHandler } from '@temporal-contract/worker';
 import myContract from '../contract';
 import { sendEmail, logEvent } from './email';
 import { validateInventory } from './inventory';
 import { chargePayment } from './payment';
 
-export const activitiesHandler = createActivitiesHandler({
+export const activitiesHandler = declareActivitiesHandler({
   contract: myContract,
   activities: {
     // Global activities
@@ -243,10 +243,10 @@ export async function logEvent(eventName: string, data: any) {
 ### workflows/processOrder.ts
 
 ```typescript
-import { createWorkflow } from '@temporal-contract/worker';
+import { declareWorkflow } from '@temporal-contract/worker';
 import myContract from '../contract';
 
-export const processOrder = createWorkflow({
+export const processOrder = declareWorkflow({
   definition: myContract.workflows.processOrder,
   contract: myContract,
   implementation: async (context, orderId, customerId) => {
@@ -298,7 +298,7 @@ await worker.run();
 TypeScript ensures all activities are implemented:
 
 ```typescript
-const activitiesHandler = createActivitiesHandler({
+const activitiesHandler = declareActivitiesHandler({
   contract: myContract,
   activities: {
     sendEmail: /* ... */,
@@ -320,7 +320,7 @@ type ProcessOrderWorkflow = typeof myContract.workflows.processOrder;
 type Contract = typeof myContract;
 
 // Option 1: Function signature with explicit types
-export const processOrder = createWorkflow({
+export const processOrder = declareWorkflow({
   definition: myContract.workflows.processOrder,
   contract: myContract,
   implementation: async (
@@ -338,7 +338,7 @@ const processOrderImpl: WorkflowImplementation<ProcessOrderWorkflow, Contract> =
     // Everything typed
   };
 
-export const processOrder = createWorkflow({
+export const processOrder = declareWorkflow({
   definition: myContract.workflows.processOrder,
   contract: myContract,
   implementation: processOrderImpl,
@@ -352,7 +352,7 @@ All implementations are wrapped with Zod validation:
 ### Workflow Validation
 
 ```typescript
-export const processOrder = createWorkflow({
+export const processOrder = declareWorkflow({
   definition: myContract.workflows.processOrder,
   contract: myContract,
   implementation: async (context, orderId, customerId) => {
@@ -367,7 +367,7 @@ export const processOrder = createWorkflow({
 ### Activity Validation
 
 ```typescript
-const activitiesHandler = createActivitiesHandler({
+const activitiesHandler = declareActivitiesHandler({
   contract: myContract,
   activities: {
     chargePayment: async (customerId, amount) => {
@@ -403,10 +403,10 @@ Each workflow should be in its own file for better organization and to work prop
 ```typescript
 // ✅ Good: Each workflow in its own file
 // workflows/processOrder.ts
-export const processOrder = createWorkflow({ /* ... */ });
+export const processOrder = declareWorkflow({ /* ... */ });
 
 // workflows/cancelOrder.ts
-export const cancelOrder = createWorkflow({ /* ... */ });
+export const cancelOrder = declareWorkflow({ /* ... */ });
 ```
 
 ### 2. Group Activities by Domain
@@ -434,7 +434,7 @@ Add explicit types for better IDE support:
 ```typescript
 import type { WorkflowContext } from '@temporal-contract/worker';
 
-export const processOrder = createWorkflow({
+export const processOrder = declareWorkflow({
   definition: myContract.workflows.processOrder,
   contract: myContract,
   implementation: async (
@@ -455,7 +455,7 @@ export const processOrder = createWorkflow({
 Set sensible defaults for workflow activities:
 
 ```typescript
-export const processOrder = createWorkflow({
+export const processOrder = declareWorkflow({
   definition: myContract.workflows.processOrder,
   contract: myContract,
   implementation: async (context, orderId, customerId) => { /* ... */ },
@@ -491,7 +491,7 @@ export default contract({
 // activities/orders.ts
 import ordersContract from '../contracts/orders';
 
-export const ordersActivitiesHandler = createActivitiesHandler({
+export const ordersActivitiesHandler = declareActivitiesHandler({
   contract: ordersContract,
   activities: { /* ... */ },
 });
@@ -499,7 +499,7 @@ export const ordersActivitiesHandler = createActivitiesHandler({
 // activities/payments.ts
 import paymentsContract from '../contracts/payments';
 
-export const paymentsActivitiesHandler = createActivitiesHandler({
+export const paymentsActivitiesHandler = declareActivitiesHandler({
   contract: paymentsContract,
   activities: { /* ... */ },
 });
@@ -507,7 +507,7 @@ export const paymentsActivitiesHandler = createActivitiesHandler({
 // workflows/orders/processOrder.ts
 import ordersContract from '../../contracts/orders';
 
-export const processOrder = createWorkflow({
+export const processOrder = declareWorkflow({
   definition: ordersContract.workflows.processOrder,
   contract: ordersContract,
   implementation: async (context, orderId) => { /* ... */ },

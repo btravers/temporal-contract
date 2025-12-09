@@ -3,13 +3,20 @@ import { z } from "zod";
 import type {
   ActivityDefinition,
   ContractDefinition,
-  InferActivity,
-  InferInput,
-  InferOutput,
-  InferQuery,
-  InferSignal,
-  InferUpdate,
-  InferWorkflow,
+  WorkerInferActivity,
+  WorkerInferInput,
+  WorkerInferOutput,
+  WorkerInferQuery,
+  WorkerInferSignal,
+  WorkerInferUpdate,
+  WorkerInferWorkflow,
+  ClientInferActivity,
+  ClientInferInput,
+  ClientInferOutput,
+  ClientInferQuery,
+  ClientInferSignal,
+  ClientInferUpdate,
+  ClientInferWorkflow,
   QueryDefinition,
   SignalDefinition,
   UpdateDefinition,
@@ -34,7 +41,7 @@ describe("Core Types", () => {
         output: z.object({ transactionId: z.string() }),
       } satisfies ActivityDefinition;
 
-      type Input = InferInput<typeof activityDef>;
+      type Input = WorkerInferInput<typeof activityDef>;
       const input: Input = { orderId: "123", amount: 100 };
 
       expect(input.orderId).toBe("123");
@@ -47,7 +54,7 @@ describe("Core Types", () => {
         output: z.object({ success: z.boolean(), transactionId: z.string() }),
       } satisfies ActivityDefinition;
 
-      type Output = InferOutput<typeof activityDef>;
+      type Output = WorkerInferOutput<typeof activityDef>;
       const output: Output = { success: true, transactionId: "tx-123" };
 
       expect(output.success).toBe(true);
@@ -64,18 +71,18 @@ describe("Core Types", () => {
       expect(signalDef.input).toBeDefined();
     });
 
-    it("should infer correct signal handler type", () => {
+    it("should infer correct signal handler type", async () => {
       const signalDef = {
         input: z.object({ itemId: z.string(), quantity: z.number() }),
       } satisfies SignalDefinition;
 
-      type Handler = InferSignal<typeof signalDef>;
-      const handler: Handler = (args) => {
+      type Handler = WorkerInferSignal<typeof signalDef>;
+      const handler: Handler = async (args: WorkerInferInput<typeof signalDef>) => {
         expect(args.itemId).toBeDefined();
         expect(args.quantity).toBeDefined();
       };
 
-      handler({ itemId: "item-1", quantity: 5 });
+      await handler({ itemId: "item-1", quantity: 5 });
     });
   });
 
@@ -90,18 +97,18 @@ describe("Core Types", () => {
       expect(queryDef.output).toBeDefined();
     });
 
-    it("should infer correct query handler type", () => {
+    it("should infer correct query handler type", async () => {
       const queryDef = {
         input: z.object({}),
         output: z.object({ status: z.string(), progress: z.number() }),
       } satisfies QueryDefinition;
 
-      type Handler = InferQuery<typeof queryDef>;
-      const handler: Handler = async (_args) => {
+      type Handler = WorkerInferQuery<typeof queryDef>;
+      const handler: Handler = async (_args: WorkerInferInput<typeof queryDef>) => {
         return { status: "running", progress: 50 };
       };
 
-      expect(handler({})).resolves.toEqual({ status: "running", progress: 50 });
+      await expect(handler({})).resolves.toEqual({ status: "running", progress: 50 });
     });
   });
 
@@ -116,18 +123,18 @@ describe("Core Types", () => {
       expect(updateDef.output).toBeDefined();
     });
 
-    it("should infer correct update handler type", () => {
+    it("should infer correct update handler type", async () => {
       const updateDef = {
         input: z.object({ percentage: z.number() }),
         output: z.object({ applied: z.boolean(), newAmount: z.number() }),
       } satisfies UpdateDefinition;
 
-      type Handler = InferUpdate<typeof updateDef>;
-      const handler: Handler = async (args) => {
+      type Handler = WorkerInferUpdate<typeof updateDef>;
+      const handler: Handler = async (args: WorkerInferInput<typeof updateDef>) => {
         return { applied: true, newAmount: 100 * (1 - args.percentage / 100) };
       };
 
-      expect(handler({ percentage: 10 })).resolves.toEqual({
+      await expect(handler({ percentage: 10 })).resolves.toEqual({
         applied: true,
         newAmount: 90,
       });
@@ -180,20 +187,20 @@ describe("Core Types", () => {
       expect(workflowDef.updates).toBeDefined();
     });
 
-    it("should infer correct workflow function type", () => {
+    it("should infer correct workflow function type", async () => {
       const workflowDef = {
         input: z.object({ orderId: z.string(), customerId: z.string() }),
         output: z.object({ status: z.string(), total: z.number() }),
       } satisfies WorkflowDefinition;
 
-      type WorkflowFn = InferWorkflow<typeof workflowDef>;
-      const workflow: WorkflowFn = async (args) => {
+      type WorkflowFn = WorkerInferWorkflow<typeof workflowDef>;
+      const workflow: WorkflowFn = async (args: WorkerInferInput<typeof workflowDef>) => {
         expect(args.orderId).toBeDefined();
         expect(args.customerId).toBeDefined();
         return { status: "completed", total: 100 };
       };
 
-      expect(workflow({ orderId: "123", customerId: "456" })).resolves.toEqual({
+      await expect(workflow({ orderId: "123", customerId: "456" })).resolves.toEqual({
         status: "completed",
         total: 100,
       });
@@ -202,7 +209,7 @@ describe("Core Types", () => {
 
   describe("ContractDefinition", () => {
     it("should correctly define a contract", () => {
-      const contractDef: ContractDefinition = {
+      const contractDef = {
         taskQueue: "test-queue",
         workflows: {
           processOrder: {
@@ -216,7 +223,7 @@ describe("Core Types", () => {
             output: z.object({ sent: z.boolean() }),
           },
         },
-      };
+      } satisfies ContractDefinition<any, any>;
 
       expect(contractDef.taskQueue).toBe("test-queue");
       expect(contractDef.workflows).toBeDefined();
@@ -224,7 +231,7 @@ describe("Core Types", () => {
     });
 
     it("should support optional activities", () => {
-      const contractDef: ContractDefinition = {
+      const contractDef = {
         taskQueue: "test-queue",
         workflows: {
           simpleWorkflow: {
@@ -232,31 +239,208 @@ describe("Core Types", () => {
             output: z.object({ result: z.string() }),
           },
         },
-      };
+      } satisfies ContractDefinition<any, any>;
 
       expect(contractDef.taskQueue).toBe("test-queue");
       expect(contractDef.workflows).toBeDefined();
-      expect(contractDef.activities).toBeUndefined();
+      expect((contractDef as any).activities).toBeUndefined();
     });
   });
 
-  describe("InferActivity", () => {
-    it("should correctly infer activity function signature", () => {
+  describe("WorkerInferActivity", () => {
+    it("should correctly infer activity function signature", async () => {
       const activityDef = {
         input: z.object({ orderId: z.string(), amount: z.number() }),
         output: z.object({ transactionId: z.string(), success: z.boolean() }),
       } satisfies ActivityDefinition;
 
-      type ActivityFn = InferActivity<typeof activityDef>;
-      const activity: ActivityFn = async (args) => {
+      type ActivityFn = WorkerInferActivity<typeof activityDef>;
+      const activity: ActivityFn = async (args: WorkerInferInput<typeof activityDef>) => {
         expect(args.orderId).toBeDefined();
         expect(args.amount).toBeDefined();
         return { transactionId: "tx-123", success: true };
       };
 
-      expect(activity({ orderId: "123", amount: 100 })).resolves.toEqual({
+      await expect(activity({ orderId: "123", amount: 100 })).resolves.toEqual({
         transactionId: "tx-123",
         success: true,
+      });
+    });
+  });
+
+  describe("Worker vs Client Perspective", () => {
+    describe("with z.transform", () => {
+      it("should correctly infer worker and client types for activities with transformations", async () => {
+        const activityDef = {
+          input: z.string().transform(Number),
+          output: z.number().transform(String),
+        } satisfies ActivityDefinition;
+
+        // Worker receives number (z.output of input, after parsing) and returns number (z.input of output, before serialization)
+        type WorkerInput = WorkerInferInput<typeof activityDef>;
+        type WorkerOutput = WorkerInferOutput<typeof activityDef>;
+
+        const workerInput: WorkerInput = 123;
+        const workerOutput: WorkerOutput = 456;
+
+        expect(workerInput).toBe(123);
+        expect(workerOutput).toBe(456);
+
+        // Client sends string (z.input of input, before parsing) and receives string (z.output of output, after serialization)
+        type ClientInput = ClientInferInput<typeof activityDef>;
+        type ClientOutput = ClientInferOutput<typeof activityDef>;
+
+        const clientInput: ClientInput = "123";
+        const clientOutput: ClientOutput = "456";
+
+        expect(clientInput).toBe("123");
+        expect(clientOutput).toBe("456");
+      });
+
+      it("should correctly infer worker workflow signature", async () => {
+        const workflowDef = {
+          input: z.object({ amount: z.string().transform(Number) }),
+          output: z.object({ result: z.number().transform(String) }),
+        } satisfies WorkflowDefinition;
+
+        type WorkerFn = WorkerInferWorkflow<typeof workflowDef>;
+        const workerWorkflow: WorkerFn = async (args: WorkerInferInput<typeof workflowDef>) => {
+          expect(args.amount).toBe(100);
+          return { result: 200 };
+        };
+
+        await expect(workerWorkflow({ amount: 100 })).resolves.toEqual({ result: 200 });
+      });
+
+      it("should correctly infer client workflow signature", async () => {
+        const workflowDef = {
+          input: z.object({ amount: z.string().transform(Number) }),
+          output: z.object({ result: z.number().transform(String) }),
+        } satisfies WorkflowDefinition;
+
+        type ClientFn = ClientInferWorkflow<typeof workflowDef>;
+        const clientWorkflow: ClientFn = async (args: ClientInferInput<typeof workflowDef>) => {
+          expect(args.amount).toBe("100");
+          return { result: "200" };
+        };
+
+        await expect(clientWorkflow({ amount: "100" })).resolves.toEqual({ result: "200" });
+      });
+
+      it("should correctly infer worker signal signature", async () => {
+        const signalDef = {
+          input: z.object({ value: z.string().transform(Number) }),
+        } satisfies SignalDefinition;
+
+        type WorkerHandler = WorkerInferSignal<typeof signalDef>;
+        const workerSignal: WorkerHandler = async (args: WorkerInferInput<typeof signalDef>) => {
+          expect(args.value).toBe(42);
+        };
+
+        await workerSignal({ value: 42 });
+      });
+
+      it("should correctly infer client signal signature", async () => {
+        const signalDef = {
+          input: z.object({ value: z.string().transform(Number) }),
+        } satisfies SignalDefinition;
+
+        type ClientHandler = ClientInferSignal<typeof signalDef>;
+        const clientSignal: ClientHandler = async (args: ClientInferInput<typeof signalDef>) => {
+          expect(args.value).toBe("42");
+        };
+
+        await clientSignal({ value: "42" });
+      });
+
+      it("should correctly infer worker query signature", async () => {
+        const queryDef = {
+          input: z.object({ id: z.string().transform(Number) }),
+          output: z.object({ value: z.number().transform(String) }),
+        } satisfies QueryDefinition;
+
+        type WorkerHandler = WorkerInferQuery<typeof queryDef>;
+        const workerQuery: WorkerHandler = async (args: WorkerInferInput<typeof queryDef>) => {
+          expect(args.id).toBe(123);
+          return { value: 456 };
+        };
+
+        await expect(workerQuery({ id: 123 })).resolves.toEqual({ value: 456 });
+      });
+
+      it("should correctly infer client query signature", async () => {
+        const queryDef = {
+          input: z.object({ id: z.string().transform(Number) }),
+          output: z.object({ value: z.number().transform(String) }),
+        } satisfies QueryDefinition;
+
+        type ClientHandler = ClientInferQuery<typeof queryDef>;
+        const clientQuery: ClientHandler = async (args: ClientInferInput<typeof queryDef>) => {
+          expect(args.id).toBe("123");
+          return { value: "456" };
+        };
+
+        await expect(clientQuery({ id: "123" })).resolves.toEqual({ value: "456" });
+      });
+
+      it("should correctly infer worker update signature", async () => {
+        const updateDef = {
+          input: z.object({ value: z.string().transform(Number) }),
+          output: z.object({ result: z.number().transform(String) }),
+        } satisfies UpdateDefinition;
+
+        type WorkerHandler = WorkerInferUpdate<typeof updateDef>;
+        const workerUpdate: WorkerHandler = async (args: WorkerInferInput<typeof updateDef>) => {
+          expect(args.value).toBe(10);
+          return { result: 20 };
+        };
+
+        await expect(workerUpdate({ value: 10 })).resolves.toEqual({ result: 20 });
+      });
+
+      it("should correctly infer client update signature", async () => {
+        const updateDef = {
+          input: z.object({ value: z.string().transform(Number) }),
+          output: z.object({ result: z.number().transform(String) }),
+        } satisfies UpdateDefinition;
+
+        type ClientHandler = ClientInferUpdate<typeof updateDef>;
+        const clientUpdate: ClientHandler = async (args: ClientInferInput<typeof updateDef>) => {
+          expect(args.value).toBe("10");
+          return { result: "20" };
+        };
+
+        await expect(clientUpdate({ value: "10" })).resolves.toEqual({ result: "20" });
+      });
+
+      it("should correctly infer worker activity signature", async () => {
+        const activityDef = {
+          input: z.object({ amount: z.string().transform(Number) }),
+          output: z.object({ total: z.number().transform(String) }),
+        } satisfies ActivityDefinition;
+
+        type WorkerFn = WorkerInferActivity<typeof activityDef>;
+        const workerActivity: WorkerFn = async (args: WorkerInferInput<typeof activityDef>) => {
+          expect(args.amount).toBe(100);
+          return { total: 200 };
+        };
+
+        await expect(workerActivity({ amount: 100 })).resolves.toEqual({ total: 200 });
+      });
+
+      it("should correctly infer client activity signature", async () => {
+        const activityDef = {
+          input: z.object({ amount: z.string().transform(Number) }),
+          output: z.object({ total: z.number().transform(String) }),
+        } satisfies ActivityDefinition;
+
+        type ClientFn = ClientInferActivity<typeof activityDef>;
+        const clientActivity: ClientFn = async (args: ClientInferInput<typeof activityDef>) => {
+          expect(args.amount).toBe("100");
+          return { total: "200" };
+        };
+
+        await expect(clientActivity({ amount: "100" })).resolves.toEqual({ total: "200" });
       });
     });
   });

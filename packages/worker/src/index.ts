@@ -1,5 +1,4 @@
-export { createActivitiesHandler, createWorkflow } from "./handler.js";
-
+export { declareActivitiesHandler, declareWorkflow } from "./handler.js";
 export type {
   WorkflowContext,
   WorkflowImplementation,
@@ -8,7 +7,7 @@ export type {
   QueryHandlerImplementation,
   UpdateHandlerImplementation,
   ActivityImplementations,
-  CreateActivitiesHandlerOptions,
+  DeclareActivitiesHandlerOptions,
   ActivitiesHandler,
-  CreateWorkflowOptions,
+  DeclareWorkflowOptions,
 } from "./handler.js";

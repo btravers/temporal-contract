@@ -1,4 +1,4 @@
-import { type WorkflowImplementation, createWorkflow } from "@temporal-contract/worker";
+import { type WorkflowImplementation, declareWorkflow } from "@temporal-contract/worker";
 import { orderProcessingContract } from "../contract.js";
 import type {
   InventoryResult,
@@ -155,7 +155,7 @@ const implementation: WorkflowImplementation<
 /**
  * Export the workflow for Temporal Worker
  */
-export const processOrder = createWorkflow({
+export const processOrder = declareWorkflow({
   definition: orderProcessingContract.workflows.processOrder,
   contract: orderProcessingContract,
   implementation,

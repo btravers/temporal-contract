@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { createActivitiesHandler, createWorkflow } from "./handler.js";
+import { declareActivitiesHandler, declareWorkflow } from "./handler.js";
 import type { ContractDefinition, WorkflowDefinition } from "@temporal-contract/core";
 
 // Mock Temporal workflow functions
@@ -20,7 +20,7 @@ vi.mock("@temporalio/workflow", () => ({
 }));
 
 describe("Worker Package", () => {
-  describe("createActivitiesHandler", () => {
+  describe("declareActivitiesHandler", () => {
     it("should create an activities handler with validation", () => {
       const contract = {
         taskQueue: "test-queue",
@@ -38,7 +38,7 @@ describe("Worker Package", () => {
         },
       } satisfies ContractDefinition;
 
-      const handler = createActivitiesHandler({
+      const handler = declareActivitiesHandler({
         contract,
         activities: {
           sendEmail: async (args) => {
@@ -65,7 +65,7 @@ describe("Worker Package", () => {
         },
       } satisfies ContractDefinition;
 
-      const handler = createActivitiesHandler({
+      const handler = declareActivitiesHandler({
         contract,
         activities: {
           processPayment: async (args) => {
@@ -96,7 +96,7 @@ describe("Worker Package", () => {
         },
       } satisfies ContractDefinition;
 
-      const handler = createActivitiesHandler({
+      const handler = declareActivitiesHandler({
         contract,
         activities: {
           fetchData: async (_args) => {
@@ -126,7 +126,7 @@ describe("Worker Package", () => {
         },
       } satisfies ContractDefinition;
 
-      const handler = createActivitiesHandler({
+      const handler = declareActivitiesHandler({
         contract,
         activities: {
           validateInventory: async (_args) => {
@@ -139,7 +139,7 @@ describe("Worker Package", () => {
     });
   });
 
-  describe("createWorkflow", () => {
+  describe("declareWorkflow", () => {
     const testWorkflowDef = {
       input: z.object({ orderId: z.string(), amount: z.number() }),
       output: z.object({ status: z.string(), total: z.number() }),
@@ -153,7 +153,7 @@ describe("Worker Package", () => {
     } satisfies ContractDefinition;
 
     it("should create a workflow with validation", () => {
-      const workflow = createWorkflow({
+      const workflow = declareWorkflow({
         definition: testWorkflowDef,
         contract: testContract,
         implementation: async (_context, args) => {
@@ -166,7 +166,7 @@ describe("Worker Package", () => {
     });
 
     it("should validate workflow input", async () => {
-      const workflow = createWorkflow({
+      const workflow = declareWorkflow({
         definition: testWorkflowDef,
         contract: testContract,
         implementation: async (_context, args) => {
@@ -184,7 +184,7 @@ describe("Worker Package", () => {
     });
 
     it("should validate workflow output", async () => {
-      const workflow = createWorkflow({
+      const workflow = declareWorkflow({
         definition: testWorkflowDef,
         contract: testContract,
         implementation: async (_context, _args) => {
@@ -195,7 +195,7 @@ describe("Worker Package", () => {
       await expect(workflow([{ orderId: "123", amount: 100 }] as any)).rejects.toThrow();
     });
 
-    it("should support signal handlers", () => {
+    it("should register signal handlers", async () => {
       const workflowDef = {
         ...testWorkflowDef,
         signals: {
@@ -207,9 +207,16 @@ describe("Worker Package", () => {
 
       const cancelHandler = vi.fn();
 
-      const workflow = createWorkflow({
+      const contractWithSignals = {
+        taskQueue: "test-queue",
+        workflows: {
+          processOrder: workflowDef,
+        },
+      } satisfies ContractDefinition;
+
+      const workflow = declareWorkflow({
         definition: workflowDef,
-        contract: testContract,
+        contract: contractWithSignals,
         implementation: async (_context, args) => {
           return { status: "completed", total: args.amount };
         },
@@ -234,9 +241,16 @@ describe("Worker Package", () => {
 
       const queryHandler = vi.fn().mockReturnValue({ status: "running", progress: 50 });
 
-      const workflow = createWorkflow({
+      const contractWithQueries = {
+        taskQueue: "test-queue",
+        workflows: {
+          processOrder: workflowDef,
+        },
+      } satisfies ContractDefinition;
+
+      const workflow = declareWorkflow({
         definition: workflowDef,
-        contract: testContract,
+        contract: contractWithQueries,
         implementation: async (_context, args) => {
           return { status: "completed", total: args.amount };
         },
@@ -261,9 +275,16 @@ describe("Worker Package", () => {
 
       const updateHandler = vi.fn().mockResolvedValue({ newTotal: 90 });
 
-      const workflow = createWorkflow({
+      const contractWithUpdates = {
+        taskQueue: "test-queue",
+        workflows: {
+          processOrder: workflowDef,
+        },
+      } satisfies ContractDefinition;
+
+      const workflow = declareWorkflow({
         definition: workflowDef,
-        contract: testContract,
+        contract: contractWithUpdates,
         implementation: async (_context, args) => {
           return { status: "completed", total: args.amount };
         },
@@ -276,7 +297,7 @@ describe("Worker Package", () => {
     });
 
     it("should handle single parameter (not array)", async () => {
-      const workflow = createWorkflow({
+      const workflow = declareWorkflow({
         definition: testWorkflowDef,
         contract: testContract,
         implementation: async (_context, args) => {

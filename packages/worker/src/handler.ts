@@ -11,12 +11,12 @@ import {
 import type {
   ActivityDefinition,
   ContractDefinition,
-  InferInput,
-  InferOutput,
-  InferWorkflowContextActivities,
   QueryDefinition,
   SignalDefinition,
   UpdateDefinition,
+  WorkerInferInput,
+  WorkerInferOutput,
+  WorkerInferWorkflowContextActivities,
   WorkflowDefinition,
 } from "@temporal-contract/core";
 
@@ -25,10 +25,10 @@ import type {
  * Note: activities is typed as 'any' to work around TypeScript generic type inference limitations with Zod tuples
  */
 export interface WorkflowContext<
-  TWorkflow extends WorkflowDefinition,
   TContract extends ContractDefinition,
+  TWorkflowName extends keyof TContract["workflows"],
 > {
-  activities: InferWorkflowContextActivities<TWorkflow, TContract>;
+  activities: WorkerInferWorkflowContextActivities<TContract, TWorkflowName>;
   info: WorkflowInfo;
 }
 
@@ -38,12 +38,12 @@ export interface WorkflowContext<
  * The actual type will be enforced at runtime by Zod validation
  */
 export type WorkflowImplementation<
-  TWorkflow extends WorkflowDefinition,
   TContract extends ContractDefinition,
+  TWorkflowName extends keyof TContract["workflows"],
 > = (
-  context: WorkflowContext<TWorkflow, TContract>,
-  args: InferInput<TWorkflow>,
-) => Promise<InferOutput<TWorkflow>>;
+  context: WorkflowContext<TContract, TWorkflowName>,
+  args: WorkerInferInput<TContract["workflows"][TWorkflowName]>,
+) => Promise<WorkerInferOutput<TContract["workflows"][TWorkflowName]>>;
 
 /**
  * Raw activity implementation function (receives typed args as tuple)
@@ -51,29 +51,29 @@ export type WorkflowImplementation<
  * The actual types will be enforced at runtime by Zod validation
  */
 export type RawActivityImplementation<TActivity extends ActivityDefinition> = (
-  args: InferInput<TActivity>,
-) => Promise<InferOutput<TActivity>>;
+  args: WorkerInferInput<TActivity>,
+) => Promise<WorkerInferOutput<TActivity>>;
 
 /**
  * Signal handler implementation
  */
 export type SignalHandlerImplementation<TSignal extends SignalDefinition> = (
-  args: InferInput<TSignal>,
+  args: WorkerInferInput<TSignal>,
 ) => void | Promise<void>;
 
 /**
  * Query handler implementation
  */
 export type QueryHandlerImplementation<TQuery extends QueryDefinition> = (
-  args: InferInput<TQuery>,
-) => InferOutput<TQuery>;
+  args: WorkerInferInput<TQuery>,
+) => WorkerInferOutput<TQuery>;
 
 /**
  * Update handler implementation
  */
 export type UpdateHandlerImplementation<TUpdate extends UpdateDefinition> = (
-  args: InferInput<TUpdate>,
-) => Promise<InferOutput<TUpdate>>;
+  args: WorkerInferInput<TUpdate>,
+) => Promise<WorkerInferOutput<TUpdate>>;
 
 /**
  * Map of all activity implementations for a contract (global + all workflow-specific)
@@ -111,7 +111,7 @@ type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
 /**
  * Options for creating activities handler
  */
-export interface CreateActivitiesHandlerOptions<T extends ContractDefinition> {
+export interface DeclareActivitiesHandlerOptions<T extends ContractDefinition> {
   contract: T;
   activities: ActivityImplementations<T>;
 }
@@ -125,15 +125,15 @@ export interface ActivitiesHandler<T extends ContractDefinition> {
 }
 
 /**
- * Options for creating a workflow implementation
+ * Options for declaring a workflow implementation
  */
-export interface CreateWorkflowOptions<
-  TWorkflow extends WorkflowDefinition,
+export interface DeclareWorkflowOptions<
   TContract extends ContractDefinition,
+  TWorkflowName extends keyof TContract["workflows"],
 > {
-  definition: TWorkflow;
+  definition: TContract["workflows"][TWorkflowName];
   contract: TContract;
-  implementation: WorkflowImplementation<TWorkflow, TContract>;
+  implementation: WorkflowImplementation<TContract, TWorkflowName>;
   /**
    * Default activity options
    */
@@ -141,25 +141,37 @@ export interface CreateWorkflowOptions<
   /**
    * Signal handlers (if defined in workflow)
    */
-  signals?: TWorkflow["signals"] extends Record<string, SignalDefinition>
+  signals?: TContract["workflows"][TWorkflowName]["signals"] extends Record<
+    string,
+    SignalDefinition
+  >
     ? {
-        [K in keyof TWorkflow["signals"]]: SignalHandlerImplementation<TWorkflow["signals"][K]>;
+        [K in keyof TContract["workflows"][TWorkflowName]["signals"]]: SignalHandlerImplementation<
+          TContract["workflows"][TWorkflowName]["signals"][K]
+        >;
       }
     : never;
   /**
    * Query handlers (if defined in workflow)
    */
-  queries?: TWorkflow["queries"] extends Record<string, QueryDefinition>
+  queries?: TContract["workflows"][TWorkflowName]["queries"] extends Record<string, QueryDefinition>
     ? {
-        [K in keyof TWorkflow["queries"]]: QueryHandlerImplementation<TWorkflow["queries"][K]>;
+        [K in keyof TContract["workflows"][TWorkflowName]["queries"]]: QueryHandlerImplementation<
+          TContract["workflows"][TWorkflowName]["queries"][K]
+        >;
       }
     : never;
   /**
    * Update handlers (if defined in workflow)
    */
-  updates?: TWorkflow["updates"] extends Record<string, UpdateDefinition>
+  updates?: TContract["workflows"][TWorkflowName]["updates"] extends Record<
+    string,
+    UpdateDefinition
+  >
     ? {
-        [K in keyof TWorkflow["updates"]]: UpdateHandlerImplementation<TWorkflow["updates"][K]>;
+        [K in keyof TContract["workflows"][TWorkflowName]["updates"]]: UpdateHandlerImplementation<
+          TContract["workflows"][TWorkflowName]["updates"][K]
+        >;
       }
     : never;
 }
@@ -171,14 +183,14 @@ export interface CreateWorkflowOptions<
  * workflow and activity execution.
  */
 function createValidatedActivities<
-  TWorkflow extends WorkflowDefinition,
   TContract extends ContractDefinition,
+  TWorkflowName extends keyof TContract["workflows"],
 >(
   rawActivities: Record<string, (...args: any[]) => Promise<any>>,
   workflowActivitiesDefinition: Record<string, ActivityDefinition> | undefined,
   contractActivitiesDefinition: Record<string, ActivityDefinition> | undefined,
-): InferWorkflowContextActivities<TWorkflow, TContract> {
-  const validatedActivities: Record<string, (...args: any[]) => Promise<any>> = {};
+): WorkerInferWorkflowContextActivities<TContract, TWorkflowName> {
+  const validatedActivities = {} as WorkerInferWorkflowContextActivities<TContract, TWorkflowName>;
 
   // Merge workflow activities and global contract activities
   const allActivitiesDefinition = {
@@ -193,6 +205,7 @@ function createValidatedActivities<
       throw new Error(`Activity implementation not found for: ${activityName}`);
     }
 
+    // @ts-expect-error fixme later
     validatedActivities[activityName] = async (...args: any[]) => {
       // Validate input before sending over network
       const validatedInput = activityDef.input.parse(args);
@@ -205,7 +218,7 @@ function createValidatedActivities<
     };
   }
 
-  return validatedActivities as InferWorkflowContextActivities<TWorkflow, TContract>;
+  return validatedActivities;
 }
 
 /**
@@ -218,10 +231,10 @@ function createValidatedActivities<
  *
  * @example
  * ```ts
- * import { createActivitiesHandler } from '@temporal-contract/worker';
+ * import { declareActivitiesHandler } from '@temporal-contract/worker';
  * import myContract from './contract';
  *
- * export const activitiesHandler = createActivitiesHandler({
+ * export const activitiesHandler = declareActivitiesHandler({
  *   contract: myContract,
  *   activities: {
  *     // Global activities
@@ -247,8 +260,8 @@ function createValidatedActivities<
  * });
  * ```
  */
-export function createActivitiesHandler<T extends ContractDefinition>(
-  options: CreateActivitiesHandlerOptions<T>,
+export function declareActivitiesHandler<T extends ContractDefinition>(
+  options: DeclareActivitiesHandlerOptions<T>,
 ): ActivitiesHandler<T> {
   const { contract, activities } = options;
 
@@ -308,10 +321,10 @@ export function createActivitiesHandler<T extends ContractDefinition>(
  * @example
  * ```ts
  * // workflows/processOrder.ts
- * import { createWorkflow } from '@temporal-contract/worker';
+ * import { declareWorkflow } from '@temporal-contract/worker';
  * import myContract from '../contract';
  *
- * export const processOrder = createWorkflow({
+ * export const processOrder = declareWorkflow({
  *   definition: myContract.workflows.processOrder,
  *   contract: myContract,
  *   implementation: async (context, orderId, customerId) => {
@@ -358,21 +371,25 @@ export function createActivitiesHandler<T extends ContractDefinition>(
  * });
  * ```
  */
-export function createWorkflow<
-  TWorkflow extends WorkflowDefinition,
+export function declareWorkflow<
   TContract extends ContractDefinition,
+  TWorkflowName extends keyof TContract["workflows"],
 >(
-  options: CreateWorkflowOptions<TWorkflow, TContract>,
-): (args: InferInput<TWorkflow>) => Promise<InferOutput<TWorkflow>> {
+  options: DeclareWorkflowOptions<TContract, TWorkflowName>,
+): (
+  args: WorkerInferInput<TContract["workflows"][TWorkflowName]>,
+) => Promise<WorkerInferOutput<TContract["workflows"][TWorkflowName]>> {
   const { definition, contract, implementation, activityOptions, signals, queries, updates } =
     options;
 
-  return async (args: any) => {
+  return async (args) => {
     // Temporal passes args as array, extract first element which is our single parameter
     const singleArg = Array.isArray(args) ? args[0] : args;
 
     // Validate workflow input
-    const validatedInput = definition.input.parse(singleArg) as any;
+    const validatedInput = definition.input.parse(singleArg) as WorkerInferInput<
+      TContract["workflows"][TWorkflowName]
+    >;
 
     // Register signal handlers
     if (definition.signals && signals) {
@@ -450,7 +467,7 @@ export function createWorkflow<
     }
 
     // Create workflow context
-    const context: WorkflowContext<TWorkflow, TContract> = {
+    const context: WorkflowContext<TContract, TWorkflowName> = {
       activities: contextActivities,
       info: workflowInfo(),
     };
@@ -459,6 +476,8 @@ export function createWorkflow<
     const result = await implementation(context, validatedInput);
 
     // Validate workflow output
-    return definition.output.parse(result) as InferOutput<TWorkflow>;
+    return definition.output.parse(result) as WorkerInferOutput<
+      TContract["workflows"][TWorkflowName]
+    >;
   };
 }

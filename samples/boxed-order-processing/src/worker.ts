@@ -1,5 +1,5 @@
 import { Worker } from "@temporalio/worker";
-import { createBoxedActivitiesHandler } from "@temporal-contract/worker-boxed";
+import { declareActivitiesHandler } from "@temporal-contract/worker-boxed";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { activities } from "./activities/index.js";
@@ -22,7 +22,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 async function run() {
   // Create activities handler with Result pattern
-  const activitiesHandler = createBoxedActivitiesHandler({
+  const activitiesHandler = declareActivitiesHandler({
     contract: boxedOrderContract,
     activities,
   });

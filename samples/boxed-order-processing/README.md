@@ -68,7 +68,7 @@ boxed-order-processing/
 │   │   └── index.ts          # Activities using Result/Future pattern
 │   ├── workflows/
 │   │   └── processOrder.ts   # Workflow (similar to standard)
-│   ├── worker.ts             # Worker using createBoxedActivitiesHandler
+│   ├── worker.ts             # Worker using declareActivitiesHandler
 │   └── client.ts             # Client (identical to standard)
 ├── package.json
 ├── tsconfig.json
@@ -231,7 +231,7 @@ Future.make((resolve) => {
 
 ### Automatic Unwrapping
 
-The `createBoxedActivitiesHandler` automatically:
+The `declareActivitiesHandler` automatically:
 
 1. Validates activity inputs (Zod)
 2. Executes activity returning `Future<Result<T, E>>`

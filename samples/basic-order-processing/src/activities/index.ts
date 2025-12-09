@@ -1,4 +1,4 @@
-import { createActivitiesHandler } from "@temporal-contract/worker";
+import { declareActivitiesHandler } from "@temporal-contract/worker";
 import { orderProcessingContract } from "../contract.js";
 import type { InventoryResult, PaymentResult, ShippingResult } from "../contract.js";
 
@@ -118,7 +118,7 @@ const createShipment = async ({
 /**
  * Create the activities handler with all global and workflow-specific activities
  */
-export const activitiesHandler = createActivitiesHandler({
+export const activitiesHandler = declareActivitiesHandler({
   contract: orderProcessingContract,
   activities: {
     // Global activities (from contract.activities)

@@ -38,9 +38,7 @@
   "scripts": {
     "dev": "tsdown src/index.ts --format cjs,esm --dts --watch",
     "build": "tsdown src/index.ts --format cjs,esm --dts --clean",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@temporal-contract/core": "workspace:*"

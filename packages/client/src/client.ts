@@ -1,21 +1,17 @@
 import { Client, WorkflowHandle } from "@temporalio/client";
-import { Entries } from "type-fest";
 import type { ClientOptions } from "@temporalio/client";
 import type {
+  ClientInferInput,
+  ClientInferOutput,
+  ClientInferWorkflowQueries,
+  ClientInferWorkflowSignals,
+  ClientInferWorkflowUpdates,
   ContractDefinition,
-  InferInput,
-  InferOutput,
-  InferWorkflowQueries,
-  InferWorkflowSignals,
-  InferWorkflowUpdates,
   WorkflowDefinition,
+  QueryDefinition,
+  SignalDefinition,
+  UpdateDefinition,
 } from "@temporal-contract/core";
-
-declare global {
-  interface ObjectConstructor {
-    entries<T extends object>(o: T): Entries<T>;
-  }
-}
 
 /**
  * Typed workflow handle with validated results, queries, signals and updates
@@ -26,19 +22,19 @@ export interface TypedWorkflowHandle<TWorkflow extends WorkflowDefinition> {
   /**
    * Type-safe queries based on workflow definition
    */
-  queries: InferWorkflowQueries<TWorkflow>;
+  queries: ClientInferWorkflowQueries<TWorkflow>;
 
   /**
    * Type-safe signals based on workflow definition
    */
-  signals: InferWorkflowSignals<TWorkflow>;
+  signals: ClientInferWorkflowSignals<TWorkflow>;
 
   /**
    * Type-safe updates based on workflow definition
    */
-  updates: InferWorkflowUpdates<TWorkflow>;
+  updates: ClientInferWorkflowUpdates<TWorkflow>;
 
-  result: () => Promise<InferOutput<TWorkflow>>;
+  result: () => Promise<ClientInferOutput<TWorkflow>>;
   terminate: (reason?: string) => Promise<void>;
   cancel: () => Promise<void>;
 }
@@ -93,24 +89,24 @@ export class TypedClient<TContract extends ContractDefinition> {
    * const result = await handle.result();
    * ```
    */
-  async startWorkflow<TWorkflowName extends keyof TContract["workflows"] & string>(
+  async startWorkflow<TWorkflowName extends keyof TContract["workflows"]>(
     workflowName: TWorkflowName,
     options: {
       workflowId: string;
-      args: InferInput<TContract["workflows"][TWorkflowName]>;
+      args: ClientInferInput<TContract["workflows"][TWorkflowName]>;
     },
   ): Promise<TypedWorkflowHandle<TContract["workflows"][TWorkflowName]>> {
-    const definition = this.contract.workflows[workflowName];
+    const definition = this.contract.workflows[workflowName as string];
 
     if (!definition) {
-      throw new Error(`Workflow definition not found for: ${workflowName}`);
+      throw new Error(`Workflow definition not found for: ${String(workflowName)}`);
     }
 
     // Validate input with Zod schema (tuple)
     const validatedInput = definition.input.parse(options.args);
 
     // Start workflow (Temporal expects args as array, so wrap single parameter)
-    const handle = await this.client.workflow.start(workflowName, {
+    const handle = await this.client.workflow.start(workflowName as string, {
       workflowId: options.workflowId,
       taskQueue: this.contract.taskQueue,
       args: [validatedInput],
@@ -134,31 +130,31 @@ export class TypedClient<TContract extends ContractDefinition> {
    * console.log(result.status); // fully typed!
    * ```
    */
-  async executeWorkflow<TWorkflowName extends keyof TContract["workflows"] & string>(
+  async executeWorkflow<TWorkflowName extends keyof TContract["workflows"]>(
     workflowName: TWorkflowName,
     options: {
       workflowId: string;
-      args: InferInput<TContract["workflows"][TWorkflowName]>;
+      args: ClientInferInput<TContract["workflows"][TWorkflowName]>;
     },
-  ): Promise<InferOutput<TContract["workflows"][TWorkflowName]>> {
-    const definition = this.contract.workflows[workflowName];
+  ): Promise<ClientInferOutput<TContract["workflows"][TWorkflowName]>> {
+    const definition = this.contract.workflows[workflowName as string];
 
     if (!definition) {
-      throw new Error(`Workflow definition not found for: ${workflowName}`);
+      throw new Error(`Workflow definition not found for: ${String(workflowName)}`);
     }
 
     // Validate input with Zod schema
     const validatedInput = definition.input.parse(options.args);
 
     // Execute workflow (Temporal expects args as array, so wrap single parameter)
-    const result = await this.client.workflow.execute(workflowName, {
+    const result = await this.client.workflow.execute(workflowName as string, {
       workflowId: options.workflowId,
       taskQueue: this.contract.taskQueue,
       args: [validatedInput],
     });
 
     // Validate output with Zod schema
-    return definition.output.parse(result) as InferOutput<TContract["workflows"][TWorkflowName]>;
+    return definition.output.parse(result) as any;
   }
 
   /**
@@ -170,14 +166,14 @@ export class TypedClient<TContract extends ContractDefinition> {
    * const result = await handle.result();
    * ```
    */
-  async getHandle<TWorkflowName extends keyof TContract["workflows"] & string>(
+  async getHandle<TWorkflowName extends keyof TContract["workflows"]>(
     workflowName: TWorkflowName,
     workflowId: string,
   ): Promise<TypedWorkflowHandle<TContract["workflows"][TWorkflowName]>> {
-    const definition = this.contract.workflows[workflowName];
+    const definition = this.contract.workflows[workflowName as string];
 
     if (!definition) {
-      throw new Error(`Workflow definition not found for: ${workflowName}`);
+      throw new Error(`Workflow definition not found for: ${String(workflowName)}`);
     }
 
     const handle = this.client.workflow.getHandle(workflowId);
@@ -191,44 +187,41 @@ export class TypedClient<TContract extends ContractDefinition> {
     definition: TWorkflow,
   ): TypedWorkflowHandle<TWorkflow> {
     // Create typed queries proxy
-    const queries = {} as InferWorkflowQueries<TWorkflow>;
-    if (definition.queries) {
-      for (const [queryName, queryDef] of Object.entries(definition.queries)) {
-        // @ts-expect-error fixme later
-        queries[queryName] = async (args: InferInput<typeof queryDef>) => {
-          const validatedInput = queryDef.input.parse(args);
-          const result = await handle.query(queryName, validatedInput);
-          return queryDef.output.parse(result);
-        };
-      }
+    const queries = {} as ClientInferWorkflowQueries<TWorkflow>;
+    for (const [queryName, queryDef] of Object.entries(definition.queries ?? {}) as Array<
+      [string, QueryDefinition]
+    >) {
+      (queries as any)[queryName] = async (args: ClientInferInput<typeof queryDef>) => {
+        const validatedInput = queryDef.input.parse(args);
+        const result = await handle.query(queryName as string, validatedInput);
+        return queryDef.output.parse(result);
+      };
     }
 
     // Create typed signals proxy
-    const signals = {} as InferWorkflowSignals<TWorkflow>;
-    if (definition.signals) {
-      for (const [signalName, signalDef] of Object.entries(definition.signals)) {
-        // @ts-expect-error fixme later
-        signals[signalName] = async (args: InferInput<typeof signalDef>) => {
-          const validatedInput = signalDef.input.parse(args);
-          await handle.signal(signalName, validatedInput);
-        };
-      }
+    const signals = {} as ClientInferWorkflowSignals<TWorkflow>;
+    for (const [signalName, signalDef] of Object.entries(definition.signals ?? {}) as Array<
+      [string, SignalDefinition]
+    >) {
+      (signals as any)[signalName] = async (args: ClientInferInput<typeof signalDef>) => {
+        const validatedInput = signalDef.input.parse(args);
+        await handle.signal(signalName as string, validatedInput);
+      };
     }
 
     // Create typed updates proxy
-    const updates = {} as InferWorkflowUpdates<TWorkflow>;
-    if (definition.updates) {
-      for (const [updateName, updateDef] of Object.entries(definition.updates)) {
-        // @ts-expect-error fixme later
-        updates[updateName] = async (args: InferInput<typeof updateDef>) => {
-          const validatedInput = updateDef.input.parse(args);
-          const result = await handle.executeUpdate(updateName, { args: [validatedInput] });
-          return updateDef.output.parse(result);
-        };
-      }
+    const updates = {} as ClientInferWorkflowUpdates<TWorkflow>;
+    for (const [updateName, updateDef] of Object.entries(definition.updates ?? {}) as Array<
+      [string, UpdateDefinition]
+    >) {
+      (updates as any)[updateName] = async (args: ClientInferInput<typeof updateDef>) => {
+        const validatedInput = updateDef.input.parse(args);
+        const result = await handle.executeUpdate(updateName as string, { args: [validatedInput] });
+        return updateDef.output.parse(result);
+      };
     }
 
-    return {
+    const typedHandle: TypedWorkflowHandle<TWorkflow> = {
       workflowId: handle.workflowId,
       queries,
       signals,
@@ -236,7 +229,7 @@ export class TypedClient<TContract extends ContractDefinition> {
       result: async () => {
         const result = await handle.result();
         // Validate output with Zod schema
-        return definition.output.parse(result) as InferOutput<TWorkflow>;
+        return definition.output.parse(result) as ClientInferOutput<TWorkflow>;
       },
       terminate: async (reason?: string) => {
         await handle.terminate(reason);
@@ -245,5 +238,7 @@ export class TypedClient<TContract extends ContractDefinition> {
         await handle.cancel();
       },
     };
+
+    return typedHandle;
   }
 }

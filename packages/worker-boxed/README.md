@@ -26,10 +26,10 @@ pnpm add @temporalio/worker @temporalio/workflow zod
 ### 1. Implement Activities with Result Pattern
 
 ```typescript
-import { createBoxedActivitiesHandler, Result, Future } from '@temporal-contract/worker-boxed';
+import { declareActivitiesHandler, Result, Future } from '@temporal-contract/worker-boxed';
 import { orderContract } from './contract';
 
-export const activitiesHandler = createBoxedActivitiesHandler({
+export const activitiesHandler = declareActivitiesHandler({
   contract: orderContract,
   activities: {
     // ✅ Returns Result instead of throwing
@@ -76,9 +76,9 @@ export const activitiesHandler = createBoxedActivitiesHandler({
 In workflows, activities still throw errors (Result is automatically unwrapped), maintaining Temporal's native error handling:
 
 ```typescript
-import { createWorkflow } from '@temporal-contract/worker-boxed';
+import { declareWorkflow } from '@temporal-contract/worker-boxed';
 
-export const processOrder = createWorkflow({
+export const processOrder = declareWorkflow({
   definition: orderContract.workflows.processOrder,
   contract: orderContract,
   implementation: async (context, order) => {
@@ -212,7 +212,7 @@ See the [boxed documentation](https://swan-io.github.io/boxed/) for full API.
 
 ## API
 
-### `createBoxedActivitiesHandler(options)`
+### `declareActivitiesHandler(options)`
 
 Creates an activities handler where implementations use Result pattern.
 
@@ -222,7 +222,7 @@ type BoxedActivityImplementation<T> = (
 ) => Future<Result<InferOutput<T>, ActivityError>>;
 ```
 
-### `createWorkflow(options)`
+### `declareWorkflow(options)`
 
 Creates a typed workflow implementation with validation and typed activities.
 

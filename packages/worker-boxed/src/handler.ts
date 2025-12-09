@@ -1,18 +1,18 @@
 import { Future, Result } from "@swan-io/boxed";
 import {
-  type CreateWorkflowOptions as BaseCreateWorkflowOptions,
+  type DeclareWorkflowOptions as BaseDeclareWorkflowOptions,
   type QueryHandlerImplementation,
   type SignalHandlerImplementation,
   type UpdateHandlerImplementation,
   type WorkflowContext,
   type WorkflowImplementation,
-  createWorkflow as createBaseWorkflow,
+  declareWorkflow as createBaseWorkflow,
 } from "@temporal-contract/worker";
 import type {
   ActivityDefinition,
   ContractDefinition,
-  InferInput,
-  InferOutput,
+  WorkerInferInput,
+  WorkerInferOutput,
   WorkflowDefinition,
 } from "@temporal-contract/core";
 
@@ -30,8 +30,8 @@ export interface ActivityError {
  * Returns Result<Output, ActivityError> instead of throwing exceptions
  */
 export type BoxedActivityImplementation<TActivity extends ActivityDefinition> = (
-  args: InferInput<TActivity>,
-) => Future<Result<InferOutput<TActivity>, ActivityError>>;
+  args: WorkerInferInput<TActivity>,
+) => Future<Result<WorkerInferOutput<TActivity>, ActivityError>>;
 
 /**
  * Map of all boxed activity implementations for a contract (global + all workflow-specific)
@@ -69,7 +69,7 @@ type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
 /**
  * Options for creating boxed activities handler
  */
-export interface CreateBoxedActivitiesHandlerOptions<T extends ContractDefinition> {
+export interface DeclareActivitiesHandlerOptions<T extends ContractDefinition> {
   contract: T;
   activities: BoxedActivityImplementations<T>;
 }
@@ -77,7 +77,7 @@ export interface CreateBoxedActivitiesHandlerOptions<T extends ContractDefinitio
 /**
  * Boxed activities handler ready for Temporal Worker
  */
-export interface BoxedActivitiesHandler<T extends ContractDefinition> {
+export interface ActivitiesHandler<T extends ContractDefinition> {
   contract: T;
   activities: Record<string, (...args: any[]) => Promise<any>>;
 }
@@ -85,11 +85,11 @@ export interface BoxedActivitiesHandler<T extends ContractDefinition> {
 /**
  * Options for creating a workflow implementation with boxed pattern
  */
-export interface CreateWorkflowOptions<
-  TWorkflow extends WorkflowDefinition,
+export interface DeclareWorkflowOptions<
   TContract extends ContractDefinition,
-> extends Omit<BaseCreateWorkflowOptions<TWorkflow, TContract>, "implementation"> {
-  implementation: WorkflowImplementation<TWorkflow, TContract>;
+  TWorkflowName extends keyof TContract["workflows"],
+> extends Omit<BaseDeclareWorkflowOptions<TContract, TWorkflowName>, "implementation"> {
+  implementation: WorkflowImplementation<TContract, TWorkflowName>;
 }
 
 // Re-export types from base worker
@@ -115,11 +115,11 @@ export type {
  *
  * @example
  * ```ts
- * import { createBoxedActivitiesHandler } from '@temporal-contract/worker-boxed';
+ * import { declareActivitiesHandler } from '@temporal-contract/worker-boxed';
  * import { Result, Future } from '@swan-io/boxed';
  * import myContract from './contract';
  *
- * export const activitiesHandler = createBoxedActivitiesHandler({
+ * export const activitiesHandler = declareActivitiesHandler({
  *   contract: myContract,
  *   activities: {
  *     // Activity returns Result instead of throwing
@@ -141,9 +141,9 @@ export type {
  * });
  * ```
  */
-export function createBoxedActivitiesHandler<T extends ContractDefinition>(
-  options: CreateBoxedActivitiesHandlerOptions<T>,
-): BoxedActivitiesHandler<T> {
+export function declareActivitiesHandler<T extends ContractDefinition>(
+  options: DeclareActivitiesHandlerOptions<T>,
+): ActivitiesHandler<T> {
   const { contract, activities } = options;
 
   // Wrap activities with validation and Result unwrapping
@@ -171,11 +171,14 @@ export function createBoxedActivitiesHandler<T extends ContractDefinition>(
     }
 
     wrappedActivities[activityName] = async (...args: any[]) => {
+      // Extract single parameter (Temporal passes as args array)
+      const input = args.length === 1 ? args[0] : args;
+
       // Validate input
-      const validatedInput = activityDef.input.parse(args) as any;
+      const validatedInput = activityDef.input.parse(input) as any;
 
       // Execute boxed activity (pass single parameter, returns Future<Result<T, E>>)
-      const futureResult = await (activityImpl as any)(validatedInput);
+      const futureResult = (activityImpl as any)(validatedInput);
 
       // Unwrap Future and Result
       const result = await futureResult.toPromise();
@@ -205,15 +208,15 @@ export function createBoxedActivitiesHandler<T extends ContractDefinition>(
 /**
  * Create a typed workflow implementation with automatic validation
  *
- * This is a re-export of the base createWorkflow from @temporal-contract/worker.
+ * This is a re-export of the base declareWorkflow from @temporal-contract/worker.
  * Workflows in worker-boxed work the same as in worker - only activities use the Result pattern.
  *
  * @example
  * ```ts
- * import { createWorkflow } from '@temporal-contract/worker-boxed';
+ * import { declareWorkflow } from '@temporal-contract/worker-boxed';
  * import myContract from '../contract';
  *
- * export const processOrder = createWorkflow({
+ * export const processOrder = declareWorkflow({
  *   definition: myContract.workflows.processOrder,
  *   contract: myContract,
  *   implementation: async (context, order) => {
@@ -229,12 +232,14 @@ export function createBoxedActivitiesHandler<T extends ContractDefinition>(
  * });
  * ```
  */
-export function createWorkflow<
-  TWorkflow extends WorkflowDefinition,
+export function declareWorkflow<
   TContract extends ContractDefinition,
+  TWorkflowName extends keyof TContract["workflows"],
 >(
-  options: CreateWorkflowOptions<TWorkflow, TContract>,
-): (args: InferInput<TWorkflow>) => Promise<InferOutput<TWorkflow>> {
+  options: DeclareWorkflowOptions<TContract, TWorkflowName>,
+): (
+  args: WorkerInferInput<TContract["workflows"][TWorkflowName]>,
+) => Promise<WorkerInferOutput<TContract["workflows"][TWorkflowName]>> {
   // Delegate to base worker implementation - workflows are the same
-  return createBaseWorkflow(options as any);
+  return createBaseWorkflow(options);
 }

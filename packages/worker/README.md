@@ -29,10 +29,10 @@ const processPayment = createActivity({
 ### Implementing Workflows
 
 ```typescript
-import { createWorkflow } from '@temporal-contract/worker';
+import { declareWorkflow } from '@temporal-contract/worker';
 import { myContract } from './contract';
 
-const processOrder = createWorkflow({
+const processOrder = declareWorkflow({
   definition: myContract.workflows.processOrder,
   contract: myContract,
   implementation: async (context, input) => {
@@ -99,7 +99,7 @@ Creates a typed activity implementation with validation.
 - `definition` - Activity definition from contract
 - `implementation` - Activity implementation function (receives validated input, returns validated output)
 
-### `createWorkflow(options)`
+### `declareWorkflow(options)`
 
 Creates a typed workflow implementation with validation and typed activities.
 

@@ -1,13 +1,13 @@
 export {
-  createBoxedActivitiesHandler,
-  createWorkflow,
+  declareActivitiesHandler,
+  declareWorkflow,
   type BoxedActivityImplementation,
   type BoxedActivityImplementations,
   type WorkflowImplementation,
   type WorkflowContext,
-  type CreateBoxedActivitiesHandlerOptions,
-  type BoxedActivitiesHandler,
-  type CreateWorkflowOptions,
+  type DeclareActivitiesHandlerOptions,
+  type ActivitiesHandler,
+  type DeclareWorkflowOptions,
   type ActivityError,
 } from "./handler.js";
 

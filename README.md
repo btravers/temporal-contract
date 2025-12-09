@@ -77,10 +77,10 @@ export default defineContract({
 
 ```typescript
 // activities/index.ts
-import { createActivitiesHandler } from '@temporal-contract/worker';
+import { declareActivitiesHandler } from '@temporal-contract/worker';
 import myContract from '../contract';
 
-export const activitiesHandler = createActivitiesHandler({
+export const activitiesHandler = declareActivitiesHandler({
   contract: myContract,
   activities: {
     // Global activities
@@ -107,10 +107,10 @@ export const activitiesHandler = createActivitiesHandler({
 
 ```typescript
 // workflows/processOrder.ts
-import { createWorkflow } from '@temporal-contract/worker';
+import { declareWorkflow } from '@temporal-contract/worker';
 import myContract from '../contract';
 
-export const processOrder = createWorkflow({
+export const processOrder = declareWorkflow({
   definition: myContract.workflows.processOrder,
   contract: myContract,
   implementation: async (context, { orderId, customerId }) => {
@@ -192,12 +192,12 @@ console.log(result.transactionId); // string
 
 The worker implementation is split into two functions:
 
-1. **`createActivitiesHandler`** - Implements all activities (global + workflow-specific)
+1. **`declareActivitiesHandler`** - Implements all activities (global + workflow-specific)
    - Used by the Temporal Worker
    - Ensures all activities are implemented at compile-time
    - Wraps activities with validation
 
-2. **`createWorkflow`** - Implements individual workflows
+2. **`declareWorkflow`** - Implements individual workflows
    - Each workflow in its own file
    - Loaded by Worker via `workflowsPath`
    - Receives typed context with activities and workflow info
