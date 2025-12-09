@@ -225,7 +225,7 @@ describe("Core Types", () => {
             output: z.object({ sent: z.boolean() }),
           },
         },
-      } satisfies ContractDefinition<any, any>;
+      } satisfies ContractDefinition;
 
       expect(contractDef.taskQueue).toBe("test-queue");
       expect(contractDef.workflows).toBeDefined();
@@ -241,11 +241,11 @@ describe("Core Types", () => {
             output: z.object({ result: z.string() }),
           },
         },
-      } satisfies ContractDefinition<any, any>;
+      } satisfies ContractDefinition;
 
       expect(contractDef.taskQueue).toBe("test-queue");
       expect(contractDef.workflows).toBeDefined();
-      expect((contractDef as any).activities).toBeUndefined();
+      expect((contractDef as { activities?: unknown }).activities).toBeUndefined();
     });
   });
 

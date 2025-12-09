@@ -118,7 +118,9 @@ export type BoxedActivityImplementations<T extends ContractDefinition> =
 /**
  * Utility type to convert union to intersection
  */
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void
+type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (
+  k: infer I,
+) => void
   ? I
   : never;
 
@@ -135,7 +137,7 @@ export interface DeclareActivitiesHandlerOptions<T extends ContractDefinition> {
  */
 export interface ActivitiesHandler<T extends ContractDefinition> {
   contract: T;
-  activities: Record<string, (...args: any[]) => Promise<any>>;
+  activities: Record<string, (...args: unknown[]) => Promise<unknown>>;
 }
 
 /**
@@ -203,7 +205,7 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
   const { contract, activities } = options;
 
   // Wrap activities with validation and Result unwrapping
-  const wrappedActivities: Record<string, (...args: any[]) => Promise<any>> = {};
+  const wrappedActivities: Record<string, (...args: unknown[]) => Promise<unknown>> = {};
 
   for (const [activityName, activityImpl] of Object.entries(activities)) {
     // Find activity definition (global or workflow-specific)
@@ -226,29 +228,31 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
       throw new Error(`Activity definition not found for: ${activityName}`);
     }
 
-    wrappedActivities[activityName] = async (...args: any[]) => {
+    wrappedActivities[activityName] = async (...args: unknown[]) => {
       // Extract single parameter (Temporal passes as args array)
       const input = args.length === 1 ? args[0] : args;
 
       // Validate input
-      const validatedInput = activityDef.input.parse(input) as any;
+      const validatedInput = activityDef.input.parse(input);
 
       // Execute boxed activity (pass single parameter, returns Future<Result<T, E>>)
-      const futureResult = (activityImpl as any)(validatedInput);
+      const futureResult = (
+        activityImpl as (args: unknown) => Future<Result<unknown, ActivityError>>
+      )(validatedInput);
 
       // Unwrap Future and Result
       const result = await futureResult.toPromise();
 
       return result.match({
-        Ok: (value: any) => {
+        Ok: (value: unknown) => {
           // Validate output on success
           return activityDef.output.parse(value);
         },
         Error: (error: ActivityError) => {
           // Convert Result.Error to thrown exception for Temporal
-          const err = new Error(error.message);
-          (err as any).code = error.code;
-          (err as any).details = error.details;
+          const err = new Error(error.message) as Error & { code: string; details?: unknown };
+          err.code = error.code;
+          err.details = error.details;
           throw err;
         },
       });

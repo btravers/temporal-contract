@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { Future, Result } from "@swan-io/boxed";
 import { z } from "zod";
-import { declareActivitiesHandler } from "./handler.js";
+import {
+  declareActivitiesHandler,
+  type ActivityError,
+  type BoxedActivityImplementations,
+} from "./handler.js";
 import type { ContractDefinition } from "@temporal-contract/contract";
 
 describe("Worker-Boxed Package", () => {
@@ -61,11 +65,11 @@ describe("Worker-Boxed Package", () => {
 
       // Valid input should work
       const result = await handler.activities["processPayment"]!({ amount: 100, currency: "USD" });
-      expect(result.transactionId).toBe("tx-100");
+      expect((result as { transactionId: string }).transactionId).toBe("tx-100");
 
       // Invalid input should throw
       await expect(
-        handler.activities["processPayment"]!({ amount: "invalid" as any, currency: "USD" }),
+        handler.activities["processPayment"]!({ amount: "invalid" as unknown, currency: "USD" }),
       ).rejects.toThrow();
     });
 
@@ -91,15 +95,19 @@ describe("Worker-Boxed Package", () => {
       });
 
       const result = await handler.activities["fetchData"]!({ id: "abc" });
-      expect(result.data).toBe("data-abc");
-      expect(result.timestamp).toBe(123);
+      expect((result as { data: string; timestamp: number }).data).toBe("data-abc");
+      expect((result as { data: string; timestamp: number }).timestamp).toBe(123);
 
       // Invalid output should throw
       const badHandler = declareActivitiesHandler({
         contract,
         activities: {
-          fetchData: (_args) => {
-            return Future.value(Result.Ok({ data: "test" } as any)); // Missing timestamp
+          fetchData: (
+            _args,
+          ): Future<Result<{ data: string; timestamp: number }, ActivityError>> => {
+            return Future.value(
+              Result.Ok({ data: "test" } as unknown as { data: string; timestamp: number }),
+            ); // Missing timestamp
           },
         },
       });
@@ -129,7 +137,7 @@ describe("Worker-Boxed Package", () => {
       });
 
       const result = await handler.activities["successActivity"]!({ value: "test" });
-      expect(result.result).toBe("success-test");
+      expect((result as { result: string }).result).toBe("success-test");
     });
 
     it("should handle Result.Error by throwing exception", async () => {
@@ -162,10 +170,14 @@ describe("Worker-Boxed Package", () => {
       try {
         await handler.activities["failingActivity"]!({ value: "test" });
         expect.fail("Should have thrown an error");
-      } catch (error: any) {
-        expect(error.message).toBe("Something went wrong");
-        expect(error.code).toBe("ACTIVITY_FAILED");
-        expect(error.details).toEqual({ info: "additional details" });
+      } catch (error: unknown) {
+        expect((error as Error & { code: string; details?: unknown }).message).toBe(
+          "Something went wrong",
+        );
+        expect((error as Error & { code: string; details?: unknown }).code).toBe("ACTIVITY_FAILED");
+        expect((error as Error & { code: string; details?: unknown }).details).toEqual({
+          info: "additional details",
+        });
       }
     });
 
@@ -185,7 +197,7 @@ describe("Worker-Boxed Package", () => {
         contract,
         activities: {
           asyncActivity: (args) => {
-            return Future.make<Result<{ completed: boolean }, any>>((resolve) => {
+            return Future.make<Result<{ completed: boolean }, ActivityError>>((resolve) => {
               setTimeout(() => {
                 resolve(Result.Ok({ completed: true }));
               }, args.delay);
@@ -195,7 +207,7 @@ describe("Worker-Boxed Package", () => {
       });
 
       const result = await handler.activities["asyncActivity"]!({ delay: 10 });
-      expect(result.completed).toBe(true);
+      expect((result as { completed: boolean }).completed).toBe(true);
     });
 
     it("should support workflow-specific activities", async () => {
@@ -224,8 +236,8 @@ describe("Worker-Boxed Package", () => {
         },
       });
 
-      const result = await handler.activities["validateOrder"]!({ orderId: "ORDER-123" });
-      expect(result.valid).toBe(true);
+      const result = await handler.activities["validateOrder"]!({ orderId: "123", amount: 100 });
+      expect((result as { valid: boolean }).valid).toBe(true);
     });
 
     it("should throw if activity definition is not found", () => {
@@ -239,8 +251,8 @@ describe("Worker-Boxed Package", () => {
         declareActivitiesHandler({
           contract,
           activities: {
-            unknownActivity: (_args: any) => Future.value(Result.Ok({ result: "test" })),
-          } as any,
+            unknownActivity: (_args: unknown) => Future.value(Result.Ok({ result: "test" })),
+          } as BoxedActivityImplementations<typeof contract>,
         });
       }).toThrow("Activity definition not found");
     });

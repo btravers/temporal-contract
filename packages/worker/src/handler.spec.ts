@@ -76,11 +76,11 @@ describe("Worker Package", () => {
 
       // Valid input should work - Temporal passes as array
       const result = await handler.activities["processPayment"]!({ amount: 100, currency: "USD" });
-      expect(result.transactionId).toBe("tx-100");
+      expect((result as { transactionId: string }).transactionId).toBe("tx-100");
 
       // Invalid input should throw
       await expect(
-        handler.activities["processPayment"]!({ amount: "invalid" as any, currency: "USD" }),
+        handler.activities["processPayment"]!({ amount: "invalid" as unknown, currency: "USD" }),
       ).rejects.toThrow();
     });
 
@@ -99,8 +99,8 @@ describe("Worker Package", () => {
       const handler = declareActivitiesHandler({
         contract,
         activities: {
-          fetchData: async (_args) => {
-            return { data: "test", timestamp: "invalid" } as any;
+          fetchData: async (_args): Promise<{ data: string; timestamp: number }> => {
+            return { data: "test", timestamp: "invalid" as unknown as number };
           },
         },
       });
@@ -175,24 +175,40 @@ describe("Worker Package", () => {
       });
 
       // Valid input (Temporal passes as array)
-      const result = await workflow([{ orderId: "123", amount: 100 }] as any);
+      const result = await workflow([{ orderId: "123", amount: 100 }] as unknown as {
+        orderId: string;
+        amount: number;
+      });
       expect(result.status).toBe("completed");
       expect(result.total).toBe(100);
 
       // Invalid input should throw
-      await expect(workflow([{ orderId: 123, amount: "invalid" }] as any)).rejects.toThrow();
+      await expect(
+        workflow([{ orderId: 123, amount: "invalid" }] as unknown as {
+          orderId: string;
+          amount: number;
+        }),
+      ).rejects.toThrow();
     });
 
     it("should validate workflow output", async () => {
       const workflow = declareWorkflow({
         definition: testWorkflowDef,
         contract: testContract,
-        implementation: async (_context, _args) => {
-          return { status: "completed", total: "invalid" } as any;
+        implementation: async (_context, _args): Promise<{ status: string; total: number }> => {
+          return { status: "completed", total: "invalid" } as unknown as {
+            status: string;
+            total: number;
+          };
         },
       });
 
-      await expect(workflow([{ orderId: "123", amount: 100 }] as any)).rejects.toThrow();
+      await expect(
+        workflow([{ orderId: "123", amount: 100 }] as unknown as {
+          orderId: string;
+          amount: number;
+        }),
+      ).rejects.toThrow();
     });
 
     it("should register signal handlers", async () => {
@@ -308,7 +324,10 @@ describe("Worker Package", () => {
       });
 
       // Single parameter (should extract from array)
-      await workflow([{ orderId: "123", amount: 100 }] as any);
+      await workflow([{ orderId: "123", amount: 100 }] as unknown as {
+        orderId: string;
+        amount: number;
+      });
     });
   });
 });

@@ -104,7 +104,9 @@ export type ActivityImplementations<T extends ContractDefinition> =
 /**
  * Utility type to convert union to intersection
  */
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void
+type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (
+  k: infer I,
+) => void
   ? I
   : never;
 
@@ -121,7 +123,7 @@ export interface DeclareActivitiesHandlerOptions<T extends ContractDefinition> {
  */
 export interface ActivitiesHandler<T extends ContractDefinition> {
   contract: T;
-  activities: Record<string, (...args: any[]) => Promise<any>>;
+  activities: Record<string, (...args: unknown[]) => Promise<unknown>>;
 }
 
 /**
@@ -186,7 +188,7 @@ function createValidatedActivities<
   TContract extends ContractDefinition,
   TWorkflowName extends keyof TContract["workflows"],
 >(
-  rawActivities: Record<string, (...args: any[]) => Promise<any>>,
+  rawActivities: Record<string, (...args: unknown[]) => Promise<unknown>>,
   workflowActivitiesDefinition: Record<string, ActivityDefinition> | undefined,
   contractActivitiesDefinition: Record<string, ActivityDefinition> | undefined,
 ): WorkerInferWorkflowContextActivities<TContract, TWorkflowName> {
@@ -206,7 +208,7 @@ function createValidatedActivities<
     }
 
     // @ts-expect-error fixme later
-    validatedActivities[activityName] = async (...args: any[]) => {
+    validatedActivities[activityName] = async (...args: unknown[]) => {
       // Validate input before sending over network
       const validatedInput = activityDef.input.parse(args);
 
@@ -266,7 +268,7 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
   const { contract, activities } = options;
 
   // Wrap activities with validation
-  const wrappedActivities: Record<string, (...args: any[]) => Promise<any>> = {};
+  const wrappedActivities: Record<string, (...args: unknown[]) => Promise<unknown>> = {};
 
   for (const [activityName, activityImpl] of Object.entries(activities)) {
     // Find activity definition (global or workflow-specific)
@@ -289,7 +291,7 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
       throw new Error(`Activity definition not found for: ${activityName}`);
     }
 
-    wrappedActivities[activityName] = async (input: undefined) => {
+    wrappedActivities[activityName] = async (input: unknown) => {
       // Validate input
       const validatedInput = activityDef.input.parse(input);
 
@@ -394,17 +396,17 @@ export function declareWorkflow<
     // Register signal handlers
     if (definition.signals && signals) {
       const signalDefs = definition.signals as Record<string, SignalDefinition>;
-      const signalHandlers = signals as Record<string, any>;
+      const signalHandlers = signals as Record<string, unknown>;
 
       for (const [signalName, signalDef] of Object.entries(signalDefs)) {
         const handler = signalHandlers[signalName];
         if (handler) {
           const signal = defineSignal(signalName);
-          setHandler(signal, async (...args: any[]) => {
+          setHandler(signal, async (...args: unknown[]) => {
             // Extract single parameter (Temporal passes as args array)
             const input = args.length === 1 ? args[0] : args;
             const validatedInput = signalDef.input.parse(input);
-            await handler(validatedInput);
+            await (handler as SignalHandlerImplementation<SignalDefinition>)(validatedInput);
           });
         }
       }
@@ -413,17 +415,17 @@ export function declareWorkflow<
     // Register query handlers
     if (definition.queries && queries) {
       const queryDefs = definition.queries as Record<string, QueryDefinition>;
-      const queryHandlers = queries as Record<string, any>;
+      const queryHandlers = queries as Record<string, unknown>;
 
       for (const [queryName, queryDef] of Object.entries(queryDefs)) {
         const handler = queryHandlers[queryName];
         if (handler) {
           const query = defineQuery(queryName);
-          setHandler(query, (...args: any[]) => {
+          setHandler(query, (...args: unknown[]) => {
             // Extract single parameter (Temporal passes as args array)
             const input = args.length === 1 ? args[0] : args;
             const validatedInput = queryDef.input.parse(input);
-            const result = handler(validatedInput);
+            const result = (handler as QueryHandlerImplementation<QueryDefinition>)(validatedInput);
             return queryDef.output.parse(result);
           });
         }
@@ -433,17 +435,19 @@ export function declareWorkflow<
     // Register update handlers
     if (definition.updates && updates) {
       const updateDefs = definition.updates as Record<string, UpdateDefinition>;
-      const updateHandlers = updates as Record<string, any>;
+      const updateHandlers = updates as Record<string, unknown>;
 
       for (const [updateName, updateDef] of Object.entries(updateDefs)) {
         const handler = updateHandlers[updateName];
         if (handler) {
           const update = defineUpdate(updateName);
-          setHandler(update, async (...args: any[]) => {
+          setHandler(update, async (...args: unknown[]) => {
             // Extract single parameter (Temporal passes as args array)
             const input = args.length === 1 ? args[0] : args;
             const validatedInput = updateDef.input.parse(input);
-            const result = await handler(validatedInput);
+            const result = await (handler as UpdateHandlerImplementation<UpdateDefinition>)(
+              validatedInput,
+            );
             return updateDef.output.parse(result);
           });
         }
@@ -451,10 +455,12 @@ export function declareWorkflow<
     }
 
     // Create activities proxy if activities are defined
-    let contextActivities: any = {};
+    let contextActivities: unknown = {};
 
     if (definition.activities || contract.activities) {
-      const rawActivities = proxyActivities<Record<string, (...args: any[]) => Promise<any>>>({
+      const rawActivities = proxyActivities<
+        Record<string, (...args: unknown[]) => Promise<unknown>>
+      >({
         startToCloseTimeout: 60_000, // 1 minute default
         ...activityOptions,
       });
@@ -468,7 +474,10 @@ export function declareWorkflow<
 
     // Create workflow context
     const context: WorkflowContext<TContract, TWorkflowName> = {
-      activities: contextActivities,
+      activities: contextActivities as WorkerInferWorkflowContextActivities<
+        TContract,
+        TWorkflowName
+      >,
       info: workflowInfo(),
     };
 

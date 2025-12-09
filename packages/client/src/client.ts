@@ -193,7 +193,9 @@ export class TypedClient<TContract extends ContractDefinition> {
     for (const [queryName, queryDef] of Object.entries(definition.queries ?? {}) as Array<
       [string, QueryDefinition]
     >) {
-      (queries as any)[queryName] = async (args: ClientInferInput<typeof queryDef>) => {
+      (queries as Record<string, unknown>)[queryName] = async (
+        args: ClientInferInput<typeof queryDef>,
+      ) => {
         const validatedInput = queryDef.input.parse(args);
         const result = await handle.query(queryName as string, validatedInput);
         return queryDef.output.parse(result);
@@ -205,7 +207,9 @@ export class TypedClient<TContract extends ContractDefinition> {
     for (const [signalName, signalDef] of Object.entries(definition.signals ?? {}) as Array<
       [string, SignalDefinition]
     >) {
-      (signals as any)[signalName] = async (args: ClientInferInput<typeof signalDef>) => {
+      (signals as Record<string, unknown>)[signalName] = async (
+        args: ClientInferInput<typeof signalDef>,
+      ) => {
         const validatedInput = signalDef.input.parse(args);
         await handle.signal(signalName as string, validatedInput);
       };
@@ -216,7 +220,9 @@ export class TypedClient<TContract extends ContractDefinition> {
     for (const [updateName, updateDef] of Object.entries(definition.updates ?? {}) as Array<
       [string, UpdateDefinition]
     >) {
-      (updates as any)[updateName] = async (args: ClientInferInput<typeof updateDef>) => {
+      (updates as Record<string, unknown>)[updateName] = async (
+        args: ClientInferInput<typeof updateDef>,
+      ) => {
         const validatedInput = updateDef.input.parse(args);
         const result = await handle.executeUpdate(updateName as string, { args: [validatedInput] });
         return updateDef.output.parse(result);

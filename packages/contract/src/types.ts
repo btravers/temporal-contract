@@ -3,7 +3,7 @@ import type { z } from "zod";
 /**
  * Base types for validation schemas
  */
-export type AnyZodSchema = z.ZodTypeAny;
+export type AnyZodSchema = z.ZodType;
 
 /**
  * Definition of an activity

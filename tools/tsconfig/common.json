@@ -6,6 +6,7 @@
     "lib": ["ES2020"],
 
     "strict": true,
+    "noImplicitAny": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
