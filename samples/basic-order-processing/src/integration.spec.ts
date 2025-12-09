@@ -1,10 +1,10 @@
 import { describe, expect } from "vitest";
 import { Worker } from "@temporalio/worker";
 import { TypedClient } from "@temporal-contract/client";
-import { it as baseIt } from "@temporal-contract/testing";
+import { it as baseIt } from "@temporal-contract/testing/extension";
 import { orderProcessingContract } from "./contract.js";
 import { activitiesHandler } from "./activities/index.js";
-import { dirname, join } from "node:path";
+import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Order } from "./contract.js";
 
@@ -14,15 +14,12 @@ const it = baseIt.extend<{
 }>({
   worker: [
     async ({ workerConnection }, use) => {
-      const __filename = fileURLToPath(import.meta.url);
-      const __dirname = dirname(__filename);
-
       // Create and start worker
       const worker = await Worker.create({
         connection: workerConnection,
         namespace: "default",
         taskQueue: orderProcessingContract.taskQueue,
-        workflowsPath: join(__dirname, "workflows"),
+        workflowsPath: workflowPath("workflows/processOrder"),
         activities: activitiesHandler.activities,
       });
 
@@ -197,3 +194,7 @@ describe("Order Processing Workflow - Integration Tests", () => {
     ).rejects.toThrow();
   });
 });
+
+function workflowPath(filename: string): string {
+  return fileURLToPath(new URL(`./${filename}${extname(import.meta.url)}`, import.meta.url));
+}

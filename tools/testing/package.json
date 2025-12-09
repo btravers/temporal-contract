@@ -4,16 +4,21 @@
   "description": "Shared testing utilities for temporal-contract",
   "type": "module",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs"
+    "./global-setup": {
+      "types": "./dist/global-setup.d.mts",
+      "import": "./dist/global-setup.mjs"
+    },
+    "./extension": {
+      "types": "./dist/extension.d.mts",
+      "import": "./dist/extension.mjs"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "config"
   ],
   "scripts": {
-    "build": "tsdown src/index.ts --format esm --dts --clean",
+    "build": "tsdown src/global-setup.ts src/extension.ts --format esm --dts --clean",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
