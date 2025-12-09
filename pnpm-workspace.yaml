@@ -18,6 +18,7 @@ catalog:
   tsdown: 0.17.2
   tsx: 4.21.0
   turbo: 2.6.3
+  type-fest: 5.3.1
   typescript: 5.9.3
   vitest: 4.0.15
   zod: 4.1.13

@@ -1,8 +1,7 @@
 import { Future, Result } from "@swan-io/boxed";
-import type { BoxedActivityImplementations } from "@temporal-contract/worker-boxed";
-import type { ActivityError } from "@temporal-contract/worker-boxed";
-import type { boxedOrderContract } from "../contract.js";
-import type { PaymentResult, InventoryResult, ShippingResult } from "../contract.js";
+import { boxedOrderContract } from "../contract.js";
+import type { ActivityError, BoxedActivityImplementations } from "@temporal-contract/worker-boxed";
+import type { InventoryResult, PaymentResult, ShippingResult } from "../contract.js";
 
 /**
  * Activity implementations using the Result/Future pattern from @swan-io/boxed

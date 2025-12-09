@@ -1,7 +1,10 @@
 import type {
   ActivityDefinition,
-  WorkflowDefinition,
   ContractDefinition,
+  QueryDefinition,
+  SignalDefinition,
+  UpdateDefinition,
+  WorkflowDefinition,
 } from "@temporal-contract/core";
 
 /**
@@ -18,6 +21,50 @@ import type {
 export const defineActivity = <TActivity extends ActivityDefinition>(
   definition: TActivity,
 ): TActivity => {
+  return definition;
+};
+
+/**
+ * Builder for creating signal definitions
+ *
+ * @example
+ * ```ts
+ * const mySignal = defineSignal({
+ *   input: z.object({ message: z.string() }),
+ * });
+ * ```
+ */
+export const defineSignal = <TSignal extends SignalDefinition>(definition: TSignal): TSignal => {
+  return definition;
+};
+
+/**
+ * Builder for creating query definitions
+ *
+ * @example
+ * ```ts
+ * const myQuery = defineQuery({
+ *   input: z.object({ id: z.string() }),
+ *   output: z.object({ status: z.string() }),
+ * });
+ * ```
+ */
+export const defineQuery = <TQuery extends QueryDefinition>(definition: TQuery): TQuery => {
+  return definition;
+};
+
+/**
+ * Builder for creating update definitions
+ *
+ * @example
+ * ```ts
+ * const myUpdate = defineUpdate({
+ *   input: z.object({ value: z.number() }),
+ *   output: z.object({ newValue: z.number() }),
+ * });
+ * ```
+ */
+export const defineUpdate = <TUpdate extends UpdateDefinition>(definition: TUpdate): TUpdate => {
   return definition;
 };
 

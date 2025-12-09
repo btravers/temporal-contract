@@ -35,21 +35,21 @@ pnpm add zod @temporalio/client @temporalio/worker @temporalio/workflow
 ```typescript
 // contract.ts
 import { z } from 'zod';
-import { defineActivity, defineWorkflow, defineContract } from '@temporal-contract/contract';
+import { defineContract } from '@temporal-contract/contract';
 
 export default defineContract({
   taskQueue: 'my-service',
 
   // Global activities (available in all workflows)
   activities: {
-    sendEmail: defineActivity({
+    sendEmail: {
       input: z.object({ to: z.string(), subject: z.string(), body: z.string() }),
       output: z.object({ sent: z.boolean() }),
-    }),
+    },
   },
 
   workflows: {
-    processOrder: defineWorkflow({
+    processOrder: {
       input: z.object({ orderId: z.string(), customerId: z.string() }),
       output: z.object({
         orderId: z.string(),
@@ -59,16 +59,16 @@ export default defineContract({
 
       // Workflow-specific activities
       activities: {
-        validateInventory: defineActivity({
+        validateInventory: {
           input: z.string(), // Single orderId parameter
           output: z.object({ available: z.boolean() }),
-        }),
-        chargePayment: defineActivity({
+        },
+        chargePayment: {
           input: z.object({ customerId: z.string(), amount: z.number() }),
           output: z.object({ transactionId: z.string(), success: z.boolean() }),
-        }),
+        },
       },
-    }),
+    },
   },
 });
 ```
@@ -231,21 +231,42 @@ args: [{ ... }]
 
 This follows Temporal's best practices and simplifies the API.
 
+### Type Inference
+
+When using `defineContract`, the type system automatically enforces the correct structure for activities and workflows. You don't need to use `defineActivity` or `defineWorkflow` helpers:
+
+```typescript
+defineContract({
+  activities: {
+    sendEmail: { input: ..., output: ... }, // Type is inferred
+  },
+  workflows: {
+    processOrder: {
+      input: ...,
+      output: ...,
+      activities: {
+        chargePayment: { input: ..., output: ... }, // Type is inferred
+      },
+    },
+  },
+})
+```
+
 ### Global Activities
 
 Activities defined at the contract level are available in all workflows:
 
 ```typescript
-contract({
+defineContract({
   activities: {
-    sendEmail: activity({ ... }), // Available in all workflows
+    sendEmail: { ... }, // Available in all workflows
   },
   workflows: {
-    processOrder: workflow({
+    processOrder: {
       activities: {
-        chargePayment: activity({ ... }), // Only in processOrder
+        chargePayment: { ... }, // Only in processOrder
       },
-    }),
+    },
   },
 })
 ```

@@ -1,9 +1,9 @@
 import { Worker } from "@temporalio/worker";
 import { createBoxedActivitiesHandler } from "@temporal-contract/worker-boxed";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { activities } from "./activities/index.js";
 import { boxedOrderContract } from "./contract.js";
-import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

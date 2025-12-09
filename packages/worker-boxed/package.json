@@ -24,7 +24,9 @@
   "scripts": {
     "build": "tsdown src/index.ts --format cjs,esm --dts --clean",
     "typecheck": "tsc --noEmit",
-    "dev": "tsdown src/index.ts --format cjs,esm --dts --watch"
+    "dev": "tsdown src/index.ts --format cjs,esm --dts --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "temporal",
@@ -46,7 +48,9 @@
     "@temporal-contract/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "tsdown": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "@temporalio/worker": ">=1.0.0"

@@ -12,12 +12,12 @@ pnpm add @temporal-contract/contract zod
 
 ```typescript
 import { z } from 'zod';
-import { defineContract, defineWorkflow, defineActivity } from '@temporal-contract/contract';
+import { defineContract } from '@temporal-contract/contract';
 
 export const myContract = defineContract({
   taskQueue: 'my-service',
   workflows: {
-    processOrder: defineWorkflow({
+    processOrder: {
       input: z.object({
         orderId: z.string(),
         items: z.array(z.object({
@@ -30,29 +30,85 @@ export const myContract = defineContract({
         totalAmount: z.number(),
       }),
       activities: {
-        processPayment: defineActivity({
+        processPayment: {
           input: z.object({ amount: z.number() }),
           output: z.object({ transactionId: z.string() }),
-        }),
+        },
       },
-    }),
+    },
   },
 });
 ```
 
 ## API
 
-### `contract(definition)`
+### `defineContract(definition)`
 
 Creates a contract definition with workflows and optional global activities.
 
-### `workflow(config)`
+The type system automatically infers the structure, so you don't need to use helper functions when defining activities, workflows, signals, queries, and updates inside a contract.
 
-Defines a workflow with input/output schemas and optional activities.
+### Helper Functions
 
-### `activity(config)`
+These helper functions are available for standalone definitions (outside of a contract) or when you need explicit typing:
 
-Defines an activity with input/output schemas.
+#### `defineActivity(definition)`
+
+```typescript
+import { defineActivity } from '@temporal-contract/contract';
+
+const sendEmail = defineActivity({
+  input: z.object({ to: z.string(), subject: z.string() }),
+  output: z.object({ sent: z.boolean() }),
+});
+```
+
+#### `defineSignal(definition)`
+
+```typescript
+import { defineSignal } from '@temporal-contract/contract';
+
+const cancelOrder = defineSignal({
+  input: z.object({ reason: z.string() }),
+});
+```
+
+#### `defineQuery(definition)`
+
+```typescript
+import { defineQuery } from '@temporal-contract/contract';
+
+const getStatus = defineQuery({
+  input: z.void(),
+  output: z.object({ status: z.string() }),
+});
+```
+
+#### `defineUpdate(definition)`
+
+```typescript
+import { defineUpdate } from '@temporal-contract/contract';
+
+const updateAmount = defineUpdate({
+  input: z.object({ newAmount: z.number() }),
+  output: z.object({ updated: z.boolean() }),
+});
+```
+
+#### `defineWorkflow(definition)`
+
+```typescript
+import { defineWorkflow } from '@temporal-contract/contract';
+
+const processOrder = defineWorkflow({
+  input: z.object({ orderId: z.string() }),
+  output: z.object({ status: z.string() }),
+  activities: { /* ... */ },
+  signals: { /* ... */ },
+  queries: { /* ... */ },
+  updates: { /* ... */ },
+});
+```
 
 ## License
 

@@ -1,6 +1,6 @@
 import { NativeConnection, Worker } from "@temporalio/worker";
-import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { activitiesHandler } from "./activities/index.js";
 
 // Get the directory path for ES modules

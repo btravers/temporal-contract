@@ -1,4 +1,4 @@
-import { defineContract, defineWorkflow, defineActivity } from "@temporal-contract/contract";
+import { defineContract } from "@temporal-contract/contract";
 import { z } from "zod";
 
 /**
@@ -64,18 +64,18 @@ export const orderProcessingContract = defineContract({
     /**
      * Log a message to the console
      */
-    log: defineActivity({
+    log: {
       input: z.object({ level: z.string(), message: z.string() }),
       output: z.void(),
-    }),
+    },
 
     /**
      * Send a notification to a customer
      */
-    sendNotification: defineActivity({
+    sendNotification: {
       input: z.object({ customerId: z.string(), subject: z.string(), message: z.string() }),
       output: z.void(),
-    }),
+    },
   },
 
   /**
@@ -85,7 +85,7 @@ export const orderProcessingContract = defineContract({
     /**
      * Process an order from payment to shipping
      */
-    processOrder: defineWorkflow({
+    processOrder: {
       input: OrderSchema,
       output: OrderResultSchema,
 
@@ -96,15 +96,15 @@ export const orderProcessingContract = defineContract({
         /**
          * Process payment for the order
          */
-        processPayment: defineActivity({
+        processPayment: {
           input: z.object({ customerId: z.string(), amount: z.number() }),
           output: PaymentResultSchema,
-        }),
+        },
 
         /**
          * Reserve inventory for the order items
          */
-        reserveInventory: defineActivity({
+        reserveInventory: {
           input: z.array(
             z.object({
               productId: z.string(),
@@ -112,25 +112,25 @@ export const orderProcessingContract = defineContract({
             }),
           ),
           output: InventoryResultSchema,
-        }),
+        },
 
         /**
          * Release reserved inventory
          */
-        releaseInventory: defineActivity({
+        releaseInventory: {
           input: z.string(),
           output: z.void(),
-        }),
+        },
 
         /**
          * Create a shipment for the order
          */
-        createShipment: defineActivity({
+        createShipment: {
           input: z.object({ orderId: z.string(), customerId: z.string() }),
           output: ShippingResultSchema,
-        }),
+        },
       },
-    }),
+    },
   },
 });
 

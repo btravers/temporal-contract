@@ -1,10 +1,10 @@
-import { createWorkflow, type WorkflowImplementation } from "@temporal-contract/worker";
+import { type WorkflowImplementation, createWorkflow } from "@temporal-contract/worker";
 import { orderProcessingContract } from "../contract.js";
 import type {
+  InventoryResult,
   Order,
   OrderResult,
   PaymentResult,
-  InventoryResult,
   ShippingResult,
 } from "../contract.js";
 

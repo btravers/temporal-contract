@@ -1,4 +1,4 @@
-import { defineContract, defineWorkflow, defineActivity } from "@temporal-contract/contract";
+import { defineContract } from "@temporal-contract/contract";
 import { z } from "zod";
 
 /**
@@ -64,20 +64,20 @@ export const boxedOrderContract = defineContract({
    */
   activities: {
     /**
-     * Log a message with severity level
+     * Log a message to the console
      */
-    log: defineActivity({
-      input: z.object({ level: z.enum(["info", "warn", "error"]), message: z.string() }),
+    log: {
+      input: z.object({ level: z.string(), message: z.string() }),
       output: z.void(),
-    }),
+    },
 
     /**
-     * Send notification to customer
+     * Send a notification to a customer
      */
-    sendNotification: defineActivity({
+    sendNotification: {
       input: z.object({ customerId: z.string(), subject: z.string(), message: z.string() }),
-      output: z.object({ sent: z.boolean(), messageId: z.string().optional() }),
-    }),
+      output: z.void(),
+    },
   },
 
   /**
@@ -85,9 +85,9 @@ export const boxedOrderContract = defineContract({
    */
   workflows: {
     /**
-     * Process an order with explicit error handling using Result pattern
+     * Process an order from payment to shipping with Result/Future pattern
      */
-    processOrder: defineWorkflow({
+    processOrder: {
       input: OrderSchema,
       output: OrderResultSchema,
 
@@ -96,17 +96,17 @@ export const boxedOrderContract = defineContract({
        */
       activities: {
         /**
-         * Process payment - can fail with specific error codes
+         * Process payment for the order
          */
-        processPayment: defineActivity({
+        processPayment: {
           input: z.object({ customerId: z.string(), amount: z.number() }),
           output: PaymentResultSchema,
-        }),
+        },
 
         /**
-         * Reserve inventory - can fail if out of stock
+         * Reserve inventory for the order items
          */
-        reserveInventory: defineActivity({
+        reserveInventory: {
           input: z.array(
             z.object({
               productId: z.string(),
@@ -114,33 +114,33 @@ export const boxedOrderContract = defineContract({
             }),
           ),
           output: InventoryResultSchema,
-        }),
+        },
 
         /**
          * Release reserved inventory
          */
-        releaseInventory: defineActivity({
+        releaseInventory: {
           input: z.string(),
           output: z.void(),
-        }),
+        },
 
         /**
-         * Create shipment - can fail with carrier issues
+         * Create a shipment for the order
          */
-        createShipment: defineActivity({
+        createShipment: {
           input: z.object({ orderId: z.string(), customerId: z.string() }),
           output: ShippingResultSchema,
-        }),
+        },
 
         /**
-         * Refund payment - can fail
+         * Refund a payment (used in case of errors)
          */
-        refundPayment: defineActivity({
+        refundPayment: {
           input: z.string(),
-          output: z.object({ refunded: z.boolean(), refundId: z.string().optional() }),
-        }),
+          output: z.void(),
+        },
       },
-    }),
+    },
   },
 });
 

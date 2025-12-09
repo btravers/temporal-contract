@@ -1,15 +1,15 @@
 import { Client, WorkflowHandle } from "@temporalio/client";
+import { Entries } from "type-fest";
 import type { ClientOptions } from "@temporalio/client";
 import type {
   ContractDefinition,
-  InferOutput,
-  WorkflowDefinition,
-  InferWorkflowSignals,
-  InferWorkflowQueries,
-  InferWorkflowUpdates,
   InferInput,
+  InferOutput,
+  InferWorkflowQueries,
+  InferWorkflowSignals,
+  InferWorkflowUpdates,
+  WorkflowDefinition,
 } from "@temporal-contract/core";
-import { Entries } from "type-fest";
 
 declare global {
   interface ObjectConstructor {

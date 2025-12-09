@@ -1,20 +1,20 @@
-import { Result, Future } from "@swan-io/boxed";
+import { Future, Result } from "@swan-io/boxed";
+import {
+  type CreateWorkflowOptions as BaseCreateWorkflowOptions,
+  type QueryHandlerImplementation,
+  type SignalHandlerImplementation,
+  type UpdateHandlerImplementation,
+  type WorkflowContext,
+  type WorkflowImplementation,
+  createWorkflow as createBaseWorkflow,
+} from "@temporal-contract/worker";
 import type {
+  ActivityDefinition,
   ContractDefinition,
   InferInput,
   InferOutput,
   WorkflowDefinition,
-  ActivityDefinition,
 } from "@temporal-contract/core";
-import {
-  createWorkflow as createBaseWorkflow,
-  type WorkflowContext,
-  type WorkflowImplementation,
-  type CreateWorkflowOptions as BaseCreateWorkflowOptions,
-  type SignalHandlerImplementation,
-  type QueryHandlerImplementation,
-  type UpdateHandlerImplementation,
-} from "@temporal-contract/worker";
 
 /**
  * Activity error type

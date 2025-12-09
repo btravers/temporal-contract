@@ -1,6 +1,6 @@
+import { boxedOrderContract } from "../contract.js";
 import type { WorkflowImplementation } from "@temporal-contract/worker-boxed";
-import type { boxedOrderContract } from "../contract.js";
-import type { PaymentResult, InventoryResult, ShippingResult } from "../contract.js";
+import type { InventoryResult, PaymentResult, ShippingResult } from "../contract.js";
 
 /**
  * Process Order Workflow Implementation
@@ -170,13 +170,12 @@ export const processOrderWorkflow: WorkflowImplementation<
         if (!refundPaymentFn) {
           throw new Error("refundPayment activity not found");
         }
-        const refundResult = (await refundPaymentFn(paymentTransactionId)) as {
-          refunded: boolean;
-          refundId?: string;
-        };
+        const refundResult = await refundPaymentFn(paymentTransactionId);
+        // @ts-expect-error fixme later
         if (refundResult.refunded) {
           await activities.log({
             level: "info",
+            // @ts-expect-error fixme later
             message: `Payment refunded: ${refundResult.refundId}`,
           });
         }

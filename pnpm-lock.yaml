@@ -45,6 +45,9 @@ catalogs:
     turbo:
       specifier: 2.6.3
       version: 2.6.3
+    type-fest:
+      specifier: 5.3.1
+      version: 5.3.1
     typescript:
       specifier: 5.9.3
       version: 5.9.3
@@ -98,15 +101,21 @@ importers:
       "@temporalio/client":
         specifier: "catalog:"
         version: 1.13.2
+      "@types/node":
+        specifier: "catalog:"
+        version: 24.10.1
       tsdown:
         specifier: "catalog:"
         version: 0.17.2(typescript@5.9.3)
       type-fest:
-        specifier: 5.3.1
+        specifier: "catalog:"
         version: 5.3.1
       typescript:
         specifier: "catalog:"
         version: 5.9.3
+      vitest:
+        specifier: "catalog:"
+        version: 4.0.15(@types/node@24.10.1)(terser@5.44.1)(tsx@4.21.0)
       zod:
         specifier: "catalog:"
         version: 4.1.13
@@ -126,6 +135,9 @@ importers:
       typescript:
         specifier: "catalog:"
         version: 5.9.3
+      vitest:
+        specifier: "catalog:"
+        version: 4.0.15(@types/node@24.10.1)(terser@5.44.1)(tsx@4.21.0)
       zod:
         specifier: "catalog:"
         version: 4.1.13
@@ -141,6 +153,9 @@ importers:
       typescript:
         specifier: "catalog:"
         version: 5.9.3
+      vitest:
+        specifier: "catalog:"
+        version: 4.0.15(@types/node@24.10.1)(terser@5.44.1)(tsx@4.21.0)
       zod:
         specifier: "catalog:"
         version: 4.1.13
@@ -157,12 +172,18 @@ importers:
       "@temporalio/workflow":
         specifier: "catalog:"
         version: 1.13.2
+      "@types/node":
+        specifier: "catalog:"
+        version: 24.10.1
       tsdown:
         specifier: "catalog:"
         version: 0.17.2(typescript@5.9.3)
       typescript:
         specifier: "catalog:"
         version: 5.9.3
+      vitest:
+        specifier: "catalog:"
+        version: 4.0.15(@types/node@24.10.1)(terser@5.44.1)(tsx@4.21.0)
       zod:
         specifier: "catalog:"
         version: 4.1.13
@@ -197,6 +218,9 @@ importers:
       typescript:
         specifier: "catalog:"
         version: 5.9.3
+      vitest:
+        specifier: "catalog:"
+        version: 4.0.15(@types/node@24.10.1)(terser@5.44.1)(tsx@4.21.0)
 
   samples/basic-order-processing:
     dependencies:

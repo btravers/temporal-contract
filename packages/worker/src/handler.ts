@@ -1,23 +1,23 @@
 import {
-  proxyActivities,
-  WorkflowInfo,
-  workflowInfo,
   ActivityOptions,
-  setHandler,
+  WorkflowInfo,
   defineQuery,
   defineSignal,
   defineUpdate,
+  proxyActivities,
+  setHandler,
+  workflowInfo,
 } from "@temporalio/workflow";
 import type {
+  ActivityDefinition,
   ContractDefinition,
   InferInput,
   InferOutput,
-  WorkflowDefinition,
-  ActivityDefinition,
   InferWorkflowContextActivities,
-  SignalDefinition,
   QueryDefinition,
+  SignalDefinition,
   UpdateDefinition,
+  WorkflowDefinition,
 } from "@temporal-contract/core";
 
 /**
@@ -276,12 +276,12 @@ export function createActivitiesHandler<T extends ContractDefinition>(
       throw new Error(`Activity definition not found for: ${activityName}`);
     }
 
-    wrappedActivities[activityName] = async (...args: any[]) => {
-      // Validate input (args is already a tuple)
-      const validatedInput = activityDef.input.parse(args) as any;
+    wrappedActivities[activityName] = async (input: undefined) => {
+      // Validate input
+      const validatedInput = activityDef.input.parse(input);
 
-      // Execute activity (pass tuple directly)
-      const result = await (activityImpl as any)(validatedInput);
+      // Execute activity
+      const result = await activityImpl(validatedInput);
 
       // Validate output
       return activityDef.output.parse(result);

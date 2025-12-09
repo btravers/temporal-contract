@@ -37,7 +37,9 @@
   "scripts": {
     "dev": "tsdown src/index.ts --format cjs,esm --dts --watch",
     "build": "tsdown src/index.ts --format cjs,esm --dts --clean",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@temporal-contract/core": "workspace:*"
@@ -46,6 +48,7 @@
     "@temporal-contract/tsconfig": "workspace:*",
     "tsdown": "catalog:",
     "typescript": "catalog:",
+    "vitest": "catalog:",
     "zod": "catalog:"
   },
   "peerDependencies": {
