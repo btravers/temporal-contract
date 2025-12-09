@@ -220,4 +220,406 @@ describe("Contract Builder", () => {
       expect(taskQueue).toBe("my-queue");
     });
   });
+
+  describe("defineContract validation", () => {
+    it("should throw when taskQueue is empty", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "",
+          workflows: {
+            test: {
+              input: z.object({}),
+              output: z.object({}),
+            },
+          },
+        }),
+      ).toThrow("taskQueue cannot be empty");
+    });
+
+    it("should throw when taskQueue is only whitespace", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "   ",
+          workflows: {
+            test: {
+              input: z.object({}),
+              output: z.object({}),
+            },
+          },
+        }),
+      ).toThrow("Contract error");
+    });
+
+    it("should throw when no workflows are defined", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "test",
+          workflows: {},
+        }),
+      ).toThrow("at least one workflow is required");
+    });
+
+    it("should throw when workflow name is invalid", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "test",
+          workflows: {
+            "invalid-name": {
+              input: z.object({}),
+              output: z.object({}),
+            },
+          },
+        }),
+      ).toThrow("must be a valid JavaScript identifier");
+    });
+
+    it("should throw when global activity name is invalid", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "test",
+          workflows: {
+            test: {
+              input: z.object({}),
+              output: z.object({}),
+            },
+          },
+          activities: {
+            "send-email": {
+              input: z.object({}),
+              output: z.object({}),
+            },
+          },
+        }),
+      ).toThrow("must be a valid JavaScript identifier");
+    });
+
+    it("should throw when workflow activity conflicts with global activity", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "test",
+          workflows: {
+            processOrder: {
+              input: z.object({}),
+              output: z.object({}),
+              activities: {
+                sendEmail: {
+                  input: z.object({}),
+                  output: z.object({}),
+                },
+              },
+            },
+          },
+          activities: {
+            sendEmail: {
+              input: z.object({}),
+              output: z.object({}),
+            },
+          },
+        }),
+      ).toThrow(
+        'workflow "processOrder" has activity "sendEmail" that conflicts with a global activity',
+      );
+    });
+
+    it("should throw when signal name is invalid", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "test",
+          workflows: {
+            test: {
+              input: z.object({}),
+              output: z.object({}),
+              signals: {
+                "cancel-order": {
+                  input: z.object({}),
+                },
+              },
+            },
+          },
+        }),
+      ).toThrow("must be a valid JavaScript identifier");
+    });
+
+    it("should throw when query name is invalid", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "test",
+          workflows: {
+            test: {
+              input: z.object({}),
+              output: z.object({}),
+              queries: {
+                "get-status": {
+                  input: z.object({}),
+                  output: z.object({}),
+                },
+              },
+            },
+          },
+        }),
+      ).toThrow("must be a valid JavaScript identifier");
+    });
+
+    it("should throw when update name is invalid", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "test",
+          workflows: {
+            test: {
+              input: z.object({}),
+              output: z.object({}),
+              updates: {
+                "update-amount": {
+                  input: z.object({}),
+                  output: z.object({}),
+                },
+              },
+            },
+          },
+        }),
+      ).toThrow("must be a valid JavaScript identifier");
+    });
+
+    it("should allow valid camelCase names", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "test-queue",
+          workflows: {
+            processOrder: {
+              input: z.object({}),
+              output: z.object({}),
+              activities: {
+                sendEmail: {
+                  input: z.object({}),
+                  output: z.object({}),
+                },
+              },
+              signals: {
+                cancelOrder: {
+                  input: z.object({}),
+                },
+              },
+              queries: {
+                getStatus: {
+                  input: z.object({}),
+                  output: z.object({}),
+                },
+              },
+              updates: {
+                updateAmount: {
+                  input: z.object({}),
+                  output: z.object({}),
+                },
+              },
+            },
+          },
+        }),
+      ).not.toThrow();
+    });
+
+    it("should allow names with underscores and dollar signs", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "test",
+          workflows: {
+            process_order: {
+              input: z.object({}),
+              output: z.object({}),
+            },
+            $process: {
+              input: z.object({}),
+              output: z.object({}),
+            },
+          },
+          activities: {
+            send_email: {
+              input: z.object({}),
+              output: z.object({}),
+            },
+            $send: {
+              input: z.object({}),
+              output: z.object({}),
+            },
+          },
+        }),
+      ).not.toThrow();
+    });
+  });
+
+  describe("Edge Cases", () => {
+    it("should handle empty object schemas", () => {
+      const contract = defineContract({
+        taskQueue: "test",
+        workflows: {
+          empty: {
+            input: z.object({}),
+            output: z.object({}),
+          },
+        },
+      });
+      expect(contract).toBeDefined();
+      expect(contract.workflows.empty.input).toBeDefined();
+    });
+
+    it("should handle void input", () => {
+      const contract = defineContract({
+        taskQueue: "test",
+        workflows: {
+          noInput: {
+            input: z.void(),
+            output: z.object({ result: z.string() }),
+          },
+        },
+      });
+      expect(contract).toBeDefined();
+    });
+
+    it("should handle workflows without activities, signals, queries, or updates", () => {
+      const contract = defineContract({
+        taskQueue: "test",
+        workflows: {
+          simple: {
+            input: z.string(),
+            output: z.string(),
+          },
+        },
+      });
+      const workflow = contract.workflows.simple;
+      expect("activities" in workflow).toBe(false);
+      expect("signals" in workflow).toBe(false);
+      expect("queries" in workflow).toBe(false);
+      expect("updates" in workflow).toBe(false);
+    });
+
+    it("should handle contract without global activities", () => {
+      const contract = defineContract({
+        taskQueue: "test",
+        workflows: {
+          test: {
+            input: z.object({}),
+            output: z.object({}),
+          },
+        },
+      });
+      expect("activities" in contract).toBe(false);
+    });
+
+    it("should throw when workflow is missing input", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "test",
+          workflows: {
+            // @ts-expect-error - Testing validation with missing input
+            test: {
+              output: z.object({}),
+            },
+          },
+        }),
+      ).toThrow("Contract error");
+    });
+
+    it("should throw when workflow is missing output", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "test",
+          workflows: {
+            // @ts-expect-error - Testing validation with missing output
+            test: {
+              input: z.object({}),
+            },
+          },
+        }),
+      ).toThrow("Contract error");
+    });
+
+    it("should throw when activity is missing input", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "test",
+          workflows: {
+            test: {
+              input: z.object({}),
+              output: z.object({}),
+            },
+          },
+          activities: {
+            // @ts-expect-error - Testing validation with missing input
+            test: {
+              output: z.object({}),
+            },
+          },
+        }),
+      ).toThrow("Contract error");
+    });
+
+    it("should throw when activity is missing output", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "test",
+          workflows: {
+            test: {
+              input: z.object({}),
+              output: z.object({}),
+            },
+          },
+          activities: {
+            // @ts-expect-error - Testing validation with missing output
+            test: {
+              input: z.object({}),
+            },
+          },
+        }),
+      ).toThrow("Contract error");
+    });
+
+    it("should throw when workflow activity name is invalid", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "test",
+          workflows: {
+            test: {
+              input: z.object({}),
+              output: z.object({}),
+              activities: {
+                "invalid-name": {
+                  input: z.object({}),
+                  output: z.object({}),
+                },
+              },
+            },
+          },
+        }),
+      ).toThrow("must be a valid JavaScript identifier");
+    });
+
+    it("should throw when input is not a Zod schema", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "test",
+          workflows: {
+            test: {
+              // @ts-expect-error - Testing validation with invalid input type
+              input: "not a schema",
+              output: z.object({}),
+            },
+          },
+        }),
+      ).toThrow("Contract error");
+    });
+
+    it("should throw when output is not a Zod schema", () => {
+      expect(() =>
+        defineContract({
+          taskQueue: "test",
+          workflows: {
+            test: {
+              input: z.object({}),
+              // @ts-expect-error - Testing validation with invalid output type
+              output: { invalid: true },
+            },
+          },
+        }),
+      ).toThrow("Contract error");
+    });
+  });
 });

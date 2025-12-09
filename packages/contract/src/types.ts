@@ -2,8 +2,9 @@ import type { z } from "zod";
 
 /**
  * Base types for validation schemas
+ * Constrained to avoid implicit any types
  */
-export type AnyZodSchema = z.ZodType;
+export type AnyZodSchema = z.ZodType<unknown, unknown>;
 
 /**
  * Definition of an activity
@@ -12,15 +13,15 @@ export interface ActivityDefinition<
   TInput extends AnyZodSchema = AnyZodSchema,
   TOutput extends AnyZodSchema = AnyZodSchema,
 > {
-  input: TInput;
-  output: TOutput;
+  readonly input: TInput;
+  readonly output: TOutput;
 }
 
 /**
  * Definition of a signal
  */
 export interface SignalDefinition<TInput extends AnyZodSchema = AnyZodSchema> {
-  input: TInput;
+  readonly input: TInput;
 }
 
 /**
@@ -30,8 +31,8 @@ export interface QueryDefinition<
   TInput extends AnyZodSchema = AnyZodSchema,
   TOutput extends AnyZodSchema = AnyZodSchema,
 > {
-  input: TInput;
-  output: TOutput;
+  readonly input: TInput;
+  readonly output: TOutput;
 }
 
 /**
@@ -41,8 +42,8 @@ export interface UpdateDefinition<
   TInput extends AnyZodSchema = AnyZodSchema,
   TOutput extends AnyZodSchema = AnyZodSchema,
 > {
-  input: TInput;
-  output: TOutput;
+  readonly input: TInput;
+  readonly output: TOutput;
 }
 
 /**
@@ -54,12 +55,12 @@ export interface WorkflowDefinition<
   TQueries extends Record<string, QueryDefinition> = Record<string, QueryDefinition>,
   TUpdates extends Record<string, UpdateDefinition> = Record<string, UpdateDefinition>,
 > {
-  input: AnyZodSchema;
-  output: AnyZodSchema;
-  activities?: TActivities;
-  signals?: TSignals;
-  queries?: TQueries;
-  updates?: TUpdates;
+  readonly input: AnyZodSchema;
+  readonly output: AnyZodSchema;
+  readonly activities?: TActivities;
+  readonly signals?: TSignals;
+  readonly queries?: TQueries;
+  readonly updates?: TUpdates;
 }
 
 /**
@@ -69,9 +70,9 @@ export interface ContractDefinition<
   TWorkflows extends Record<string, WorkflowDefinition> = Record<string, WorkflowDefinition>,
   TActivities extends Record<string, ActivityDefinition> = Record<string, ActivityDefinition>,
 > {
-  taskQueue: string;
-  workflows: TWorkflows;
-  activities?: TActivities;
+  readonly taskQueue: string;
+  readonly workflows: TWorkflows;
+  readonly activities?: TActivities;
 }
 
 /**
@@ -326,8 +327,9 @@ export type ClientInferWorkflowUpdates<T extends WorkflowDefinition> =
  */
 export type ClientInferWorkflowContextActivities<
   TContract extends ContractDefinition,
-  TWorkflow extends TContract["workflows"][keyof TContract["workflows"]],
-> = ClientInferWorkflowActivities<TWorkflow> & ClientInferActivities<TContract>;
+  TWorkflowName extends keyof TContract["workflows"],
+> = ClientInferWorkflowActivities<TContract["workflows"][TWorkflowName]> &
+  ClientInferActivities<TContract>;
 
 /**
  * UTILITY TYPES FOR ACTIVITY HANDLERS
