@@ -1,4 +1,5 @@
 import { Future, Result } from "@swan-io/boxed";
+import { ZodError } from "zod";
 import {
   type DeclareWorkflowOptions as BaseDeclareWorkflowOptions,
   type QueryHandlerImplementation,
@@ -15,6 +16,11 @@ import type {
   WorkerInferOutput,
   WorkflowDefinition,
 } from "@temporal-contract/contract";
+import {
+  ActivityDefinitionNotFoundError,
+  ActivityInputValidationError,
+  ActivityOutputValidationError,
+} from "./errors.js";
 
 /**
  * Activity error type
@@ -207,6 +213,17 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
   // Wrap activities with validation and Result unwrapping
   const wrappedActivities: Record<string, (...args: unknown[]) => Promise<unknown>> = {};
 
+  // Collect all available activity definitions
+  const allDefinitions: string[] = [];
+  if (contract.activities) {
+    allDefinitions.push(...Object.keys(contract.activities));
+  }
+  for (const workflow of Object.values(contract.workflows) as WorkflowDefinition[]) {
+    if (workflow.activities) {
+      allDefinitions.push(...Object.keys(workflow.activities));
+    }
+  }
+
   for (const [activityName, activityImpl] of Object.entries(activities)) {
     // Find activity definition (global or workflow-specific)
     let activityDef: ActivityDefinition | undefined;
@@ -225,7 +242,7 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
     }
 
     if (!activityDef) {
-      throw new Error(`Activity definition not found for: ${activityName}`);
+      throw new ActivityDefinitionNotFoundError(activityName, allDefinitions);
     }
 
     wrappedActivities[activityName] = async (...args: unknown[]) => {
@@ -233,7 +250,15 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
       const input = args.length === 1 ? args[0] : args;
 
       // Validate input
-      const validatedInput = activityDef.input.parse(input);
+      let validatedInput: unknown;
+      try {
+        validatedInput = activityDef.input.parse(input);
+      } catch (error) {
+        if (error instanceof ZodError) {
+          throw new ActivityInputValidationError(activityName, error);
+        }
+        throw error;
+      }
 
       // Execute boxed activity (pass single parameter, returns Future<Result<T, E>>)
       const futureResult = (
@@ -246,7 +271,14 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
       return result.match({
         Ok: (value: unknown) => {
           // Validate output on success
-          return activityDef.output.parse(value);
+          try {
+            return activityDef.output.parse(value);
+          } catch (error) {
+            if (error instanceof ZodError) {
+              throw new ActivityOutputValidationError(activityName, error);
+            }
+            throw error;
+          }
         },
         Error: (error: ActivityError) => {
           // Convert Result.Error to thrown exception for Temporal

@@ -6,6 +6,11 @@ import {
   type ActivityError,
   type BoxedActivityImplementations,
 } from "./handler.js";
+import {
+  ActivityDefinitionNotFoundError,
+  ActivityInputValidationError,
+  ActivityOutputValidationError,
+} from "./errors.js";
 import type { ContractDefinition } from "@temporal-contract/contract";
 
 describe("Worker-Boxed Package", () => {
@@ -244,17 +249,112 @@ describe("Worker-Boxed Package", () => {
       const contract = {
         taskQueue: "test-queue",
         workflows: {},
-        activities: {},
+        activities: {
+          validActivity: {
+            input: z.object({ value: z.string() }),
+            output: z.object({ result: z.string() }),
+          },
+        },
       } satisfies ContractDefinition;
+
+      const testActivities = {
+        validActivity: (_args: unknown) => Future.value(Result.Ok({ result: "test" })),
+        unknownActivity: (_args: unknown) => Future.value(Result.Ok({ result: "test" })),
+      };
 
       expect(() => {
         declareActivitiesHandler({
           contract,
-          activities: {
-            unknownActivity: (_args: unknown) => Future.value(Result.Ok({ result: "test" })),
-          } as BoxedActivityImplementations<typeof contract>,
+          activities: testActivities as unknown as BoxedActivityImplementations<typeof contract>,
         });
-      }).toThrow("Activity definition not found");
+      }).toThrow(ActivityDefinitionNotFoundError);
+
+      try {
+        declareActivitiesHandler({
+          contract,
+          activities: testActivities as unknown as BoxedActivityImplementations<typeof contract>,
+        });
+      } catch (error) {
+        if (error instanceof ActivityDefinitionNotFoundError) {
+          expect(error.activityName).toBe("unknownActivity");
+          expect(error.availableDefinitions).toEqual(["validActivity"]);
+          expect(error.message).toContain("unknownActivity");
+          expect(error.message).toContain("validActivity");
+        }
+      }
+    });
+  });
+
+  describe("Error Handling", () => {
+    it("should throw ActivityInputValidationError for invalid input", async () => {
+      const contract = {
+        taskQueue: "test-queue",
+        workflows: {},
+        activities: {
+          strictActivity: {
+            input: z.object({ amount: z.number().positive(), email: z.string().email() }),
+            output: z.object({ success: z.boolean() }),
+          },
+        },
+      } satisfies ContractDefinition;
+
+      const handler = declareActivitiesHandler({
+        contract,
+        activities: {
+          strictActivity: (_args) => {
+            return Future.value(Result.Ok({ success: true }));
+          },
+        },
+      });
+
+      try {
+        await handler.activities["strictActivity"]!({ amount: -10, email: "invalid" });
+      } catch (error) {
+        if (error instanceof ActivityInputValidationError) {
+          expect(error.activityName).toBe("strictActivity");
+          expect(error.zodError).toBeDefined();
+          expect(error.message).toContain("strictActivity");
+          expect(error.message).toContain("input validation failed");
+        }
+      }
+    });
+
+    it("should throw ActivityOutputValidationError for invalid output", async () => {
+      const contract = {
+        taskQueue: "test-queue",
+        workflows: {},
+        activities: {
+          strictOutputActivity: {
+            input: z.object({ id: z.string() }),
+            output: z.object({ value: z.number(), status: z.enum(["active", "inactive"]) }),
+          },
+        },
+      } satisfies ContractDefinition;
+
+      const handler = declareActivitiesHandler({
+        contract,
+        activities: {
+          strictOutputActivity: (_args) => {
+            return Future.value(
+              Result.Ok({ value: "not-a-number", status: "active" }) as unknown as Result<
+                { value: number; status: "active" | "inactive" },
+                ActivityError
+              >,
+            );
+          },
+        },
+      });
+
+      try {
+        await handler.activities["strictOutputActivity"]!({ id: "123" });
+      } catch (error) {
+        if (error instanceof ActivityOutputValidationError) {
+          expect(error.activityName).toBe("strictOutputActivity");
+          expect(error.zodError).toBeDefined();
+          expect(error.message).toContain("strictOutputActivity");
+          expect(error.message).toContain("output validation failed");
+        }
+      }
     });
   });
 });

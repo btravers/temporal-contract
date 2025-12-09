@@ -13,5 +13,12 @@ export {
   type ActivityError,
 } from "./handler.js";
 
+export {
+  WorkerBoxedError,
+  ActivityDefinitionNotFoundError,
+  ActivityInputValidationError,
+  ActivityOutputValidationError,
+} from "./errors.js";
+
 // Re-export boxed utilities for convenience
 export { Result, Future, Option, AsyncData } from "@swan-io/boxed";
