@@ -1,1 +1,1 @@
-export { it } from "./temporal-container.js";
+export { it, setupTemporalTestContainer } from "./temporal-container.js";
