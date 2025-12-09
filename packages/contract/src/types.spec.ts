@@ -575,7 +575,7 @@ describe("Core Types", () => {
       expect(workflowName2).toBe("sendNotification");
 
       // @ts-expect-error Invalid workflow name
-      const invalidWorkflow: WorkflowNames = "nonExistent";
+      const _invalidWorkflow: WorkflowNames = "nonExistent";
     });
 
     it("should infer activity names correctly", () => {
@@ -607,7 +607,7 @@ describe("Core Types", () => {
       expect(activityName2).toBe("logEvent");
 
       // @ts-expect-error Invalid activity name
-      const invalidActivity: ActivityNames = "nonExistent";
+      const _invalidActivity: ActivityNames = "nonExistent";
     });
 
     it("should infer contract workflows type correctly", () => {

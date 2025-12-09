@@ -11,3 +11,17 @@ export type {
   ActivitiesHandler,
   DeclareWorkflowOptions,
 } from "./handler.js";
+export {
+  WorkerError,
+  ActivityImplementationNotFoundError,
+  ActivityDefinitionNotFoundError,
+  ActivityInputValidationError,
+  ActivityOutputValidationError,
+  WorkflowInputValidationError,
+  WorkflowOutputValidationError,
+  SignalInputValidationError,
+  QueryInputValidationError,
+  QueryOutputValidationError,
+  UpdateInputValidationError,
+  UpdateOutputValidationError,
+} from "./errors.js";

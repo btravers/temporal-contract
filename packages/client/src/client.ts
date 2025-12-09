@@ -145,7 +145,10 @@ export class TypedClient<TContract extends ContractDefinition> {
    */
   async startWorkflow<TWorkflowName extends keyof TContract["workflows"]>(
     workflowName: TWorkflowName,
-    options: TypedWorkflowStartOptions & {
+    {
+      args,
+      ...temporalOptions
+    }: TypedWorkflowStartOptions & {
       args: ClientInferInput<TContract["workflows"][TWorkflowName]>;
     },
   ): Promise<TypedWorkflowHandle<TContract["workflows"][TWorkflowName]>> {
@@ -158,7 +161,7 @@ export class TypedClient<TContract extends ContractDefinition> {
     // Validate input with Zod schema (tuple)
     let validatedInput: ClientInferInput<TContract["workflows"][TWorkflowName]>;
     try {
-      validatedInput = definition.input.parse(options.args) as ClientInferInput<
+      validatedInput = definition.input.parse(args) as ClientInferInput<
         TContract["workflows"][TWorkflowName]
       >;
     } catch (error) {
@@ -167,9 +170,6 @@ export class TypedClient<TContract extends ContractDefinition> {
       }
       throw error;
     }
-
-    // Destructure args and extract Temporal-specific options
-    const { args, ...temporalOptions } = options;
 
     // Start workflow (Temporal expects args as array, so wrap single parameter)
     const handle = await this.client.workflow.start(workflowName as string, {
@@ -200,7 +200,10 @@ export class TypedClient<TContract extends ContractDefinition> {
    */
   async executeWorkflow<TWorkflowName extends keyof TContract["workflows"]>(
     workflowName: TWorkflowName,
-    options: TypedWorkflowStartOptions & {
+    {
+      args,
+      ...temporalOptions
+    }: TypedWorkflowStartOptions & {
       args: ClientInferInput<TContract["workflows"][TWorkflowName]>;
     },
   ): Promise<ClientInferOutput<TContract["workflows"][TWorkflowName]>> {
@@ -213,7 +216,7 @@ export class TypedClient<TContract extends ContractDefinition> {
     // Validate input with Zod schema
     let validatedInput: ClientInferInput<TContract["workflows"][TWorkflowName]>;
     try {
-      validatedInput = definition.input.parse(options.args) as ClientInferInput<
+      validatedInput = definition.input.parse(args) as ClientInferInput<
         TContract["workflows"][TWorkflowName]
       >;
     } catch (error) {
@@ -222,9 +225,6 @@ export class TypedClient<TContract extends ContractDefinition> {
       }
       throw error;
     }
-
-    // Destructure args and extract Temporal-specific options
-    const { args, ...temporalOptions } = options;
 
     // Execute workflow (Temporal expects args as array, so wrap single parameter)
     const result = await this.client.workflow.execute(workflowName as string, {

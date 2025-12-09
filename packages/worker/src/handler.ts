@@ -8,6 +8,7 @@ import {
   setHandler,
   workflowInfo,
 } from "@temporalio/workflow";
+import { ZodError } from "zod";
 import type {
   ActivityDefinition,
   ContractDefinition,
@@ -19,6 +20,19 @@ import type {
   WorkerInferWorkflowContextActivities,
   WorkflowDefinition,
 } from "@temporal-contract/contract";
+import {
+  ActivityImplementationNotFoundError,
+  ActivityDefinitionNotFoundError,
+  ActivityInputValidationError,
+  ActivityOutputValidationError,
+  WorkflowInputValidationError,
+  WorkflowOutputValidationError,
+  SignalInputValidationError,
+  QueryInputValidationError,
+  QueryOutputValidationError,
+  UpdateInputValidationError,
+  UpdateOutputValidationError,
+} from "./errors.js";
 
 /**
  * Workflow context with typed activities (workflow + global) and workflow info
@@ -137,7 +151,22 @@ export interface DeclareWorkflowOptions<
   contract: TContract;
   implementation: WorkflowImplementation<TContract, TWorkflowName>;
   /**
-   * Default activity options
+   * Default activity options applied to all activities in this workflow.
+   * These will be merged with the default startToCloseTimeout of 60 seconds.
+   * For more control, you can override specific Temporal ActivityOptions like:
+   * - startToCloseTimeout: Maximum time for activity execution
+   * - scheduleToCloseTimeout: End-to-end timeout including queuing
+   * - scheduleToStartTimeout: Maximum time activity can wait in queue
+   * - heartbeatTimeout: Time between heartbeats before considering activity dead
+   * - retry: Retry policy for failed activities
+   *
+   * @example
+   * ```ts
+   * activityOptions: {
+   *   startToCloseTimeout: '5m',
+   *   retry: { maximumAttempts: 3 }
+   * }
+   * ```
    */
   activityOptions?: ActivityOptions;
   /**
@@ -204,19 +233,34 @@ function createValidatedActivities<
     const rawActivity = rawActivities[activityName];
 
     if (!rawActivity) {
-      throw new Error(`Activity implementation not found for: ${activityName}`);
+      throw new ActivityImplementationNotFoundError(activityName, Object.keys(rawActivities));
     }
 
     // @ts-expect-error fixme later
     validatedActivities[activityName] = async (...args: unknown[]) => {
       // Validate input before sending over network
-      const validatedInput = activityDef.input.parse(args);
+      let validatedInput: unknown;
+      try {
+        validatedInput = activityDef.input.parse(args);
+      } catch (error) {
+        if (error instanceof ZodError) {
+          throw new ActivityInputValidationError(activityName, error);
+        }
+        throw error;
+      }
 
       // Call the actual activity (pass the single parameter directly)
       const result = await rawActivity(validatedInput);
 
       // Validate output after receiving from network
-      return activityDef.output.parse(result);
+      try {
+        return activityDef.output.parse(result);
+      } catch (error) {
+        if (error instanceof ZodError) {
+          throw new ActivityOutputValidationError(activityName, error);
+        }
+        throw error;
+      }
     };
   }
 
@@ -270,6 +314,17 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
   // Wrap activities with validation
   const wrappedActivities: Record<string, (...args: unknown[]) => Promise<unknown>> = {};
 
+  // Collect all available activity definitions
+  const allDefinitions: string[] = [];
+  if (contract.activities) {
+    allDefinitions.push(...Object.keys(contract.activities));
+  }
+  for (const workflow of Object.values(contract.workflows) as WorkflowDefinition[]) {
+    if (workflow.activities) {
+      allDefinitions.push(...Object.keys(workflow.activities));
+    }
+  }
+
   for (const [activityName, activityImpl] of Object.entries(activities)) {
     // Find activity definition (global or workflow-specific)
     let activityDef: ActivityDefinition | undefined;
@@ -288,18 +343,33 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
     }
 
     if (!activityDef) {
-      throw new Error(`Activity definition not found for: ${activityName}`);
+      throw new ActivityDefinitionNotFoundError(activityName, allDefinitions);
     }
 
     wrappedActivities[activityName] = async (input: unknown) => {
       // Validate input
-      const validatedInput = activityDef.input.parse(input);
+      let validatedInput: unknown;
+      try {
+        validatedInput = activityDef.input.parse(input);
+      } catch (error) {
+        if (error instanceof ZodError) {
+          throw new ActivityInputValidationError(activityName, error);
+        }
+        throw error;
+      }
 
       // Execute activity
       const result = await activityImpl(validatedInput);
 
       // Validate output
-      return activityDef.output.parse(result);
+      try {
+        return activityDef.output.parse(result);
+      } catch (error) {
+        if (error instanceof ZodError) {
+          throw new ActivityOutputValidationError(activityName, error);
+        }
+        throw error;
+      }
     };
   }
 
@@ -389,9 +459,17 @@ export function declareWorkflow<
     const singleArg = Array.isArray(args) ? args[0] : args;
 
     // Validate workflow input
-    const validatedInput = definition.input.parse(singleArg) as WorkerInferInput<
-      TContract["workflows"][TWorkflowName]
-    >;
+    let validatedInput: WorkerInferInput<TContract["workflows"][TWorkflowName]>;
+    try {
+      validatedInput = definition.input.parse(singleArg) as WorkerInferInput<
+        TContract["workflows"][TWorkflowName]
+      >;
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new WorkflowInputValidationError(String(options.definition), error);
+      }
+      throw error;
+    }
 
     // Register signal handlers
     if (definition.signals && signals) {
@@ -405,7 +483,15 @@ export function declareWorkflow<
           setHandler(signal, async (...args: unknown[]) => {
             // Extract single parameter (Temporal passes as args array)
             const input = args.length === 1 ? args[0] : args;
-            const validatedInput = signalDef.input.parse(input);
+            let validatedInput: unknown;
+            try {
+              validatedInput = signalDef.input.parse(input);
+            } catch (error) {
+              if (error instanceof ZodError) {
+                throw new SignalInputValidationError(signalName, error);
+              }
+              throw error;
+            }
             await (handler as SignalHandlerImplementation<SignalDefinition>)(validatedInput);
           });
         }
@@ -424,9 +510,24 @@ export function declareWorkflow<
           setHandler(query, (...args: unknown[]) => {
             // Extract single parameter (Temporal passes as args array)
             const input = args.length === 1 ? args[0] : args;
-            const validatedInput = queryDef.input.parse(input);
+            let validatedInput: unknown;
+            try {
+              validatedInput = queryDef.input.parse(input);
+            } catch (error) {
+              if (error instanceof ZodError) {
+                throw new QueryInputValidationError(queryName, error);
+              }
+              throw error;
+            }
             const result = (handler as QueryHandlerImplementation<QueryDefinition>)(validatedInput);
-            return queryDef.output.parse(result);
+            try {
+              return queryDef.output.parse(result);
+            } catch (error) {
+              if (error instanceof ZodError) {
+                throw new QueryOutputValidationError(queryName, error);
+              }
+              throw error;
+            }
           });
         }
       }
@@ -444,11 +545,26 @@ export function declareWorkflow<
           setHandler(update, async (...args: unknown[]) => {
             // Extract single parameter (Temporal passes as args array)
             const input = args.length === 1 ? args[0] : args;
-            const validatedInput = updateDef.input.parse(input);
+            let validatedInput: unknown;
+            try {
+              validatedInput = updateDef.input.parse(input);
+            } catch (error) {
+              if (error instanceof ZodError) {
+                throw new UpdateInputValidationError(updateName, error);
+              }
+              throw error;
+            }
             const result = await (handler as UpdateHandlerImplementation<UpdateDefinition>)(
               validatedInput,
             );
-            return updateDef.output.parse(result);
+            try {
+              return updateDef.output.parse(result);
+            } catch (error) {
+              if (error instanceof ZodError) {
+                throw new UpdateOutputValidationError(updateName, error);
+              }
+              throw error;
+            }
           });
         }
       }
@@ -461,7 +577,8 @@ export function declareWorkflow<
       const rawActivities = proxyActivities<
         Record<string, (...args: unknown[]) => Promise<unknown>>
       >({
-        startToCloseTimeout: 60_000, // 1 minute default
+        // Default to 1 minute if no timeout specified
+        startToCloseTimeout: activityOptions?.startToCloseTimeout ?? 60_000,
         ...activityOptions,
       });
 
@@ -485,8 +602,15 @@ export function declareWorkflow<
     const result = await implementation(context, validatedInput);
 
     // Validate workflow output
-    return definition.output.parse(result) as WorkerInferOutput<
-      TContract["workflows"][TWorkflowName]
-    >;
+    try {
+      return definition.output.parse(result) as WorkerInferOutput<
+        TContract["workflows"][TWorkflowName]
+      >;
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new WorkflowOutputValidationError(String(options.definition), error);
+      }
+      throw error;
+    }
   };
 }

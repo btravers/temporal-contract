@@ -1,7 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { declareActivitiesHandler, declareWorkflow } from "./handler.js";
+import type { ActivityImplementations } from "./handler.js";
 import type { ContractDefinition, WorkflowDefinition } from "@temporal-contract/contract";
+import {
+  ActivityDefinitionNotFoundError,
+  ActivityInputValidationError,
+  ActivityOutputValidationError,
+  WorkflowInputValidationError,
+  WorkflowOutputValidationError,
+} from "./errors.js";
 
 // Mock Temporal workflow functions
 vi.mock("@temporalio/workflow", () => ({
@@ -328,6 +336,191 @@ describe("Worker Package", () => {
         orderId: string;
         amount: number;
       });
+    });
+  });
+
+  describe("Error Handling", () => {
+    it("should throw ActivityDefinitionNotFoundError with available definitions", () => {
+      const contract = {
+        taskQueue: "test-queue",
+        workflows: {},
+        activities: {
+          sendEmail: {
+            input: z.object({ to: z.string() }),
+            output: z.object({ sent: z.boolean() }),
+          },
+          processPayment: {
+            input: z.object({ amount: z.number() }),
+            output: z.object({ transactionId: z.string() }),
+          },
+        },
+      } satisfies ContractDefinition;
+
+      const testActivities = {
+        sendEmail: async () => ({ sent: true }),
+        unknownActivity: async () => ({ result: true }), // Activity not in contract
+      };
+
+      expect(() => {
+        declareActivitiesHandler({
+          contract,
+          activities: testActivities as unknown as ActivityImplementations<typeof contract>,
+        });
+      }).toThrow(ActivityDefinitionNotFoundError);
+
+      try {
+        declareActivitiesHandler({
+          contract,
+          activities: testActivities as unknown as ActivityImplementations<typeof contract>,
+        });
+      } catch (error) {
+        if (error instanceof ActivityDefinitionNotFoundError) {
+          expect(error.activityName).toBe("unknownActivity");
+          expect(error.availableDefinitions).toEqual(["sendEmail", "processPayment"]);
+          expect(error.message).toContain("unknownActivity");
+          expect(error.message).toContain("sendEmail");
+        }
+      }
+    });
+
+    it("should throw ActivityInputValidationError with Zod details", async () => {
+      const contract = {
+        taskQueue: "test-queue",
+        workflows: {},
+        activities: {
+          processPayment: {
+            input: z.object({ amount: z.number().positive(), currency: z.string() }),
+            output: z.object({ transactionId: z.string() }),
+          },
+        },
+      } satisfies ContractDefinition;
+
+      const handler = declareActivitiesHandler({
+        contract,
+        activities: {
+          processPayment: async (args) => {
+            return { transactionId: `tx-${args.amount}` };
+          },
+        },
+      });
+
+      try {
+        await handler.activities["processPayment"]!({
+          amount: -100,
+          currency: "USD",
+        });
+      } catch (error) {
+        if (error instanceof ActivityInputValidationError) {
+          expect(error.activityName).toBe("processPayment");
+          expect(error.zodError).toBeDefined();
+          expect(error.message).toContain("processPayment");
+          expect(error.message).toContain("input validation failed");
+        }
+      }
+    });
+
+    it("should throw ActivityOutputValidationError with Zod details", async () => {
+      const contract = {
+        taskQueue: "test-queue",
+        workflows: {},
+        activities: {
+          fetchData: {
+            input: z.object({ id: z.string() }),
+            output: z.object({ data: z.string(), timestamp: z.number() }),
+          },
+        },
+      } satisfies ContractDefinition;
+
+      const handler = declareActivitiesHandler({
+        contract,
+        activities: {
+          fetchData: async (): Promise<{ data: string; timestamp: number }> => {
+            return { data: "test", timestamp: "invalid" as unknown as number };
+          },
+        },
+      });
+
+      try {
+        await handler.activities["fetchData"]!({ id: "123" });
+      } catch (error) {
+        if (error instanceof ActivityOutputValidationError) {
+          expect(error.activityName).toBe("fetchData");
+          expect(error.zodError).toBeDefined();
+          expect(error.message).toContain("fetchData");
+          expect(error.message).toContain("output validation failed");
+        }
+      }
+    });
+
+    it("should throw WorkflowInputValidationError", async () => {
+      const workflowDef = {
+        input: z.object({ orderId: z.string().uuid(), amount: z.number().positive() }),
+        output: z.object({ status: z.string() }),
+      } satisfies WorkflowDefinition;
+
+      const contract = {
+        taskQueue: "test-queue",
+        workflows: {
+          processOrder: workflowDef,
+        },
+      } satisfies ContractDefinition;
+
+      const workflow = declareWorkflow({
+        definition: workflowDef,
+        contract: contract,
+        implementation: async () => {
+          return { status: "completed" };
+        },
+      });
+
+      try {
+        await workflow([{ orderId: "not-a-uuid", amount: 100 }] as unknown as {
+          orderId: string;
+          amount: number;
+        });
+      } catch (error) {
+        if (error instanceof WorkflowInputValidationError) {
+          expect(error.workflowName).toBe(String(workflowDef));
+          expect(error.zodError).toBeDefined();
+          expect(error.message).toContain("input validation failed");
+        }
+      }
+    });
+
+    it("should throw WorkflowOutputValidationError", async () => {
+      const workflowDef = {
+        input: z.object({ orderId: z.string() }),
+        output: z.object({ status: z.enum(["completed", "failed", "pending"]), total: z.number() }),
+      } satisfies WorkflowDefinition;
+
+      const contract = {
+        taskQueue: "test-queue",
+        workflows: {
+          processOrder: workflowDef,
+        },
+      } satisfies ContractDefinition;
+
+      const workflow = declareWorkflow({
+        definition: workflowDef,
+        contract: contract,
+        implementation: async () => {
+          // Return invalid status to trigger validation error
+          return { status: "invalid-status", total: 100 } as unknown as {
+            status: "completed" | "failed" | "pending";
+            total: number;
+          };
+        },
+      });
+
+      try {
+        await workflow([{ orderId: "123" }] as unknown as { orderId: string });
+      } catch (error) {
+        if (error instanceof WorkflowOutputValidationError) {
+          expect(error.workflowName).toBe(String(workflowDef));
+          expect(error.zodError).toBeDefined();
+          expect(error.message).toContain("output validation failed");
+        }
+      }
     });
   });
 });
