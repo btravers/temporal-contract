@@ -1,13 +1,13 @@
 // Entry point for activities (can use @swan-io/boxed)
 export {
   declareActivitiesHandler,
+  ActivityError,
   type BoxedActivityImplementation,
   type BoxedActivityImplementations,
   type BoxedActivityHandler,
   type BoxedWorkflowActivityHandler,
   type DeclareActivitiesHandlerOptions,
   type ActivitiesHandler,
-  type ActivityError,
 } from "./handler.js";
 
 export {

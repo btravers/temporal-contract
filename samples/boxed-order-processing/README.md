@@ -70,13 +70,48 @@ pnpm dev:worker
 pnpm dev:client
 ```
 
+## Error Requalification Pattern
+
+This sample demonstrates the **required error requalification** for Temporal activities:
+
+### Activity Layer (activities.ts)
+
+```typescript
+processPayment: ({ customerId, amount }) => {
+  return processPaymentUseCase.execute(customerId, amount).map((result) =>
+    result.mapError((domainError) =>
+      // ⚠️ CRITICAL: Wrap all domain errors in ActivityError
+      // Required for Temporal retry policies!
+      new ActivityError(domainError.code, domainError.message, domainError.details)
+    )
+  );
+}
+```
+
+### Why Required?
+
+1. **Temporal Retry Policies**: Temporal needs `Error` instances (not plain objects) to apply retry policies
+2. **Explicit Error Handling**: Forces conscious error handling at activity boundaries
+3. **Type Safety**: `ActivityError` ensures consistent error structure
+4. **Clean Architecture**: Domain stays pure, activity layer handles Temporal concerns
+
+### Error Flow
+
+```
+External Service → Adapter → Use Case → Activity → Temporal
+     (throws)      (Result.Error)  (Result.Error)  (ActivityError)  (retry/fail)
+```
+
+All technical exceptions MUST be caught in adapters and returned as `Result.Error`, then wrapped in `ActivityError` at the activity layer.
+
 ## Benefits
 
 ✅ **Explicit errors** in function signatures  
 ✅ **Better testability** (no try/catch needed)  
 ✅ **Functional composition** with map/flatMap  
 ✅ **Type-safe errors** throughout the stack  
-✅ **Railway-oriented programming**
+✅ **Railway-oriented programming**  
+✅ **Controlled retry behavior** via ActivityError
 
 ## When to Use
 

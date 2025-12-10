@@ -22,12 +22,23 @@ import {
 } from "./errors.js";
 
 /**
- * Activity error type
+ * Activity error class that should be used to wrap all technical exceptions
+ * Forces proper error handling and enables retry policies
  */
-export interface ActivityError {
-  code: string;
-  message: string;
-  details?: unknown;
+export class ActivityError extends Error {
+  public readonly code: string;
+  public override readonly cause?: unknown;
+
+  constructor(code: string, message: string, cause?: unknown) {
+    super(message, { cause });
+    this.code = code;
+    this.cause = cause;
+    this.name = "ActivityError";
+    // Maintains proper stack trace for where our error was thrown (only available on V8)
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ActivityError);
+    }
+  }
 }
 
 /**
@@ -178,7 +189,7 @@ export type {
  *
  * @example
  * ```ts
- * import { declareActivitiesHandler } from '@temporal-contract/worker-boxed';
+ * import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker-boxed';
  * import { Result, Future } from '@swan-io/boxed';
  * import myContract from './contract';
  *
@@ -186,17 +197,47 @@ export type {
  *   contract: myContract,
  *   activities: {
  *     // Activity returns Result instead of throwing
+ *     // All technical exceptions must be wrapped in ActivityError for retry policies
  *     sendEmail: (to, subject, body) => {
  *       return Future.make(async resolve => {
  *         try {
  *           await emailService.send({ to, subject, body });
  *           resolve(Result.Ok({ sent: true }));
  *         } catch (error) {
- *           resolve(Result.Error({
- *             code: 'EMAIL_SEND_FAILED',
- *             message: error.message,
- *             details: error
- *           }));
+ *           // Wrap technical errors in ActivityError to enable retries
+ *           resolve(Result.Error(
+ *             new ActivityError(
+ *               'EMAIL_SEND_FAILED',
+ *               'Failed to send email',
+ *               error // Original error as cause for debugging
+ *             )
+ *           ));
+ *         }
+ *       });
+ *     },
+ *     processPayment: ({ amount, customerId }) => {
+ *       return Future.make(async resolve => {
+ *         try {
+ *           const result = await paymentGateway.charge(customerId, amount);
+ *           resolve(Result.Ok(result));
+ *         } catch (error) {
+ *           // Distinguish between retryable and non-retryable errors
+ *           if (error.code === 'NETWORK_ERROR' || error.code === 'TIMEOUT') {
+ *             // Retryable: wrap in ActivityError
+ *             resolve(Result.Error(
+ *               new ActivityError('PAYMENT_GATEWAY_UNAVAILABLE', error.message, error)
+ *             ));
+ *           } else if (error.code === 'INSUFFICIENT_FUNDS') {
+ *             // Non-retryable: business error wrapped in ActivityError
+ *             resolve(Result.Error(
+ *               new ActivityError('INSUFFICIENT_FUNDS', 'Customer has insufficient funds', error)
+ *             ));
+ *           } else {
+ *             // Unknown error: wrap for retry
+ *             resolve(Result.Error(
+ *               new ActivityError('PAYMENT_ERROR', 'Payment processing failed', error)
+ *             ));
+ *           }
  *         }
  *       });
  *     },
@@ -280,11 +321,8 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
           }
         },
         Error: (error: ActivityError) => {
-          // Convert Result.Error to thrown exception for Temporal
-          const err = new Error(error.message) as Error & { code: string; details?: unknown };
-          err.code = error.code;
-          err.details = error.details;
-          throw err;
+          // Convert Result.Error to thrown ActivityError for Temporal
+          throw error;
         },
       });
     };

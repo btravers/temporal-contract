@@ -3,7 +3,7 @@ import { Future, Result } from "@swan-io/boxed";
 import { z } from "zod";
 import {
   declareActivitiesHandler,
-  type ActivityError,
+  ActivityError,
   type BoxedActivityImplementations,
 } from "./handler.js";
 import {
@@ -162,11 +162,11 @@ describe("Worker-Boxed Package", () => {
         activities: {
           failingActivity: (_args) => {
             return Future.value(
-              Result.Error({
-                code: "ACTIVITY_FAILED",
-                message: "Something went wrong",
-                details: { info: "additional details" },
-              }),
+              Result.Error(
+                new ActivityError("ACTIVITY_FAILED", "Something went wrong", {
+                  info: "additional details",
+                }),
+              ),
             );
           },
         },
@@ -176,13 +176,10 @@ describe("Worker-Boxed Package", () => {
         await handler.activities["failingActivity"]!({ value: "test" });
         expect.fail("Should have thrown an error");
       } catch (error: unknown) {
-        expect((error as Error & { code: string; details?: unknown }).message).toBe(
-          "Something went wrong",
-        );
-        expect((error as Error & { code: string; details?: unknown }).code).toBe("ACTIVITY_FAILED");
-        expect((error as Error & { code: string; details?: unknown }).details).toEqual({
-          info: "additional details",
-        });
+        expect(error).toBeInstanceOf(ActivityError);
+        expect((error as ActivityError).message).toBe("Something went wrong");
+        expect((error as ActivityError).code).toBe("ACTIVITY_FAILED");
+        expect((error as ActivityError).cause).toEqual({ info: "additional details" });
       }
     });
 
