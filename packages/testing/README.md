@@ -25,46 +25,67 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    globalSetup: './vitest.global-setup.ts',
+    globalSetup: '@temporal-contract/testing/global-setup',
     testTimeout: 60000,
   },
 });
 ```
 
-### In vitest.global-setup.ts
-
-```typescript
-import { setupTemporalTestContainer } from '@temporal-contract/testing';
-
-export default setupTemporalTestContainer;
-```
-
 ### In your tests
 
 ```typescript
-import { describe, it, expect } from 'vitest';
+import { describe, expect } from 'vitest';
 import { getTemporalConnection } from '@temporal-contract/testing';
 import { TypedClient } from '@temporal-contract/client';
+import { it as baseIt } from "@temporal-contract/testing/extension";
+
+const it = baseIt.extend<{
+  worker: Worker;
+  client: TypedClient<typeof orderProcessingContract>;
+}>({
+  worker: [
+    async ({ workerConnection }, use) => {
+      // Create and start worker
+      const worker = await Worker.create({
+        connection: workerConnection,
+        namespace: "default",
+        taskQueue: orderProcessingContract.taskQueue,
+        workflowsPath: workflowPath("application/workflows"),
+        activities: activitiesHandler.activities,
+      });
+
+      // Start worker in background
+      worker.run().catch((err) => {
+        console.error("Worker failed:", err);
+      });
+
+      await vi.waitFor(() => worker.getState() === "RUNNING", { interval: 100 });
+
+      await use(worker);
+
+      worker.shutdown();
+
+      await vi.waitFor(() => worker.getState() === "STOPPED", { interval: 100 });
+    },
+    { auto: true },
+  ],
+  client: async ({ clientConnection }, use) => {
+    // Create typed client
+    const client = TypedClient.create(orderProcessingContract, {
+      connection: clientConnection,
+      namespace: "default",
+    });
+
+    await use(client);
+  },
+});
 
 describe('Order Processing Workflow', () => {
   it('should process an order successfully', async () => {
-    const connection = await getTemporalConnection();
-    const client = TypedClient.create(myContract, { connection });
-
     // Your test code here
   });
 });
 ```
-
-## API
-
-### `setupTemporalTestContainer()`
-
-Global setup function that starts a Temporal container before all tests and stops it after all tests.
-
-### `getTemporalConnection()`
-
-Returns a connection to the Temporal server running in the container.
 
 ## Requirements
 
