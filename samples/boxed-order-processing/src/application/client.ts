@@ -2,18 +2,7 @@ import { Connection } from "@temporalio/client";
 import { TypedClient } from "@temporal-contract/client";
 import { boxedOrderContract } from "./contract.js";
 import type { Order, OrderResult } from "./contract.js";
-import pino from "pino";
-
-const logger = pino({
-  transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-      translateTime: "SYS:standard",
-      ignore: "pid,hostname",
-    },
-  },
-});
+import { logger } from "../logger.js";
 
 /**
  * Client for Boxed Order Processing

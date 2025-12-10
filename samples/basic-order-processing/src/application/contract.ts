@@ -102,11 +102,4 @@ export const orderProcessingContract = defineContract({
 });
 
 // Re-export types from domain for convenience
-export type {
-  Order,
-  OrderItem,
-  PaymentResult,
-  InventoryReservation,
-  ShippingResult,
-  OrderResult,
-} from "../domain/entities/order.schema.js";
+export type { Order, OrderResult } from "../domain/entities/order.schema.js";

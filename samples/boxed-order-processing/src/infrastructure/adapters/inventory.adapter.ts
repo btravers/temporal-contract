@@ -1,18 +1,7 @@
 import { Future, Result } from "@swan-io/boxed";
 import type { InventoryPort, InventoryError } from "../../domain/ports/inventory.port.js";
 import type { InventoryReservation, OrderItem } from "../../domain/entities/order.schema.js";
-import { pino } from "pino";
-
-const logger = pino({
-  transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-      translateTime: "SYS:standard",
-      ignore: "pid,hostname",
-    },
-  },
-});
+import { logger } from "../../logger.js";
 
 /**
  * Mock Inventory Adapter

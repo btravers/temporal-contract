@@ -2,9 +2,6 @@ import { Future, Result } from "@swan-io/boxed";
 import { ZodError } from "zod";
 import {
   type DeclareWorkflowOptions as BaseDeclareWorkflowOptions,
-  type QueryHandlerImplementation,
-  type SignalHandlerImplementation,
-  type UpdateHandlerImplementation,
   type WorkflowContext,
   type WorkflowImplementation,
 } from "@temporal-contract/worker/workflow";
@@ -167,13 +164,7 @@ export interface DeclareWorkflowOptions<
 }
 
 // Re-export types from base worker
-export type {
-  WorkflowContext,
-  WorkflowImplementation,
-  SignalHandlerImplementation,
-  QueryHandlerImplementation,
-  UpdateHandlerImplementation,
-};
+export type { WorkflowContext, WorkflowImplementation };
 
 /**
  * Create a typed boxed activities handler with automatic validation and Result pattern

@@ -18,7 +18,6 @@
     "@temporalio/worker": "catalog:",
     "@temporalio/workflow": "catalog:",
     "pino": "catalog:",
-    "pino-pretty": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

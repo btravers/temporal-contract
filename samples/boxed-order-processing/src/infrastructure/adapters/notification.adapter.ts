@@ -1,17 +1,6 @@
 import { Future, Result } from "@swan-io/boxed";
 import type { NotificationPort, NotificationError } from "../../domain/ports/notification.port.js";
-import { pino } from "pino";
-
-const logger = pino({
-  transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-      translateTime: "SYS:standard",
-      ignore: "pid,hostname",
-    },
-  },
-});
+import { logger } from "../../logger.js";
 
 /**
  * Console Notification Adapter
