@@ -3,9 +3,7 @@ import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { activitiesHandler } from "./activities.js";
 import { boxedOrderContract } from "./contract.js";
-import pino from "pino";
-
-const logger = pino();
+import { logger } from "../logger.js";
 
 function workflowPath(filename: string): string {
   return fileURLToPath(new URL(`./${filename}${extname(import.meta.url)}`, import.meta.url));

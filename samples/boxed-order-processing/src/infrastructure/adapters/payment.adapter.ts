@@ -1,9 +1,7 @@
 import { Future, Result } from "@swan-io/boxed";
 import type { PaymentPort, PaymentError } from "../../domain/ports/payment.port.js";
 import type { PaymentResult } from "../../domain/entities/order.schema.js";
-import { pino } from "pino";
-
-const logger = pino();
+import { logger } from "../../logger.js";
 
 /**
  * Mock Payment Adapter

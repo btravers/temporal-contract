@@ -1,5 +1,5 @@
 import type { LoggerPort } from "../../domain/ports/logger.port.js";
-import { pino } from "pino";
+import { logger } from "../../logger.js";
 
 /**
  * Pino Logger Adapter
@@ -7,9 +7,7 @@ import { pino } from "pino";
  * Concrete implementation of LoggerPort using Pino
  */
 export class PinoLoggerAdapter implements LoggerPort {
-  private readonly logger = pino();
-
   log(level: "fatal" | "error" | "warn" | "info" | "debug" | "trace", message: string): void {
-    this.logger[level](message);
+    logger[level](message);
   }
 }

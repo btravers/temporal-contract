@@ -1,8 +1,6 @@
 import type { InventoryPort } from "../../domain/ports/inventory.port.js";
 import type { InventoryReservation, OrderItem } from "../../domain/entities/order.schema.js";
-import { pino } from "pino";
-
-const logger = pino();
+import { logger } from "../../logger.js";
 
 /**
  * Mock Inventory Adapter

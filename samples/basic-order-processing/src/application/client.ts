@@ -2,9 +2,7 @@ import { Connection } from "@temporalio/client";
 import { TypedClient } from "@temporal-contract/client";
 import { orderProcessingContract } from "./contract.js";
 import type { Order } from "./contract.js";
-import pino from "pino";
-
-const logger = pino();
+import { logger } from "../logger.js";
 
 /**
  * Example client to start order processing workflows

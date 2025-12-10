@@ -1,8 +1,6 @@
 import type { ShippingPort } from "../../domain/ports/shipping.port.js";
 import type { ShippingResult } from "../../domain/entities/order.schema.js";
-import { pino } from "pino";
-
-const logger = pino();
+import { logger } from "../../logger.js";
 
 /**
  * Mock Shipping Adapter
