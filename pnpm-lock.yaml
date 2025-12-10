@@ -266,6 +266,9 @@ importers:
       "@temporal-contract/contract":
         specifier: workspace:*
         version: link:../../packages/contract
+      "@temporal-contract/worker":
+        specifier: workspace:*
+        version: link:../../packages/worker
       "@temporal-contract/worker-boxed":
         specifier: workspace:*
         version: link:../../packages/worker-boxed

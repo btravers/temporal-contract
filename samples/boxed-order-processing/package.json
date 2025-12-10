@@ -15,6 +15,7 @@
     "@swan-io/boxed": "catalog:",
     "@temporal-contract/client": "workspace:*",
     "@temporal-contract/contract": "workspace:*",
+    "@temporal-contract/worker": "workspace:*",
     "@temporal-contract/worker-boxed": "workspace:*",
     "@temporalio/client": "catalog:",
     "@temporalio/worker": "catalog:",

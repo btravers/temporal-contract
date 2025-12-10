@@ -9,12 +9,14 @@ This directory contains sample applications demonstrating how to use `temporal-c
 A comprehensive order processing system demonstrating **Clean Architecture** principles with `temporal-contract`:
 
 **Architecture:**
+
 - **Domain Layer:** Pure business logic with entities, use cases, and ports (interfaces)
 - **Infrastructure Layer:** Adapters implementing domain ports (mock payment, inventory, shipping)
 - **Application Layer:** Temporal-specific code (contracts, workflows, activities)
 - **Dependency Injection:** Centralized in `dependencies.ts` for easy testing
 
 **What it demonstrates:**
+
 - Type-safe contract definition with workflows and activities
 - Clean Architecture separation (Domain → Infrastructure → Application)
 - Use cases containing business logic (activities are thin wrappers)
@@ -31,12 +33,14 @@ A comprehensive order processing system demonstrating **Clean Architecture** pri
 The same order processing system using **Clean Architecture** + **Result/Future pattern** from [@swan-io/boxed](https://swan-io.github.io/boxed/):
 
 **Architecture:**
+
 - Same Clean Architecture structure as basic sample
 - **Domain Layer:** Use cases return `Future<Result<T, E>>` for explicit error handling
 - **Infrastructure Layer:** Adapters return `Future<Result<T, E>>` instead of throwing
 - **Application Layer:** Activities unwrap Results automatically via worker-boxed
 
 **What it demonstrates:**
+
 - Explicit error types in function signatures (`PaymentError`, `InventoryError`, etc.)
 - Functional error handling without exceptions (Result.Ok / Result.Error)
 - Better testability (no try/catch needed in domain layer)
@@ -126,6 +130,7 @@ samples/your-sample-name/
 ```
 
 **Key principles:**
+
 1. **Domain layer:** Pure business logic, no dependencies on frameworks
 2. **Infrastructure layer:** Technical implementations (database, APIs, etc.)
 3. **Application layer:** Temporal-specific code (thin wrappers)
