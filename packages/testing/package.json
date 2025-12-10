@@ -1,7 +1,7 @@
 {
   "name": "@temporal-contract/testing",
   "version": "0.0.1",
-  "description": "Shared testing utilities for temporal-contract",
+  "description": "Temporal testing utilities",
   "type": "module",
   "exports": {
     "./global-setup": {
