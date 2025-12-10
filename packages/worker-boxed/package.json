@@ -4,14 +4,24 @@
   "description": "Type-safe Temporal worker with boxed Result/Future pattern for activities",
   "type": "module",
   "exports": {
-    ".": {
+    "./activity": {
       "import": {
-        "types": "./dist/index.d.mts",
-        "default": "./dist/index.mjs"
+        "types": "./dist/activity.d.mts",
+        "default": "./dist/activity.mjs"
       },
       "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
+        "types": "./dist/activity.d.cts",
+        "default": "./dist/activity.cjs"
+      }
+    },
+    "./workflow": {
+      "import": {
+        "types": "./dist/workflow.d.mts",
+        "default": "./dist/workflow.mjs"
+      },
+      "require": {
+        "types": "./dist/workflow.d.cts",
+        "default": "./dist/workflow.cjs"
       }
     },
     "./package.json": "./package.json"
@@ -23,9 +33,9 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown src/index.ts --format cjs,esm --dts --clean",
+    "build": "tsdown src/activity.ts src/workflow.ts --format cjs,esm --dts --clean",
     "typecheck": "tsc --noEmit",
-    "dev": "tsdown src/index.ts --format cjs,esm --dts --watch",
+    "dev": "tsdown src/activity.ts src/workflow.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
     "test:watch": "vitest"
   },

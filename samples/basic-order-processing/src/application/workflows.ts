@@ -1,4 +1,4 @@
-import { declareWorkflow } from "@temporal-contract/worker";
+import { declareWorkflow } from "@temporal-contract/worker/workflow";
 import { orderProcessingContract } from "./contract.js";
 import type { OrderResult } from "./contract.js";
 

@@ -21,13 +21,24 @@ pnpm add @temporal-contract/worker-boxed @swan-io/boxed
 pnpm add @temporalio/worker @temporalio/workflow zod
 ```
 
+## Important: Separate Entry Points
+
+This package exports **two different entry points** to prevent bundling issues with Temporal workflows:
+
+- **`@temporal-contract/worker-boxed/activity`** - For activity implementations (includes `@swan-io/boxed`)
+- **`@temporal-contract/worker-boxed/workflow`** - For workflow implementations (NO `@swan-io/boxed` to keep workflows deterministic)
+
+> ⚠️ **Why?** `@swan-io/boxed` uses `FinalizationRegistry` which is non-deterministic and cannot be used in Temporal workflows. The `/workflow` entry point avoids importing boxed to prevent bundling errors.
+
 ## Usage
 
 ### 1. Implement Activities with Result Pattern
 
+**⚠️ Always import from `/activity` in activity files:**
+
 ```typescript
-import { declareActivitiesHandler, Result, Future } from '@temporal-contract/worker-boxed';
-import type { BoxedActivityHandler, BoxedWorkflowActivityHandler } from '@temporal-contract/worker-boxed';
+import { declareActivitiesHandler, Result, Future } from '@temporal-contract/worker-boxed/activity';
+import type { BoxedActivityHandler, BoxedWorkflowActivityHandler } from '@temporal-contract/worker-boxed/activity';
 import { orderContract } from './contract';
 
 // Using utility types for cleaner signatures
@@ -89,10 +100,13 @@ export const activitiesHandler = declareActivitiesHandler({
 
 ### 2. Activities are Unwrapped in Workflows
 
+**⚠️ Always import from `/workflow` in workflow files:**
+
 In workflows, activities still throw errors (Result is automatically unwrapped), maintaining Temporal's native error handling:
 
 ```typescript
-import { declareWorkflow } from '@temporal-contract/worker-boxed';
+import { declareWorkflow } from '@temporal-contract/worker-boxed/workflow';
+import { orderContract } from './contract';
 
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
@@ -236,6 +250,38 @@ For cleaner activity implementations with the Result pattern, use the utility ty
 See the [Activity Handlers documentation](../../docs/ACTIVITY_HANDLERS.md) for more details.
 
 ## API
+
+### Entry Points
+
+This package provides three entry points:
+
+#### `@temporal-contract/worker-boxed/activity`
+
+For activity implementations. Exports:
+
+- `declareActivitiesHandler()` - Creates activities with Result pattern
+- `Result`, `Future`, `Option`, `AsyncData` - From @swan-io/boxed
+- Type helpers: `BoxedActivityHandler`, `BoxedWorkflowActivityHandler`, etc.
+- Error classes: `ActivityDefinitionNotFoundError`, etc.
+
+**Use in:** Activity implementation files
+
+#### `@temporal-contract/worker-boxed/workflow`
+
+For workflow implementations. Exports:
+
+- `declareWorkflow()` - Creates typed workflow implementations
+- Type helpers: `WorkflowContext`, `WorkflowImplementation`, etc.
+
+**Use in:** Workflow implementation files
+
+> ⚠️ Does NOT export `@swan-io/boxed` to avoid non-deterministic code in workflows
+
+#### `@temporal-contract/worker-boxed` (default)
+
+For backward compatibility. Exports everything from both `/activity` and `/workflow`.
+
+**⚠️ WARNING:** Do not import this directly in workflow files, as it includes `@swan-io/boxed` which will cause bundling errors.
 
 ### `declareActivitiesHandler(options)`
 

@@ -8,12 +8,23 @@ Worker utilities for implementing temporal-contract workflows and activities.
 pnpm add @temporal-contract/worker @temporal-contract/contract @temporalio/workflow zod
 ```
 
+## Important: Separate Entry Points
+
+This package exports **two different entry points** for optimal tree-shaking and to separate concerns:
+
+- **`@temporal-contract/worker/activity`** - For activity implementations
+- **`@temporal-contract/worker/workflow`** - For workflow implementations
+
+Using these specific entry points ensures cleaner imports and better bundling.
+
 ## Usage
 
 ### Implementing Activities
 
+**Import from `/activity` in activity files:**
+
 ```typescript
-import { declareActivitiesHandler } from '@temporal-contract/worker';
+import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
 import type { ActivityHandler, WorkflowActivityHandler } from '@temporal-contract/contract';
 import { myContract } from './contract';
 
@@ -43,8 +54,10 @@ export const activitiesHandler = declareActivitiesHandler({
 
 ### Implementing Workflows
 
+**Import from `/workflow` in workflow files:**
+
 ```typescript
-import { declareWorkflow } from '@temporal-contract/worker';
+import { declareWorkflow } from '@temporal-contract/worker/workflow';
 import { myContract } from './contract';
 
 const processOrder = declareWorkflow({
@@ -113,6 +126,33 @@ For cleaner activity implementations without explicit type annotations, use the 
 See the [Activity Handlers documentation](../../docs/ACTIVITY_HANDLERS.md) for more details.
 
 ## API
+
+### Entry Points
+
+This package provides three entry points:
+
+#### `@temporal-contract/worker/activity`
+
+For activity implementations. Exports:
+
+- `declareActivitiesHandler()` - Creates validated activities handler
+- Error classes: `ActivityDefinitionNotFoundError`, `ActivityInputValidationError`, etc.
+
+**Use in:** Activity implementation files
+
+#### `@temporal-contract/worker/workflow`
+
+For workflow implementations. Exports:
+
+- `declareWorkflow()` - Creates typed workflow implementations
+- Type helpers: `WorkflowContext`, `WorkflowImplementation`, etc.
+- Workflow-related error classes
+
+**Use in:** Workflow implementation files
+
+#### `@temporal-contract/worker` (default)
+
+For backward compatibility. Exports everything from both `/activity` and `/workflow`.
 
 ### `declareActivitiesHandler(options)`
 

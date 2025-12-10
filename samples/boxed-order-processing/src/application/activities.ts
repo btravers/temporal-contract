@@ -1,5 +1,5 @@
 import { Future, Result } from "@swan-io/boxed";
-import { declareActivitiesHandler } from "@temporal-contract/worker-boxed";
+import { declareActivitiesHandler } from "@temporal-contract/worker-boxed/activity";
 import { boxedOrderContract } from "./contract.js";
 import {
   loggerAdapter,

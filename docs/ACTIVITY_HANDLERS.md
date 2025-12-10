@@ -69,6 +69,8 @@ const processPayment = async ({
 
 ### Pour les activités avec pattern Result/Future (@swan-io/boxed)
 
+> ⚠️ **Important :** Toujours importer depuis `@temporal-contract/worker-boxed/activity` dans les fichiers d'activités.
+
 #### `BoxedActivityHandler<TContract, TActivityName>`
 
 Type utilitaire pour typer un handler d'**activité globale** utilisant le pattern Result/Future.
@@ -77,7 +79,7 @@ Type utilitaire pour typer un handler d'**activité globale** utilisant le patte
 
 ```typescript
 import { Future, Result } from "@swan-io/boxed";
-import type { BoxedActivityHandler } from "@temporal-contract/worker-boxed";
+import type { BoxedActivityHandler } from "@temporal-contract/worker-boxed/activity";
 import { myContract } from "./contract.js";
 
 const log: BoxedActivityHandler<typeof myContract, "log"> = ({
@@ -104,7 +106,7 @@ Type utilitaire pour typer un handler d'**activité spécifique à un workflow**
 
 ```typescript
 import { Future, Result } from "@swan-io/boxed";
-import type { BoxedWorkflowActivityHandler } from "@temporal-contract/worker-boxed";
+import type { BoxedWorkflowActivityHandler } from "@temporal-contract/worker-boxed/activity";
 import { myContract } from "./contract.js";
 
 const processPayment: BoxedWorkflowActivityHandler<
@@ -198,10 +200,11 @@ export const activitiesHandler = declareActivitiesHandler({
 
 ```typescript
 import { Future, Result } from "@swan-io/boxed";
+import { declareActivitiesHandler } from "@temporal-contract/worker-boxed/activity";
 import type {
   BoxedActivityHandler,
   BoxedWorkflowActivityHandler,
-} from "@temporal-contract/worker-boxed";
+} from "@temporal-contract/worker-boxed/activity";
 import { boxedOrderContract } from "../contract.js";
 
 // Activité globale

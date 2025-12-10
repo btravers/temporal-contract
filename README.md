@@ -273,6 +273,34 @@ defineContract({
 })
 ```
 
+### Separate Entry Points for Activities and Workflows
+
+For better tree-shaking and to prevent bundling issues, both `@temporal-contract/worker` and `@temporal-contract/worker-boxed` provide **separate entry points**:
+
+#### Standard Worker
+
+```typescript
+// In activity files
+import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
+
+// In workflow files
+import { declareWorkflow } from '@temporal-contract/worker/workflow';
+```
+
+#### Boxed Worker (Result/Future Pattern)
+
+```typescript
+// In activity files - includes @swan-io/boxed
+import { declareActivitiesHandler, Result, Future } from '@temporal-contract/worker-boxed/activity';
+
+// In workflow files - NO @swan-io/boxed (keeps workflows deterministic)
+import { declareWorkflow } from '@temporal-contract/worker-boxed/workflow';
+```
+
+> ⚠️ **Important for boxed workers:** Always use `/workflow` entry point in workflow files to avoid importing `@swan-io/boxed`, which uses non-deterministic APIs (`FinalizationRegistry`) that are prohibited in Temporal workflows.
+
+The default entry points (`@temporal-contract/worker` and `@temporal-contract/worker-boxed`) are still available for backward compatibility but export everything from both entry points.
+
 ### Automatic Validation
 
 All inputs and outputs are validated automatically:

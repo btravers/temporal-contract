@@ -7,7 +7,6 @@ import {
   type UpdateHandlerImplementation,
   type WorkflowContext,
   type WorkflowImplementation,
-  declareWorkflow,
 } from "@temporal-contract/worker";
 import type {
   ActivityDefinition,
@@ -164,7 +163,6 @@ export type {
   QueryHandlerImplementation,
   UpdateHandlerImplementation,
 };
-export { declareWorkflow };
 
 /**
  * Create a typed boxed activities handler with automatic validation and Result pattern

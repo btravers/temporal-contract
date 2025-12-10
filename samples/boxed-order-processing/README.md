@@ -2,6 +2,20 @@
 
 This sample demonstrates using the **Result/Future pattern** from [@swan-io/boxed](https://swan-io.github.io/boxed/) with `@temporal-contract/worker-boxed` for explicit, type-safe error handling in Temporal workflows.
 
+## ⚠️ Important: Separate Entry Points
+
+This sample uses **separate entry points** to prevent bundling issues:
+
+```typescript
+// In activity files (src/application/activities.ts)
+import { declareActivitiesHandler, Result, Future } from '@temporal-contract/worker-boxed/activity';
+
+// In workflow files (src/application/workflows.ts)
+import { declareWorkflow } from '@temporal-contract/worker-boxed/workflow';
+```
+
+> **Why?** `@swan-io/boxed` uses `FinalizationRegistry` which is non-deterministic and cannot be bundled into Temporal workflows. The `/workflow` entry point excludes boxed to keep workflows deterministic.
+
 ## Overview
 
 Instead of throwing exceptions, activities return `Future<Result<T, ActivityError>>`:

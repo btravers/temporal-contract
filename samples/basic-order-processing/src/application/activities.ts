@@ -1,4 +1,4 @@
-import { declareActivitiesHandler } from "@temporal-contract/worker";
+import { declareActivitiesHandler } from "@temporal-contract/worker/activity";
 import { orderProcessingContract } from "./contract.js";
 import {
   loggerAdapter,
