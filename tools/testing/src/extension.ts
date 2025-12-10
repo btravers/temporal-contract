@@ -14,7 +14,8 @@ export const it = vitestIt.extend<{
   workerConnection: async ({}, use) => {
     const connection = await getTemporalWorkerConnection();
     await use(connection);
-    await connection.close();
+    // fixme
+    // await connection.close();
   },
 });
 

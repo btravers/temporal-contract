@@ -84,7 +84,7 @@ describe("Worker Package", () => {
 
       // Valid input should work - Temporal passes as array
       const result = await handler.activities["processPayment"]!({ amount: 100, currency: "USD" });
-      expect((result as { transactionId: string }).transactionId).toBe("tx-100");
+      expect(result).toEqual(expect.objectContaining({ transactionId: "tx-100" }));
 
       // Invalid input should throw
       await expect(
@@ -187,8 +187,7 @@ describe("Worker Package", () => {
         orderId: string;
         amount: number;
       });
-      expect(result.status).toBe("completed");
-      expect(result.total).toBe(100);
+      expect(result).toEqual(expect.objectContaining({ status: "completed", total: 100 }));
 
       // Invalid input should throw
       await expect(

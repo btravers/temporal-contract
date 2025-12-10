@@ -1,4 +1,4 @@
-import { describe, expect } from "vitest";
+import { describe, expect, vi } from "vitest";
 import { Worker } from "@temporalio/worker";
 import { TypedClient } from "@temporal-contract/client";
 import { it as baseIt } from "@temporal-contract/testing/extension";
@@ -28,9 +28,13 @@ const it = baseIt.extend<{
         console.error("Worker failed:", err);
       });
 
+      await vi.waitFor(() => worker.getState() === "RUNNING", { interval: 100 });
+
       await use(worker);
 
-      await worker.shutdown();
+      worker.shutdown();
+
+      await vi.waitFor(() => worker.getState() === "STOPPED", { interval: 100 });
     },
     { auto: true },
   ],
@@ -47,6 +51,7 @@ const it = baseIt.extend<{
 
 describe("Order Processing Workflow - Integration Tests", () => {
   it("should process an order successfully", async ({ client }) => {
+    // GIVEN
     const order: Order = {
       orderId: `ORD-TEST-${Date.now()}`,
       customerId: "CUST-TEST-001",
@@ -65,21 +70,23 @@ describe("Order Processing Workflow - Integration Tests", () => {
       totalAmount: 109.97,
     };
 
-    // Execute workflow
+    // WHEN
     const result = await client.executeWorkflow("processOrder", {
       workflowId: order.orderId,
       args: order,
     });
 
-    // Verify result
-    expect(result).toBeDefined();
-    expect(result.orderId).toBe(order.orderId);
-    expect(result.status).toBe("completed");
-    expect(result.transactionId).toBeDefined();
-    expect(result.trackingNumber).toBeDefined();
+    // THEN
+    expect(result).toEqual({
+      orderId: order.orderId,
+      status: "completed",
+      transactionId: expect.any(String),
+      trackingNumber: expect.any(String),
+    });
   });
 
   it("should handle workflow with startWorkflow and result", async ({ client }) => {
+    // GIVEN
     const order: Order = {
       orderId: `ORD-TEST-${Date.now()}`,
       customerId: "CUST-TEST-002",
@@ -93,22 +100,25 @@ describe("Order Processing Workflow - Integration Tests", () => {
       totalAmount: 99.99,
     };
 
-    // Start workflow
+    // WHEN
     const handle = await client.startWorkflow("processOrder", {
       workflowId: order.orderId,
       args: order,
     });
 
+    // THEN
     expect(handle.workflowId).toBe(order.orderId);
 
-    // Wait for result
-    const result = await handle.result();
-
-    expect(result.orderId).toBe(order.orderId);
-    expect(result.status).toBe("completed");
+    await expect(handle.result()).resolves.toEqual({
+      orderId: order.orderId,
+      status: "completed",
+      transactionId: expect.any(String),
+      trackingNumber: expect.any(String),
+    });
   });
 
   it("should be able to get workflow handle after start", async ({ client }) => {
+    // GIVEN
     const order: Order = {
       orderId: `ORD-TEST-${Date.now()}`,
       customerId: "CUST-TEST-003",
@@ -122,25 +132,27 @@ describe("Order Processing Workflow - Integration Tests", () => {
       totalAmount: 59.97,
     };
 
-    // Start workflow
+    // WHEN
     await client.startWorkflow("processOrder", {
       workflowId: order.orderId,
       args: order,
     });
 
-    // Get handle
+    // THEN
     const handle = await client.getHandle("processOrder", order.orderId);
 
     expect(handle.workflowId).toBe(order.orderId);
 
-    // Get result
-    const result = await handle.result();
-
-    expect(result.orderId).toBe(order.orderId);
-    expect(result.status).toBe("completed");
+    await expect(handle.result()).resolves.toEqual({
+      orderId: order.orderId,
+      status: "completed",
+      transactionId: expect.any(String),
+      trackingNumber: expect.any(String),
+    });
   });
 
   it("should handle describe and terminate operations", async ({ client }) => {
+    // GIVEN
     const order: Order = {
       orderId: `ORD-TEST-${Date.now()}`,
       customerId: "CUST-TEST-004",
@@ -154,24 +166,25 @@ describe("Order Processing Workflow - Integration Tests", () => {
       totalAmount: 149.99,
     };
 
-    // Start workflow
+    // WHEN
     const handle = await client.startWorkflow("processOrder", {
       workflowId: order.orderId,
       args: order,
     });
 
-    // Describe workflow
-    const description = await handle.describe();
+    // THEN
+    await expect(handle.describe()).resolves.toEqual(
+      expect.objectContaining({
+        workflowId: order.orderId,
+        type: "processOrder",
+      }),
+    );
 
-    expect(description).toBeDefined();
-    expect(description.workflowId).toBe(order.orderId);
-    expect(description.type).toBe("processOrder");
-
-    // Wait for completion
     await handle.result();
   });
 
   it("should validate input data with Zod", async ({ client }) => {
+    // GIVEN
     const invalidOrder = {
       orderId: `ORD-TEST-${Date.now()}`,
       customerId: "CUST-TEST-005",
@@ -185,13 +198,14 @@ describe("Order Processing Workflow - Integration Tests", () => {
       totalAmount: 29.99,
     };
 
-    // Should throw validation error
-    await expect(
-      client.executeWorkflow("processOrder", {
-        workflowId: invalidOrder.orderId,
-        args: invalidOrder as Order,
-      }),
-    ).rejects.toThrow();
+    // WHEN
+    const execution = client.executeWorkflow("processOrder", {
+      workflowId: invalidOrder.orderId,
+      args: invalidOrder as Order,
+    });
+
+    // THEN
+    await expect(execution).rejects.toThrow();
   });
 });
 

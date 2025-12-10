@@ -237,11 +237,11 @@ function createValidatedActivities<
     }
 
     // @ts-expect-error fixme later
-    validatedActivities[activityName] = async (...args: unknown[]) => {
+    validatedActivities[activityName] = async (input: unknown) => {
       // Validate input before sending over network
       let validatedInput: unknown;
       try {
-        validatedInput = activityDef.input.parse(args);
+        validatedInput = activityDef.input.parse(input);
       } catch (error) {
         if (error instanceof ZodError) {
           throw new ActivityInputValidationError(activityName, error);

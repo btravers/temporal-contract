@@ -1,4 +1,4 @@
-import { describe, expect } from "vitest";
+import { describe, expect, vi } from "vitest";
 import { Worker } from "@temporalio/worker";
 import { TypedClient } from "@temporal-contract/client";
 import { it as baseIt } from "@temporal-contract/testing/extension";
@@ -28,9 +28,13 @@ const it = baseIt.extend<{
         console.error("Worker failed:", err);
       });
 
+      await vi.waitFor(() => worker.getState() === "RUNNING", { interval: 100 });
+
       await use(worker);
 
-      await worker.shutdown();
+      worker.shutdown();
+
+      await vi.waitFor(() => worker.getState() === "STOPPED", { interval: 100 });
     },
     { auto: true },
   ],
@@ -47,6 +51,7 @@ const it = baseIt.extend<{
 
 describe("Boxed Order Processing Workflow - Integration Tests", () => {
   it("should process an order successfully with Result pattern", async ({ client }) => {
+    // GIVEN
     const order: Order = {
       orderId: `ORD-BOXED-TEST-${Date.now()}`,
       customerId: "CUST-TEST-001",
@@ -65,27 +70,23 @@ describe("Boxed Order Processing Workflow - Integration Tests", () => {
       totalAmount: 109.97,
     };
 
-    // Execute workflow
+    // WHEN
     const result = await client.executeWorkflow("processOrder", {
       workflowId: order.orderId,
       args: order,
     });
 
-    // Verify result (might be completed or failed due to random errors in activities)
-    expect(result).toBeDefined();
-    expect(result.orderId).toBe(order.orderId);
-    expect(["completed", "failed"]).toContain(result.status);
-
-    if (result.status === "completed") {
-      expect(result.transactionId).toBeDefined();
-      expect(result.trackingNumber).toBeDefined();
-    } else {
-      expect(result.errorCode).toBeDefined();
-      expect(result.failureReason).toBeDefined();
-    }
+    // THEN
+    expect(result).toEqual({
+      orderId: order.orderId,
+      status: "completed",
+      transactionId: expect.any(String),
+      trackingNumber: expect.any(String),
+    });
   });
 
   it("should handle workflow errors gracefully with rollback", async ({ client }) => {
+    // GIVEN
     const order: Order = {
       orderId: `ORD-BOXED-TEST-${Date.now()}`,
       customerId: "CUST-TEST-002",
@@ -99,22 +100,25 @@ describe("Boxed Order Processing Workflow - Integration Tests", () => {
       totalAmount: 99.99,
     };
 
-    // Start workflow
+    // WHEN
     const handle = await client.startWorkflow("processOrder", {
       workflowId: order.orderId,
       args: order,
     });
 
+    // THEN
     expect(handle.workflowId).toBe(order.orderId);
 
-    // Wait for result (might succeed or fail due to random errors)
-    const result = await handle.result();
-
-    expect(result.orderId).toBe(order.orderId);
-    expect(["completed", "failed"]).toContain(result.status);
+    await expect(handle.result()).resolves.toEqual(
+      expect.objectContaining({
+        orderId: order.orderId,
+        status: "completed",
+      }),
+    );
   });
 
   it("should be able to describe workflow execution", async ({ client }) => {
+    // GIVEN
     const order: Order = {
       orderId: `ORD-BOXED-TEST-${Date.now()}`,
       customerId: "CUST-TEST-003",
@@ -128,24 +132,26 @@ describe("Boxed Order Processing Workflow - Integration Tests", () => {
       totalAmount: 59.97,
     };
 
-    // Start workflow
+    // WHEN
     const handle = await client.startWorkflow("processOrder", {
       workflowId: order.orderId,
       args: order,
     });
 
-    // Describe workflow
-    const description = await handle.describe();
+    // THEN
+    await expect(handle.describe()).resolves.toEqual(
+      expect.objectContaining({
+        workflowId: order.orderId,
+        type: "processOrder",
+        status: "RUNNING",
+      }),
+    );
 
-    expect(description).toBeDefined();
-    expect(description.workflowId).toBe(order.orderId);
-    expect(description.type).toBe("processOrder");
-
-    // Wait for completion
     await handle.result();
   });
 
   it("should validate input with Zod", async ({ client }) => {
+    // GIVEN
     const invalidOrder = {
       orderId: `ORD-BOXED-TEST-${Date.now()}`,
       customerId: "CUST-TEST-004",
@@ -159,16 +165,18 @@ describe("Boxed Order Processing Workflow - Integration Tests", () => {
       totalAmount: 29.99,
     };
 
-    // Should throw validation error
-    await expect(
-      client.executeWorkflow("processOrder", {
-        workflowId: invalidOrder.orderId,
-        args: invalidOrder as Order,
-      }),
-    ).rejects.toThrow();
+    // WHEN
+    const execution = client.executeWorkflow("processOrder", {
+      workflowId: invalidOrder.orderId,
+      args: invalidOrder as Order,
+    });
+
+    // THEN
+    await expect(execution).rejects.toThrow();
   });
 
   it("should demonstrate Result/Future pattern benefits", async ({ client }) => {
+    // GIVEN
     const order: Order = {
       orderId: `ORD-BOXED-TEST-${Date.now()}`,
       customerId: "CUST-TEST-005",
@@ -182,20 +190,19 @@ describe("Boxed Order Processing Workflow - Integration Tests", () => {
       totalAmount: 149.99,
     };
 
-    // The workflow uses Result/Future pattern internally
-    // Activities return Result.Ok or Result.Error
-    // But from workflow perspective, errors are still thrown (auto-unwrapped)
+    // WHEN
     const result = await client.executeWorkflow("processOrder", {
       workflowId: order.orderId,
       args: order,
     });
 
-    expect(result).toBeDefined();
-    expect(result.orderId).toBe(order.orderId);
-
-    // Result pattern allows explicit error types in activity signatures
-    // while maintaining Temporal's native error handling in workflows
-    expect(["completed", "failed", "cancelled"]).toContain(result.status);
+    // THEN
+    expect(result).toEqual(
+      expect.objectContaining({
+        orderId: order.orderId,
+        status: expect.stringMatching(/^(completed|failed|cancelled)$/),
+      }),
+    );
   });
 });
 
