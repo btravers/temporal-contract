@@ -1,18 +1,37 @@
 # @temporal-contract/worker-boxed
 
-Type-safe Temporal worker implementation with **Result/Future pattern** from [@swan-io/boxed](https://github.com/swan-io/boxed) for explicit error handling in activities.
+> Worker with Result/Future pattern for explicit error handling
 
-## Why worker-boxed?
+Extends `@temporal-contract/worker` with functional error handling using [@swan-io/boxed](https://swan-io.github.io/boxed/).
 
-This package extends `@temporal-contract/worker` with a functional approach to error handling using the **Result** and **Future** patterns from `@swan-io/boxed`.
+## Why Use This?
 
-### Benefits
+**Explicit errors** in activity signatures instead of thrown exceptions:
 
-- ✅ **Explicit error handling**: Activities return `Result<T, E>` instead of throwing
-- ✅ **Type-safe errors**: Error types are part of the signature
-- ✅ **Composable**: Use Result/Future combinators for elegant error handling
-- ✅ **Railway-oriented programming**: Chain operations safely
-- ✅ **All validation from worker**: Input/output Zod validation still included
+```typescript
+// ❌ Standard: Implicit errors
+const pay = async (amount: number): Promise<PaymentResult> => {
+  if (failed) throw new Error('Payment failed');  // Hidden error
+  return { txId: '123' };
+};
+
+// ✅ Boxed: Explicit errors
+const pay = (amount: number): Future<Result<PaymentResult, ActivityError>> => {
+  return Future.make(resolve => {
+    if (failed) {
+      resolve(Result.Error({ code: 'PAYMENT_FAILED', message: '...' }));
+    } else {
+      resolve(Result.Ok({ txId: '123' }));
+    }
+  });
+};
+```
+
+**Benefits:**
+- Error types visible in signature
+- Better testability (no try/catch)
+- Functional composition
+- Railway-oriented programming
 
 ## Installation
 
@@ -23,154 +42,80 @@ pnpm add @temporalio/worker @temporalio/workflow zod
 
 ## Important: Separate Entry Points
 
-This package exports **two different entry points** to prevent bundling issues with Temporal workflows:
+⚠️ **Must use separate imports** to avoid bundling issues:
 
-- **`@temporal-contract/worker-boxed/activity`** - For activity implementations (includes `@swan-io/boxed`)
-- **`@temporal-contract/worker-boxed/workflow`** - For workflow implementations (NO `@swan-io/boxed` to keep workflows deterministic)
+- **`@temporal-contract/worker-boxed/activity`** — For activities (includes `@swan-io/boxed`)
+- **`@temporal-contract/worker-boxed/workflow`** — For workflows (NO `@swan-io/boxed`)
 
-> ⚠️ **Why?** `@swan-io/boxed` uses `FinalizationRegistry` which is non-deterministic and cannot be used in Temporal workflows. The `/workflow` entry point avoids importing boxed to prevent bundling errors.
+> Why? `@swan-io/boxed` uses `FinalizationRegistry` which is non-deterministic and forbidden in Temporal workflows.
 
-## Usage
+## Quick Start
 
 ### 1. Implement Activities with Result Pattern
 
-**⚠️ Always import from `/activity` in activity files:**
-
 ```typescript
+// activities.ts
 import { declareActivitiesHandler, Result, Future } from '@temporal-contract/worker-boxed/activity';
-import type { BoxedActivityHandler, BoxedWorkflowActivityHandler } from '@temporal-contract/worker-boxed/activity';
-import { orderContract } from './contract';
+import type { BoxedActivityHandler } from '@temporal-contract/worker-boxed/activity';
 
-// Using utility types for cleaner signatures
-const sendEmail: BoxedActivityHandler<typeof orderContract, 'sendEmail'> = ({ to, subject, body }) => {
-  return Future.make(async resolve => {
-    try {
-      await emailService.send({ to, subject, body });
-      resolve(Result.Ok({ sent: true }));
-    } catch (error) {
-      resolve(Result.Error({
-        code: 'EMAIL_FAILED',
-        message: error.message,
-      }));
-    }
-  });
-};
+const processPayment: BoxedActivityHandler<typeof contract, 'processOrder', 'processPayment'> = 
+  ({ customerId, amount }) => {
+    return Future.make(async resolve => {
+      try {
+        const txId = await paymentService.charge(customerId, amount);
+        resolve(Result.Ok({ transactionId: txId, success: true }));
+      } catch (error) {
+        resolve(Result.Error({
+          code: 'PAYMENT_FAILED',
+          message: error.message,
+          details: { customerId, amount },
+        }));
+      }
+    });
+  };
 
-export const activitiesHandler = declareActivitiesHandler({
-  contract: orderContract,
-  activities: {
-    // ✅ Returns Result instead of throwing
-    processPayment: (customerId, amount) => {
-      return Future.make(async resolve => {
-        try {
-          const result = await paymentService.charge(customerId, amount);
-          resolve(Result.Ok({
-            transactionId: result.id,
-            success: true,
-          }));
-        } catch (error) {
-          // Explicit error handling
-          resolve(Result.Error({
-            code: 'PAYMENT_FAILED',
-            message: error.message,
-            details: { customerId, amount },
-          }));
-        }
-      });
-    },
-
-    // ✅ Railway-oriented programming
-    validateInventory: (orderId) => {
-      return Future.make(async resolve => {
-        const stock = await inventory.check(orderId);
-
-        if (stock > 0) {
-          resolve(Result.Ok({ available: true, quantity: stock }));
-        } else {
-          resolve(Result.Error({
-            code: 'OUT_OF_STOCK',
-            message: `Order ${orderId} is out of stock`,
-          }));
-        }
-      });
-    },
-  },
+export const activities = declareActivitiesHandler({
+  contract,
+  activities: { processPayment },
 });
 ```
 
-### 2. Activities are Unwrapped in Workflows
-
-**⚠️ Always import from `/workflow` in workflow files:**
-
-In workflows, activities still throw errors (Result is automatically unwrapped), maintaining Temporal's native error handling:
+### 2. Workflows Auto-Unwrap Results
 
 ```typescript
+// workflows.ts
 import { declareWorkflow } from '@temporal-contract/worker-boxed/workflow';
-import { orderContract } from './contract';
 
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
-  contract: orderContract,
+  contract,
   implementation: async (context, order) => {
     try {
-      // Activities throw on Error (unwrapped automatically)
-      const payment = await context.activities.processPayment(
-        order.customerId,
-        order.total
-      );
-
-      const inventory = await context.activities.validateInventory(order.id);
-
-      return {
-        orderId: order.id,
-        status: 'completed',
-        transactionId: payment.transactionId,
-      };
+      // Result automatically unwrapped — throws on Error
+      const payment = await context.activities.processPayment({
+        customerId: order.customerId,
+        amount: order.total,
+      });
+      
+      return { status: 'completed', transactionId: payment.transactionId };
     } catch (error) {
-      // Handle activity errors with error.code, error.details
-      return {
-        orderId: order.id,
-        status: 'failed',
-        error: error.code || 'UNKNOWN_ERROR',
-        message: error.message,
-      };
+      // Access error.code, error.message, error.details
+      return { status: 'failed', reason: error.code };
     }
-  },
-  // Optional: Define signal handlers
-  signals: {
-    cancelOrder: (reason) => {
-      // Handle cancellation signal
-      // reason is fully typed from contract definition
-    },
-  },
-  // Optional: Define query handlers
-  queries: {
-    getOrderStatus: () => {
-      // Return current status synchronously
-      return { status: 'processing', updatedAt: Date.now() };
-    },
-  },
-  // Optional: Define update handlers
-  updates: {
-    updateShippingAddress: async (newAddress) => {
-      // Update order and return confirmation
-      // newAddress is fully typed from contract definition
-      return { updated: true, address: newAddress };
-    },
   },
 });
 ```
 
-### 3. Setup Worker
+### 3. Start Worker
 
 ```typescript
 import { Worker } from '@temporalio/worker';
-import { activitiesHandler } from './activities';
+import { activities } from './activities';
 
 const worker = await Worker.create({
   workflowsPath: require.resolve('./workflows'),
-  activities: activitiesHandler.activities,
-  taskQueue: activitiesHandler.contract.taskQueue,
+  activities: activities.activities,
+  taskQueue: activities.contract.taskQueue,
 });
 
 await worker.run();
@@ -178,201 +123,63 @@ await worker.run();
 
 ## Error Structure
 
-Activities return errors with a structured format:
+Activities return structured errors:
 
 ```typescript
 interface ActivityError {
-  code: string;           // Error code (e.g., 'PAYMENT_FAILED')
-  message: string;        // Human-readable message
-  details?: unknown;      // Additional context
+  code: string;       // e.g., 'PAYMENT_FAILED'
+  message: string;    // Human-readable message
+  details?: unknown;  // Additional context
 }
 ```
 
-When an activity returns `Result.Error(...)`, it's automatically converted to a thrown exception in workflows with these properties accessible via `error.code`, `error.message`, and `error.details`.
+When `Result.Error(...)` is returned, it's automatically converted to an exception in workflows.
 
-## Pattern Comparison
+## When to Use
 
-### Standard worker (exception-based)
+**Use worker-boxed when:**
+- You want explicit error types in signatures
+- You prefer functional programming patterns
+- You need better testability for activities
+- You want railway-oriented programming
 
-```typescript
-const sendEmail = async (to, subject, body) => {
-  // Throws on error
-  await emailService.send({ to, subject, body });
-  return { sent: true };
-};
-```
+**Use standard worker when:**
+- You prefer traditional exception handling
+- You have simple error cases
 
-### Boxed worker (Result-based)
-
-```typescript
-const sendEmail = (to, subject, body) => {
-  return Future.make(async resolve => {
-    try {
-      await emailService.send({ to, subject, body });
-      resolve(Result.Ok({ sent: true }));
-    } catch (error) {
-      resolve(Result.Error({
-        code: 'EMAIL_SEND_FAILED',
-        message: error.message,
-        details: error,
-      }));
-    }
-  });
-};
-```
-
-## Why Use This Pattern?
-
-1. **Explicit errors**: Errors are part of the return type, not hidden in throws
-2. **Better testability**: Mock `Result.Ok` or `Result.Error` without try/catch
-3. **Functional composition**: Chain operations with `map`, `flatMap`, `getOr`, etc.
-4. **Type safety**: TypeScript knows about both success and error cases
-5. **Railway-oriented programming**: Build robust error handling pipelines
-
-## Boxed Library Features
-
-This package re-exports key utilities from [@swan-io/boxed](https://github.com/swan-io/boxed):
-
-- **Result**: Success/Error sum type
-- **Future**: Promise wrapper with better composition
-- **Option**: Some/None for nullable values
-- **AsyncData**: Loading/Done/Error states
-
-See the [boxed documentation](https://swan-io.github.io/boxed/) for full API.
+Both approaches are valid!
 
 ## Utility Types
 
-For cleaner activity implementations with the Result pattern, use the utility types exported by this package:
-
-- `BoxedActivityHandler<TContract, TActivityName>` - For global activities
-- `BoxedWorkflowActivityHandler<TContract, TWorkflowName, TActivityName>` - For workflow-specific activities
-
-See the [Activity Handlers documentation](../../docs/ACTIVITY_HANDLERS.md) for more details.
-
-## API
-
-### Entry Points
-
-This package provides three entry points:
-
-#### `@temporal-contract/worker-boxed/activity`
-
-For activity implementations. Exports:
-
-- `declareActivitiesHandler()` - Creates activities with Result pattern
-- `Result`, `Future`, `Option`, `AsyncData` - From @swan-io/boxed
-- Type helpers: `BoxedActivityHandler`, `BoxedWorkflowActivityHandler`, etc.
-- Error classes: `ActivityDefinitionNotFoundError`, etc.
-
-**Use in:** Activity implementation files
-
-#### `@temporal-contract/worker-boxed/workflow`
-
-For workflow implementations. Exports:
-
-- `declareWorkflow()` - Creates typed workflow implementations
-- Type helpers: `WorkflowContext`, `WorkflowImplementation`, etc.
-
-**Use in:** Workflow implementation files
-
-> ⚠️ Does NOT export `@swan-io/boxed` to avoid non-deterministic code in workflows
-
-#### `@temporal-contract/worker-boxed` (default)
-
-For backward compatibility. Exports everything from both `/activity` and `/workflow`.
-
-**⚠️ WARNING:** Do not import this directly in workflow files, as it includes `@swan-io/boxed` which will cause bundling errors.
-
-### `declareActivitiesHandler(options)`
-
-Creates an activities handler where implementations use Result pattern.
-
-**Parameters:**
-
-- `contract` - The full contract definition
-- `activities` - Object mapping activity names to Result-based implementations
-
 ```typescript
-type BoxedActivityImplementation<T> = (
-  ...args: InferInput<T>
-) => Future<Result<InferOutput<T>, ActivityError>>;
-```
+import type { BoxedActivityHandler, BoxedWorkflowActivityHandler } from '@temporal-contract/worker-boxed/activity';
 
-### `declareWorkflow(options)`
-
-Creates a typed workflow implementation with validation and typed activities.
-
-**Parameters:**
-
-- `workflowName` - Name of the workflow (must match a key in contract.workflows)
-- `contract` - The full contract definition
-- `implementation` - Workflow implementation function (receives context and validated input)
-- `activityOptions` - Optional default activity options
-- `signals` - Optional signal handler implementations (must match definitions in workflow)
-- `queries` - Optional query handler implementations (must match definitions in workflow)
-- `updates` - Optional update handler implementations (must match definitions in workflow)
-
-All handlers receive validated inputs and return validated outputs based on the Zod schemas defined in the contract.
-
-### `ActivityError`
-
-Standard error structure for activity failures:
-
-```typescript
-interface ActivityError {
-  code: string;
-  message: string;
-  details?: unknown;
-}
-```
-
-## Error Handling
-
-The worker-boxed package provides custom error classes for better error handling during worker setup and validation:
-
-### Error Classes
-
-- **`WorkerBoxedError`** - Base error class for all worker-boxed errors
-- **`ActivityDefinitionNotFoundError`** - Thrown when an activity is not defined in the contract, includes list of available activities
-- **`ActivityInputValidationError`** - Thrown when activity input validation fails, includes Zod error details
-- **`ActivityOutputValidationError`** - Thrown when activity output validation fails, includes Zod error details
-
-### Example
-
-```typescript
-import {
-  ActivityDefinitionNotFoundError,
-  ActivityInputValidationError,
-} from '@temporal-contract/worker-boxed';
-
-// Activity definition error includes helpful context
-try {
-  // ...worker setup
-} catch (error) {
-  if (error instanceof ActivityDefinitionNotFoundError) {
-    console.error('Activity not found:', error.activityName);
-    console.error('Available activities:', error.availableActivities);
-  }
-}
-
-// Validation errors include Zod error details (wrapped in Result)
-const activity = (input) => {
-  return Future.make(async (resolve) => {
-    try {
-      // Activity logic
-      resolve(Result.Ok(output));
-    } catch (error) {
-      // ActivityInputValidationError is automatically wrapped in Result.Error
-      if (error instanceof ActivityInputValidationError) {
-        console.error('Activity:', error.activityName);
-        console.error('Validation errors:', error.zodError.errors);
-      }
-    }
+// Global activity
+const sendEmail: BoxedActivityHandler<typeof contract, 'sendEmail'> = ({ to, subject }) => {
+  return Future.make(resolve => {
+    // ...
   });
 };
+
+// Workflow-specific activity
+const pay: BoxedWorkflowActivityHandler<typeof contract, 'processOrder', 'processPayment'> = 
+  ({ amount }) => {
+    return Future.make(resolve => {
+      // ...
+    });
+  };
 ```
 
-**Note:** Activity errors during execution should use the `ActivityError` interface pattern for functional error handling, while validation errors are thrown during worker setup.
+See [Activity Handlers documentation](../../docs/ACTIVITY_HANDLERS.md) for details.
+
+---
+
+## Learn More
+
+- [Main README](../../README.md) — Quick start guide
+- [Worker Implementation](../../docs/CONTRACT_HANDLER.md) — Complete guide
+- [Entry Points](../../docs/ENTRY_POINTS.md) — Why separate entry points
+- [@swan-io/boxed docs](https://swan-io.github.io/boxed/) — Result/Future API
 
 ## License
 

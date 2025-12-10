@@ -1,14 +1,35 @@
 # Activity Handler Utility Types
 
-Cette documentation décrit les types utilitaires disponibles pour simplifier le typage des handlers d'activités.
+> Simplify activity typing with utility types instead of manual annotations
 
-## Vue d'ensemble
+## Overview
 
-Au lieu de typer explicitement les paramètres et retours avec `WorkerInferInput` et `WorkerInferOutput`, vous pouvez utiliser des types utilitaires qui encapsulent toute la signature de la fonction.
+Instead of manually typing parameters with `WorkerInferInput` and `WorkerInferOutput`, use utility types that encapsulate the entire function signature.
 
-## Types disponibles
+**Before (verbose):**
+```typescript
+const log = async ({
+  level,
+  message
+}: WorkerInferInput<typeof myContract.activities.log>): Promise<WorkerInferOutput<typeof myContract.activities.log>> => {
+  logger[level](message);
+};
+```
 
-### Pour les activités standards
+**After (clean):**
+```typescript
+import type { ActivityHandler } from "@temporal-contract/contract";
+
+const log: ActivityHandler<typeof myContract, "log"> = async ({ level, message }) => {
+  logger[level](message);
+};
+```
+
+---
+
+## Available Types
+
+### For Standard Activities
 
 #### `ActivityHandler<TContract, TActivityName>`
 

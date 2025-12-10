@@ -1,71 +1,95 @@
 # temporal-contract
 
-> Type-safe contract system for Temporal.io workflows and activities
+> **Type-safe contracts for Temporal.io** — End-to-end type safety and automatic validation for workflows and activities
 
-**temporal-contract** brings complete type safety and developer experience to [Temporal.io](https://temporal.io/) workflows and activities, with automatic validation and compile-time checks.
+---
 
-## Packages
+## The Problem
 
-- **`@temporal-contract/contract`** - Contract builder and type definitions for workflows and activities
-- **`@temporal-contract/worker`** - Type-safe worker implementation with automatic validation
-- **`@temporal-contract/worker-boxed`** - Worker with Result/Future pattern for explicit error handling
-- **`@temporal-contract/client`** - Type-safe client for consuming workflows
+Working with [Temporal.io](https://temporal.io/) workflows is powerful, but comes with challenges:
 
-## Features
+```typescript
+// ❌ No type safety
+const result = await client.workflow.execute('processOrder', {
+  workflowId: 'order-123',
+  taskQueue: 'orders',
+  args: [{ orderId: 'ORD-123' }],  // What fields? What types?
+});
 
-✅ **Complete type safety** - Full TypeScript inference from contract to implementation  
-✅ **Compile-time validation** - Errors if workflows/activities are missing or incorrectly typed  
-✅ **Automatic runtime validation** - Zod validation at all network boundaries  
-✅ **Rich error handling** - Custom error classes with contextual information  
-✅ **Type utilities** - Helper types for cleaner activity implementations and contract introspection  
-✅ **Flexible arguments** - Single parameter: objects, primitives, or arrays  
-✅ **Global activities** - Share activities across all workflows in a contract  
-✅ **Contract-level task queue** - Configure once, use everywhere  
-✅ **Workflow context** - Type-safe access to activities and workflow info
+console.log(result.status);  // unknown type, no autocomplete
 
-## Installation
+// ❌ Manual validation everywhere
+// ❌ Runtime errors from wrong data
+// ❌ Scattered activity definitions
+```
+
+## The Solution
+
+**temporal-contract** transforms your Temporal workflows with a contract-first approach:
+
+```typescript
+// ✅ Define once
+const contract = defineContract({
+  taskQueue: 'orders',
+  workflows: {
+    processOrder: {
+      input: z.object({ orderId: z.string(), customerId: z.string() }),
+      output: z.object({ status: z.enum(['success', 'failed']), transactionId: z.string() }),
+      activities: { /* ... */ }
+    }
+  }
+});
+
+// ✅ Type-safe client
+const result = await client.executeWorkflow('processOrder', {
+  workflowId: 'order-123',
+  args: { orderId: 'ORD-123', customerId: 'CUST-456' },  // TypeScript knows!
+});
+
+console.log(result.status);  // 'success' | 'failed' — full autocomplete!
+```
+
+## What You Get
+
+✅ **End-to-end type safety** — From contract to client, workflows, and activities  
+✅ **Automatic validation** — Zod schemas validate at all network boundaries  
+✅ **Compile-time checks** — TypeScript catches missing or incorrect implementations  
+✅ **Better DX** — Autocomplete, refactoring support, inline documentation
+
+## Quick Start
+
+### Installation
 
 ```bash
 pnpm add @temporal-contract/contract @temporal-contract/worker @temporal-contract/client
 pnpm add zod @temporalio/client @temporalio/worker @temporalio/workflow
 ```
 
-## Quick Start
+### Usage in 3 Steps
 
-### 1. Define your contract
+#### 1. Define Your Contract
 
 ```typescript
-// contract.ts
-import { z } from 'zod';
 import { defineContract } from '@temporal-contract/contract';
+import { z } from 'zod';
 
-export default defineContract({
-  taskQueue: 'my-service',
-
-  // Global activities (available in all workflows)
+export const orderContract = defineContract({
+  taskQueue: 'orders',
+  
   activities: {
     sendEmail: {
       input: z.object({ to: z.string(), subject: z.string(), body: z.string() }),
       output: z.object({ sent: z.boolean() }),
     },
   },
-
+  
   workflows: {
     processOrder: {
       input: z.object({ orderId: z.string(), customerId: z.string() }),
-      output: z.object({
-        orderId: z.string(),
-        status: z.enum(['success', 'failed']),
-        transactionId: z.string(),
-      }),
-
-      // Workflow-specific activities
+      output: z.object({ status: z.enum(['success', 'failed']), transactionId: z.string() }),
+      
       activities: {
-        validateInventory: {
-          input: z.string(), // Single orderId parameter
-          output: z.object({ available: z.boolean() }),
-        },
-        chargePayment: {
+        processPayment: {
           input: z.object({ customerId: z.string(), amount: z.number() }),
           output: z.object({ transactionId: z.string(), success: z.boolean() }),
         },
@@ -75,355 +99,135 @@ export default defineContract({
 });
 ```
 
-### 2. Implement activities
+#### 2. Implement Activities & Workflows
 
 ```typescript
-// activities/index.ts
-import { declareActivitiesHandler } from '@temporal-contract/worker';
-import myContract from '../contract';
+// activities.ts
+import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
 
-export const activitiesHandler = declareActivitiesHandler({
-  contract: myContract,
+export const activities = declareActivitiesHandler({
+  contract: orderContract,
   activities: {
-    // Global activities
     sendEmail: async ({ to, subject, body }) => {
       await emailService.send({ to, subject, body });
       return { sent: true };
     },
-
-    // Workflow-specific activities
-    validateInventory: async (orderId) => {
-      const available = await inventoryDB.check(orderId);
-      return { available };
-    },
-
-    chargePayment: async ({ customerId, amount }) => {
-      const transactionId = await paymentGateway.charge(customerId, amount);
-      return { transactionId, success: true };
+    processPayment: async ({ customerId, amount }) => {
+      const txId = await paymentGateway.charge(customerId, amount);
+      return { transactionId: txId, success: true };
     },
   },
 });
-```
 
-### 3. Implement workflows
-
-```typescript
-// workflows/processOrder.ts
-import { declareWorkflow } from '@temporal-contract/worker';
-import myContract from '../contract';
+// workflows.ts
+import { declareWorkflow } from '@temporal-contract/worker/workflow';
 
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
-  contract: myContract,
+  contract: orderContract,
   implementation: async (context, { orderId, customerId }) => {
-    // context.activities: typed activities (workflow + global)
-    // context.info: WorkflowInfo
-
-    const inventory = await context.activities.validateInventory(orderId);
-
-    if (!inventory.available) {
-      throw new Error('Out of stock');
-    }
-
-    const payment = await context.activities.chargePayment({ customerId, amount: 100 });
-
-    // Global activity
+    const payment = await context.activities.processPayment({ 
+      customerId, 
+      amount: 100 
+    });
+    
     await context.activities.sendEmail({
       to: customerId,
-      subject: 'Order processed',
-      body: 'Your order has been processed',
+      subject: 'Order Confirmed',
+      body: `Order ${orderId} processed`,
     });
-
+    
     return {
-      orderId,
       status: payment.success ? 'success' : 'failed',
       transactionId: payment.transactionId,
     };
   },
-  activityOptions: {
-    startToCloseTimeout: '1 minute',
-  },
 });
 ```
 
-### 4. Setup Temporal Worker
+#### 3. Start Worker & Call from Client
 
 ```typescript
 // worker.ts
 import { Worker } from '@temporalio/worker';
-import { activitiesHandler } from './activities';
+import { activities } from './activities';
 
 const worker = await Worker.create({
   workflowsPath: require.resolve('./workflows'),
-  activities: activitiesHandler.activities,
-  taskQueue: activitiesHandler.contract.taskQueue,
+  activities: activities.activities,
+  taskQueue: activities.contract.taskQueue,
 });
 
 await worker.run();
-```
 
-### 5. Call workflows from client
-
-```typescript
 // client.ts
-import { Connection } from '@temporalio/client';
 import { TypedClient } from '@temporal-contract/client';
-import myContract from './contract';
+import { Connection } from '@temporalio/client';
 
-const connection = await Connection.connect({
-  address: 'localhost:7233',
-});
-
-const client = TypedClient.create(myContract, {
-  connection,
-  namespace: 'default',
-});
+const connection = await Connection.connect({ address: 'localhost:7233' });
+const client = TypedClient.create(orderContract, { connection });
 
 const result = await client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
   args: { orderId: 'ORD-123', customerId: 'CUST-456' },
 });
 
-console.log(result.status); // 'success' | 'failed'
-console.log(result.transactionId); // string
+console.log(result.status);  // 'success' | 'failed' — fully typed!
 ```
 
-## Key Concepts
+---
 
-### Two-Part Worker Architecture
+## Key Features
 
-The worker implementation is split into two functions:
-
-1. **`declareActivitiesHandler`** - Implements all activities (global + workflow-specific)
-   - Used by the Temporal Worker
-   - Ensures all activities are implemented at compile-time
-   - Wraps activities with validation
-
-2. **`declareWorkflow`** - Implements individual workflows
-   - Each workflow in its own file
-   - Loaded by Worker via `workflowsPath`
-   - Receives typed context with activities and workflow info
-
-This follows Temporal's architecture where workflows must be loaded from the file system.
-
-### Single Parameter Pattern
-
-Workflows and activities accept a single parameter following Temporal's recommendation:
-
-```typescript
-// For multiple values, use an object
-input: z.object({ orderId: z.string(), amount: z.number() })
-
-// Implement with destructuring
-async (context, { orderId, amount }) => { ... }
-
-// Call with object
-args: { orderId: 'ORD-123', amount: 100 }
-
-// For single primitives, pass directly
-input: z.string()
-async (orderId) => { ... }
-args: 'ORD-123'
-
-// For arrays, pass directly
-input: z.array(z.object({ ... }))
-async (items) => { ... }
-args: [{ ... }]
-```
-
-This follows Temporal's best practices and simplifies the API.
-
-### Type Inference
-
-When using `defineContract`, the type system automatically enforces the correct structure for activities and workflows. You don't need to use `defineActivity` or `defineWorkflow` helpers:
-
-```typescript
-defineContract({
-  activities: {
-    sendEmail: { input: ..., output: ... }, // Type is inferred
-  },
-  workflows: {
-    processOrder: {
-      input: ...,
-      output: ...,
-      activities: {
-        chargePayment: { input: ..., output: ... }, // Type is inferred
-      },
-    },
-  },
-})
-```
-
-### Global Activities
-
-Activities defined at the contract level are available in all workflows:
-
-```typescript
-defineContract({
-  activities: {
-    sendEmail: { ... }, // Available in all workflows
-  },
-  workflows: {
-    processOrder: {
-      activities: {
-        chargePayment: { ... }, // Only in processOrder
-      },
-    },
-  },
-})
-```
-
-### Separate Entry Points for Activities and Workflows
-
-For better tree-shaking and to prevent bundling issues, both `@temporal-contract/worker` and `@temporal-contract/worker-boxed` provide **separate entry points**:
-
-#### Standard Worker
-
-```typescript
-// In activity files
-import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
-
-// In workflow files
-import { declareWorkflow } from '@temporal-contract/worker/workflow';
-```
-
-#### Boxed Worker (Result/Future Pattern)
-
-```typescript
-// In activity files - includes @swan-io/boxed
-import { declareActivitiesHandler, Result, Future } from '@temporal-contract/worker-boxed/activity';
-
-// In workflow files - NO @swan-io/boxed (keeps workflows deterministic)
-import { declareWorkflow } from '@temporal-contract/worker-boxed/workflow';
-```
-
-> ⚠️ **Important for boxed workers:** Always use `/workflow` entry point in workflow files to avoid importing `@swan-io/boxed`, which uses non-deterministic APIs (`FinalizationRegistry`) that are prohibited in Temporal workflows.
-
-The default entry points (`@temporal-contract/worker` and `@temporal-contract/worker-boxed`) are still available for backward compatibility but export everything from both entry points.
+### Contract-First Design
+Define your workflow interface once with Zod schemas — types and validation flow from there.
 
 ### Automatic Validation
+All inputs and outputs are validated automatically at network boundaries (workflow entry/exit, activity calls).
 
-All inputs and outputs are validated automatically:
+### Type Inference
+Full TypeScript inference from contract to implementation — no manual type annotations needed.
 
-- **Workflow input/output**: Validated when entering/exiting workflow
-- **Activity calls**: Validated before serialization and after deserialization
-- **Network boundaries**: All data crossing network is validated
+### Compile-Time Safety
+TypeScript catches missing implementations, wrong types, and mismatched activity names before runtime.
 
-This ensures data integrity and catches errors early.
+---
 
-### Error Handling
+## Packages
 
-All packages provide custom error classes with rich contextual information:
+| Package | Description |
+|---------|-------------|
+| [`@temporal-contract/contract`](./packages/contract) | Contract builder and type definitions |
+| [`@temporal-contract/worker`](./packages/worker) | Type-safe worker with automatic validation |
+| [`@temporal-contract/worker-boxed`](./packages/worker-boxed) | Worker with Result/Future pattern for explicit errors |
+| [`@temporal-contract/client`](./packages/client) | Type-safe client for consuming workflows |
 
-#### Client Errors
+---
 
-```typescript
-import { WorkflowValidationError, WorkflowNotFoundError } from '@temporal-contract/client';
+## Examples
 
-try {
-  await client.executeWorkflow('processOrder', { args: invalidData });
-} catch (error) {
-  if (error instanceof WorkflowValidationError) {
-    console.error('Validation errors:', error.zodError.errors);
-  } else if (error instanceof WorkflowNotFoundError) {
-    console.error('Available workflows:', error.availableWorkflows);
-  }
-}
-```
+Explore complete working examples in [`samples/`](./samples):
 
-#### Worker Errors
+- **[basic-order-processing](./samples/basic-order-processing)** — Standard Promise-based workflow with Clean Architecture
+- **[boxed-order-processing](./samples/boxed-order-processing)** — Result/Future pattern for explicit error handling
 
-```typescript
-import { ActivityDefinitionNotFoundError } from '@temporal-contract/worker';
+---
 
-// Errors include helpful context like available activities
-if (error instanceof ActivityDefinitionNotFoundError) {
-  console.error('Activity not found:', error.activityName);
-  console.error('Did you mean:', error.availableActivities);
-}
-```
+## Documentation
 
-### Type Utilities
+**Guides:**
+- [Worker Implementation Guide](./docs/CONTRACT_HANDLER.md) — Complete guide to implementing workers
+- [Entry Points Architecture](./docs/ENTRY_POINTS.md) — Separate entry points for activities/workflows
+- [Activity Handler Types](./docs/ACTIVITY_HANDLERS.md) — Type utilities for cleaner implementations
 
-Helper types for cleaner implementations:
+**Project:**
+- [Contributing](./docs/CONTRIBUTING.md) — How to contribute
+- [Changesets](./docs/CHANGESETS.md) — Release process
+- [Roadmap](./docs/ROADMAP.md) — Future plans
 
-```typescript
-import type {
-  ActivityHandler,
-  WorkflowActivityHandler,
-  InferWorkflowNames,
-  InferActivityNames,
-} from '@temporal-contract/contract';
-
-// Type-safe activity handler (no manual type annotations needed)
-const sendEmail: ActivityHandler<typeof myContract, 'sendEmail'> =
-  async ({ to, subject, body }) => {
-    // Fully typed without explicit parameter types
-    return { sent: true };
-  };
-
-// Extract workflow/activity names as union types
-type WorkflowNames = InferWorkflowNames<typeof myContract>;
-// "processOrder" | "cancelOrder" | ...
-
-type ActivityNames = InferActivityNames<typeof myContract>;
-// "sendEmail" | "logEvent" | ...
-```
-
-See package READMEs for complete error handling and type utility documentation.
-
-## Why temporal-contract?
-
-### Before
-
-```typescript
-// ❌ No type safety
-const result = await client.workflow.execute('processOrder', {
-  workflowId: 'order-123',
-  taskQueue: 'orders',
-  args: [{ orderId: 'ORD-123' }], // What fields are required?
-});
-
-// ❌ Result type is unknown
-console.log(result.status); // No autocomplete, runtime errors possible
-
-// ❌ No validation
-// Wrong data types can cause runtime failures
-
-// ❌ Manual activity implementation
-// No compile-time check that all activities are implemented
-```
-
-### After
-
-```typescript
-// ✅ Full type safety
-const result = await client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
-  args: { orderId: 'ORD-123', customerId: 'CUST-456' }, // TypeScript knows what's required
-});
-
-// ✅ Result is fully typed
-console.log(result.status); // 'success' | 'failed' - autocomplete works!
-
-// ✅ Automatic validation
-// Zod validates all data at network boundaries
-
-// ✅ Compile-time validation
-// TypeScript errors if workflows/activities are missing or wrong
-```
+---
 
 ## Development
-
-### Tech Stack
-
-- **pnpm** with catalog - Centralized dependency management
-- **Turborepo** - High-performance monorepo build system
-- **TypeScript 5.9** - Type-safe JavaScript with latest features
-- **tsdown** - Fast dual CJS/ESM builds
-- **Changesets** - Automated versioning and publishing
-
-### Getting Started
 
 ```bash
 # Install dependencies
@@ -435,69 +239,34 @@ pnpm build
 # Type check
 pnpm typecheck
 
-# Lint
+# Run tests
+pnpm test
+
+# Lint & format
 pnpm lint
+pnpm format
 ```
 
-### Project Structure
+### Release Process
 
-```
-temporal-contract/
-├── packages/
-│   ├── contract/       # Contract builder and type definitions
-│   ├── worker/         # Worker implementation (handler)
-│   ├── worker-boxed/   # Worker with Result/Future pattern
-│   └── client/         # Typed client
-├── samples/            # Sample applications
-│   ├── basic-order-processing/  # Standard Promise-based example
-│   └── boxed-order-processing/  # Result/Future pattern example
-├── docs/               # Documentation
-├── .github/
-│   └── workflows/      # CI/CD
-└── .changeset/         # Changesets config
-```
-
-## Samples
-
-Explore working examples in the [`samples/`](./samples) directory:
-
-- **[basic-order-processing](./samples/basic-order-processing)** - Complete order processing system with payment, inventory, and shipping
-
-Each sample demonstrates real-world usage patterns with full documentation.
-
-## Documentation
-
-Essential documentation:
-
-- **[Worker Implementation](./docs/CONTRACT_HANDLER.md)** - Complete guide to implementing workers with type safety
-- **[Activity Handlers](./docs/ACTIVITY_HANDLERS.md)** - Type utility helpers for cleaner activity implementations
-- **[Changesets](./docs/CHANGESETS.md)** - Release and publishing workflow
-- **[PNPM Catalog](./docs/CATALOG.md)** - Centralized dependency management
-
-Additional documentation:
-
-- [Changelog](./docs/CHANGELOG.md) - Version history
-- [Contributing](./docs/CONTRIBUTING.md) - Contribution guidelines
-- [Roadmap](./docs/ROADMAP.md) - Future plans
-
-## Release Process
-
-This project uses [Changesets](https://github.com/changesets/changesets) for automated releases:
+This project uses [Changesets](https://github.com/changesets/changesets):
 
 1. Make changes and run `pnpm changeset`
 2. Push to GitHub
-3. CI creates a "Version Packages" PR automatically
-4. Merge the PR to publish to npm
-
-All packages share the same version number.
+3. CI creates a "Version Packages" PR
+4. Merge to publish to npm
 
 See [CHANGESETS.md](./docs/CHANGESETS.md) for details.
+
+---
 
 ## License
 
 MIT
 
-## Related Projects
+---
 
-- [Temporal.io](https://temporal.io/) - Durable workflow engine
-- [Zod](https://zod.dev/) - TypeScript-first schema validation
+## Related
+
+- [Temporal.io](https://temporal.io/) — Durable workflow engine
+- [Zod](https://zod.dev/) — TypeScript-first schema validation

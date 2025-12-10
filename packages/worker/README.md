@@ -1,6 +1,6 @@
 # @temporal-contract/worker
 
-Worker utilities for implementing temporal-contract workflows and activities.
+> Type-safe worker implementation for Temporal
 
 ## Installation
 
@@ -10,224 +10,118 @@ pnpm add @temporal-contract/worker @temporal-contract/contract @temporalio/workf
 
 ## Important: Separate Entry Points
 
-This package exports **two different entry points** for optimal tree-shaking and to separate concerns:
+Use **separate imports** for better tree-shaking:
 
-- **`@temporal-contract/worker/activity`** - For activity implementations
-- **`@temporal-contract/worker/workflow`** - For workflow implementations
+- **`@temporal-contract/worker/activity`** — For activity files
+- **`@temporal-contract/worker/workflow`** — For workflow files
 
-Using these specific entry points ensures cleaner imports and better bundling.
+## Quick Start
 
-## Usage
-
-### Implementing Activities
-
-**Import from `/activity` in activity files:**
+### 1. Implement Activities
 
 ```typescript
+// activities.ts
 import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
-import type { ActivityHandler, WorkflowActivityHandler } from '@temporal-contract/contract';
 import { myContract } from './contract';
 
-// Using utility types for cleaner signatures
-const sendEmail: ActivityHandler<typeof myContract, 'sendEmail'> = async ({ to, subject, body }) => {
-  await emailService.send({ to, subject, body });
-  return { sent: true };
-};
-
-const processPayment: WorkflowActivityHandler<
-  typeof myContract,
-  'processOrder',
-  'processPayment'
-> = async ({ amount }) => {
-  const transactionId = await paymentGateway.charge(amount);
-  return { transactionId, success: true };
-};
-
-export const activitiesHandler = declareActivitiesHandler({
+export const activities = declareActivitiesHandler({
   contract: myContract,
   activities: {
-    sendEmail,
-    processPayment,
+    sendEmail: async ({ to, subject, body }) => {
+      await emailService.send({ to, subject, body });
+      return { sent: true };
+    },
+    processPayment: async ({ customerId, amount }) => {
+      const txId = await paymentGateway.charge(customerId, amount);
+      return { transactionId: txId, success: true };
+    },
   },
 });
 ```
 
-### Implementing Workflows
-
-**Import from `/workflow` in workflow files:**
+### 2. Implement Workflows
 
 ```typescript
+// workflows.ts
 import { declareWorkflow } from '@temporal-contract/worker/workflow';
 import { myContract } from './contract';
 
-const processOrder = declareWorkflow({
+export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: myContract,
-  implementation: async (context, input) => {
-    // input is fully typed based on the contract
-    // context.activities are fully typed (workflow + global activities)
-    // context.info: WorkflowInfo
-
-    const payment = await context.activities.processPayment({
-      amount: input.totalAmount,
-    });
-
+  implementation: async (context, { orderId, customerId }) => {
+    const payment = await context.activities.processPayment({ customerId, amount: 100 });
+    await context.activities.sendEmail({ to: customerId, subject: 'Confirmed', body: 'Done!' });
+    
     return {
       status: payment.success ? 'success' : 'failed',
-      totalAmount: input.totalAmount,
+      transactionId: payment.transactionId,
     };
   },
-  activityOptions: {
-    startToCloseTimeout: '1 minute',
-  },
-  // Optional: Define signal handlers
-  signals: {
-    addItem: (item) => {
-      // Handle signal - update workflow state
-      // item is fully typed from contract definition
-    },
-  },
-  // Optional: Define query handlers
-  queries: {
-    getStatus: (args) => {
-      // Return current status synchronously
-      // args is fully typed from contract definition
-      return { status: 'processing' };
-    },
-  },
-  // Optional: Define update handlers
-  updates: {
-    updateDiscount: async (discount) => {
-      // Update workflow state and return result
-      // discount is fully typed from contract definition
-      return { newTotal: 100 };
-    },
-  },
 });
+```
+
+### 3. Start Worker
+
+```typescript
+// worker.ts
+import { Worker } from '@temporalio/worker';
+import { activities } from './activities';
+
+const worker = await Worker.create({
+  workflowsPath: require.resolve('./workflows'),
+  activities: activities.activities,
+  taskQueue: activities.contract.taskQueue,
+});
+
+await worker.run();
 ```
 
 ## Features
 
-- ✅ Automatic input validation with Zod schemas
-- ✅ Automatic output validation with Zod schemas
-- ✅ Full TypeScript type inference
-- ✅ Typed activity proxies in workflows
-- ✅ Type-safe signal handlers with validation
-- ✅ Type-safe query handlers with validation
-- ✅ Type-safe update handlers with validation
+✅ **Automatic validation** — Input/output validated with Zod at network boundaries  
+✅ **Type inference** — Full TypeScript inference from contract  
+✅ **Typed context** — Activities and workflow info fully typed  
+✅ **Signals, queries, updates** — Type-safe handlers with validation
 
 ## Utility Types
 
-For cleaner activity implementations without explicit type annotations, use the utility types from `@temporal-contract/contract`:
+For cleaner activity signatures:
 
-- `ActivityHandler<TContract, TActivityName>` - For global activities
-- `WorkflowActivityHandler<TContract, TWorkflowName, TActivityName>` - For workflow-specific activities
+```typescript
+import type { ActivityHandler, WorkflowActivityHandler } from '@temporal-contract/contract';
 
-See the [Activity Handlers documentation](../../docs/ACTIVITY_HANDLERS.md) for more details.
+const sendEmail: ActivityHandler<typeof myContract, 'sendEmail'> = 
+  async ({ to, subject, body }) => {
+    // Fully typed without explicit annotations
+    return { sent: true };
+  };
+```
 
-## API
-
-### Entry Points
-
-This package provides three entry points:
-
-#### `@temporal-contract/worker/activity`
-
-For activity implementations. Exports:
-
-- `declareActivitiesHandler()` - Creates validated activities handler
-- Error classes: `ActivityDefinitionNotFoundError`, `ActivityInputValidationError`, etc.
-
-**Use in:** Activity implementation files
-
-#### `@temporal-contract/worker/workflow`
-
-For workflow implementations. Exports:
-
-- `declareWorkflow()` - Creates typed workflow implementations
-- Type helpers: `WorkflowContext`, `WorkflowImplementation`, etc.
-- Workflow-related error classes
-
-**Use in:** Workflow implementation files
-
-#### `@temporal-contract/worker` (default)
-
-For backward compatibility. Exports everything from both `/activity` and `/workflow`.
-
-### `declareActivitiesHandler(options)`
-
-Creates an activities handler with validation for all activities (global + workflow-specific).
-
-**Parameters:**
-
-- `contract` - The full contract definition
-- `activities` - Object mapping activity names to implementations
-
-### `declareWorkflow(options)`
-
-Creates a typed workflow implementation with validation and typed activities.
-
-**Parameters:**
-
-- `workflowName` - Name of the workflow (must match a key in contract.workflows)
-- `contract` - The full contract definition
-- `implementation` - Workflow implementation function (receives context and validated input)
-- `activityOptions` - Optional default activity options
-- `signals` - Optional signal handler implementations (must match definitions in workflow)
-- `queries` - Optional query handler implementations (must match definitions in workflow)
-- `updates` - Optional update handler implementations (must match definitions in workflow)
-
-All handlers receive validated inputs and return validated outputs based on the Zod schemas defined in the contract.
+See [Activity Handlers documentation](../../docs/ACTIVITY_HANDLERS.md) for details.
 
 ## Error Handling
 
-The worker package provides custom error classes for better error handling:
-
-### Error Classes
-
-- **`WorkerError`** - Base error class for all worker errors
-- **`ActivityImplementationNotFoundError`** - Thrown when an activity implementation is missing
-- **`ActivityDefinitionNotFoundError`** - Thrown when an activity is not defined in the contract, includes list of available activities
-- **`ActivityInputValidationError`** - Thrown when activity input validation fails, includes Zod error details
-- **`ActivityOutputValidationError`** - Thrown when activity output validation fails, includes Zod error details
-- **`WorkflowInputValidationError`** - Thrown when workflow input validation fails
-- **`WorkflowOutputValidationError`** - Thrown when workflow output validation fails
-- **`SignalInputValidationError`** - Thrown when signal input validation fails
-- **`QueryInputValidationError`** - Thrown when query input validation fails
-- **`QueryOutputValidationError`** - Thrown when query output validation fails
-- **`UpdateInputValidationError`** - Thrown when update input validation fails
-- **`UpdateOutputValidationError`** - Thrown when update output validation fails
-
-### Example
+Custom error classes with contextual info:
 
 ```typescript
-import {
-  ActivityDefinitionNotFoundError,
-  ActivityInputValidationError,
-} from '@temporal-contract/worker';
+import { ActivityDefinitionNotFoundError } from '@temporal-contract/worker';
 
-// Activity definition error includes helpful context
-try {
-  // ...worker setup
-} catch (error) {
-  if (error instanceof ActivityDefinitionNotFoundError) {
-    console.error('Activity not found:', error.activityName);
-    console.error('Available activities:', error.availableActivities);
-  }
-}
-
-// Validation errors include Zod error details
-try {
-  // ...activity implementation
-} catch (error) {
-  if (error instanceof ActivityInputValidationError) {
-    console.error('Activity input validation failed:', error.activityName);
-    console.error('Validation errors:', error.zodError.errors);
-  }
+// Errors include helpful context
+if (error instanceof ActivityDefinitionNotFoundError) {
+  console.error('Not found:', error.activityName);
+  console.error('Available:', error.availableActivities);
 }
 ```
 
-All errors include rich contextual information to help identify and fix issues quickly.
+---
+
+## Learn More
+
+- [Main README](../../README.md) — Quick start guide
+- [Worker Implementation](../../docs/CONTRACT_HANDLER.md) — Complete guide
+- [Entry Points](../../docs/ENTRY_POINTS.md) — Why separate entry points
+- [Activity Handlers](../../docs/ACTIVITY_HANDLERS.md) — Type utilities
 
 ## License
 
