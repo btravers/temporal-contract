@@ -1,16 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { Future, Result } from "@swan-io/boxed";
 import { z } from "zod";
-import {
-  declareActivitiesHandler,
-  ActivityError,
-  type BoxedActivityImplementations,
-} from "./handler.js";
-import {
-  ActivityDefinitionNotFoundError,
-  ActivityInputValidationError,
-  ActivityOutputValidationError,
-} from "./errors.js";
+import { declareActivitiesHandler, ActivityError } from "./handler.js";
+import { ActivityDefinitionNotFoundError } from "./errors.js";
 import type { ContractDefinition } from "@temporal-contract/contract";
 
 describe("Worker-Boxed Package", () => {
@@ -172,15 +164,14 @@ describe("Worker-Boxed Package", () => {
         },
       });
 
-      try {
-        await handler.activities["failingActivity"]!({ value: "test" });
-        expect.fail("Should have thrown an error");
-      } catch (error: unknown) {
-        expect(error).toBeInstanceOf(ActivityError);
-        expect((error as ActivityError).message).toBe("Something went wrong");
-        expect((error as ActivityError).code).toBe("ACTIVITY_FAILED");
-        expect((error as ActivityError).cause).toEqual({ info: "additional details" });
-      }
+      await expect(handler.activities["failingActivity"]!({ value: "test" })).rejects.toMatchObject(
+        {
+          name: "ActivityError",
+          message: "Something went wrong",
+          code: "ACTIVITY_FAILED",
+          cause: { info: "additional details" },
+        },
+      );
     });
 
     it("should handle Future properly", async () => {
@@ -262,23 +253,9 @@ describe("Worker-Boxed Package", () => {
       expect(() => {
         declareActivitiesHandler({
           contract,
-          activities: testActivities as unknown as BoxedActivityImplementations<typeof contract>,
+          activities: testActivities,
         });
-      }).toThrow(ActivityDefinitionNotFoundError);
-
-      try {
-        declareActivitiesHandler({
-          contract,
-          activities: testActivities as unknown as BoxedActivityImplementations<typeof contract>,
-        });
-      } catch (error) {
-        if (error instanceof ActivityDefinitionNotFoundError) {
-          expect(error.activityName).toBe("unknownActivity");
-          expect(error.availableDefinitions).toEqual(["validActivity"]);
-          expect(error.message).toContain("unknownActivity");
-          expect(error.message).toContain("validActivity");
-        }
-      }
+      }).toThrowError(new ActivityDefinitionNotFoundError("unknownActivity", ["validActivity"]));
     });
   });
 
@@ -304,16 +281,13 @@ describe("Worker-Boxed Package", () => {
         },
       });
 
-      try {
-        await handler.activities["strictActivity"]!({ amount: -10, email: "invalid" });
-      } catch (error) {
-        if (error instanceof ActivityInputValidationError) {
-          expect(error.activityName).toBe("strictActivity");
-          expect(error.zodError).toBeDefined();
-          expect(error.message).toContain("strictActivity");
-          expect(error.message).toContain("input validation failed");
-        }
-      }
+      await expect(
+        handler.activities["strictActivity"]!({ amount: -10, email: "invalid" }),
+      ).rejects.toMatchObject({
+        name: "ActivityInputValidationError",
+        activityName: "strictActivity",
+        message: expect.stringContaining("strictActivity"),
+      });
     });
 
     it("should throw ActivityOutputValidationError for invalid output", async () => {
@@ -342,16 +316,13 @@ describe("Worker-Boxed Package", () => {
         },
       });
 
-      try {
-        await handler.activities["strictOutputActivity"]!({ id: "123" });
-      } catch (error) {
-        if (error instanceof ActivityOutputValidationError) {
-          expect(error.activityName).toBe("strictOutputActivity");
-          expect(error.zodError).toBeDefined();
-          expect(error.message).toContain("strictOutputActivity");
-          expect(error.message).toContain("output validation failed");
-        }
-      }
+      await expect(
+        handler.activities["strictOutputActivity"]!({ id: "123" }),
+      ).rejects.toMatchObject({
+        name: "ActivityOutputValidationError",
+        activityName: "strictOutputActivity",
+        message: expect.stringContaining("strictOutputActivity"),
+      });
     });
   });
 });

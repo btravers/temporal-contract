@@ -1,15 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { declareActivitiesHandler, declareWorkflow } from "./handler.js";
-import type { ActivityImplementations } from "./handler.js";
 import type { ContractDefinition, WorkflowDefinition } from "@temporal-contract/contract";
-import {
-  ActivityDefinitionNotFoundError,
-  ActivityInputValidationError,
-  ActivityOutputValidationError,
-  WorkflowInputValidationError,
-  WorkflowOutputValidationError,
-} from "./errors.js";
 
 // Mock Temporal workflow functions
 vi.mock("@temporalio/workflow", () => ({
@@ -363,23 +355,16 @@ describe("Worker Package", () => {
       expect(() => {
         declareActivitiesHandler({
           contract,
-          activities: testActivities as unknown as ActivityImplementations<typeof contract>,
+          // @ts-expect-error Testing unknown activity
+          activities: testActivities,
         });
-      }).toThrow(ActivityDefinitionNotFoundError);
-
-      try {
-        declareActivitiesHandler({
-          contract,
-          activities: testActivities as unknown as ActivityImplementations<typeof contract>,
-        });
-      } catch (error) {
-        if (error instanceof ActivityDefinitionNotFoundError) {
-          expect(error.activityName).toBe("unknownActivity");
-          expect(error.availableDefinitions).toEqual(["sendEmail", "processPayment"]);
-          expect(error.message).toContain("unknownActivity");
-          expect(error.message).toContain("sendEmail");
-        }
-      }
+      }).toThrowError(
+        expect.objectContaining({
+          name: "ActivityDefinitionNotFoundError",
+          activityName: "unknownActivity",
+          availableDefinitions: ["sendEmail", "processPayment"],
+        }),
+      );
     });
 
     it("should throw ActivityInputValidationError with Zod details", async () => {
@@ -403,19 +388,16 @@ describe("Worker Package", () => {
         },
       });
 
-      try {
-        await handler.activities["processPayment"]!({
+      await expect(
+        handler.activities["processPayment"]!({
           amount: -100,
           currency: "USD",
-        });
-      } catch (error) {
-        if (error instanceof ActivityInputValidationError) {
-          expect(error.activityName).toBe("processPayment");
-          expect(error.zodError).toBeDefined();
-          expect(error.message).toContain("processPayment");
-          expect(error.message).toContain("input validation failed");
-        }
-      }
+        }),
+      ).rejects.toMatchObject({
+        name: "ActivityInputValidationError",
+        activityName: "processPayment",
+        message: expect.stringContaining("processPayment"),
+      });
     });
 
     it("should throw ActivityOutputValidationError with Zod details", async () => {
@@ -439,16 +421,11 @@ describe("Worker Package", () => {
         },
       });
 
-      try {
-        await handler.activities["fetchData"]!({ id: "123" });
-      } catch (error) {
-        if (error instanceof ActivityOutputValidationError) {
-          expect(error.activityName).toBe("fetchData");
-          expect(error.zodError).toBeDefined();
-          expect(error.message).toContain("fetchData");
-          expect(error.message).toContain("output validation failed");
-        }
-      }
+      await expect(handler.activities["fetchData"]!({ id: "123" })).rejects.toMatchObject({
+        name: "ActivityOutputValidationError",
+        activityName: "fetchData",
+        message: expect.stringContaining("fetchData"),
+      });
     });
 
     it("should throw WorkflowInputValidationError", async () => {
@@ -472,18 +449,16 @@ describe("Worker Package", () => {
         },
       });
 
-      try {
-        await workflow([{ orderId: "not-a-uuid", amount: 100 }] as unknown as {
+      await expect(
+        workflow([{ orderId: "not-a-uuid", amount: 100 }] as unknown as {
           orderId: string;
           amount: number;
-        });
-      } catch (error) {
-        if (error instanceof WorkflowInputValidationError) {
-          expect(error.workflowName).toBe("processOrder");
-          expect(error.zodError).toBeDefined();
-          expect(error.message).toContain("input validation failed");
-        }
-      }
+        }),
+      ).rejects.toMatchObject({
+        name: "WorkflowInputValidationError",
+        workflowName: "processOrder",
+        message: expect.stringContaining("input validation failed"),
+      });
     });
 
     it("should throw WorkflowOutputValidationError", async () => {
@@ -511,15 +486,14 @@ describe("Worker Package", () => {
         },
       });
 
-      try {
-        await workflow([{ orderId: "123" }] as unknown as { orderId: string });
-      } catch (error) {
-        if (error instanceof WorkflowOutputValidationError) {
-          expect(error.workflowName).toBe("processOrder");
-          expect(error.zodError).toBeDefined();
-          expect(error.message).toContain("output validation failed");
-        }
-      }
+      await expect(
+        // @ts-expect-error Testing invalid output
+        workflow([{ orderId: "123" }]),
+      ).rejects.toMatchObject({
+        name: "WorkflowOutputValidationError",
+        workflowName: "processOrder",
+        message: expect.stringContaining("output validation failed"),
+      });
     });
   });
 });
