@@ -6,31 +6,49 @@ This directory contains sample applications demonstrating how to use `temporal-c
 
 ### 📦 [basic-order-processing](./basic-order-processing)
 
-A simple order processing system that demonstrates:
+A comprehensive order processing system demonstrating **Clean Architecture** principles with `temporal-contract`:
 
+**Architecture:**
+- **Domain Layer:** Pure business logic with entities, use cases, and ports (interfaces)
+- **Infrastructure Layer:** Adapters implementing domain ports (mock payment, inventory, shipping)
+- **Application Layer:** Temporal-specific code (contracts, workflows, activities)
+- **Dependency Injection:** Centralized in `dependencies.ts` for easy testing
+
+**What it demonstrates:**
 - Type-safe contract definition with workflows and activities
-- Activities implementation (global + workflow-specific)
-- Workflow orchestration with error handling
-- Worker and client setup
-- Input/output validation with Zod
+- Clean Architecture separation (Domain → Infrastructure → Application)
+- Use cases containing business logic (activities are thin wrappers)
+- Workflow orchestration with error handling and compensating actions
+- Worker and client setup with proper dependency injection
+- Input/output validation with Zod schemas
 
-**What it does:** Processes an order through payment, inventory reservation, and shipping, with proper error handling and customer notifications.
+**What it does:** Processes an order through payment validation, inventory reservation, shipment creation, and customer notifications, with proper error handling and inventory rollback on failures.
 
-**Approach:** Standard worker with Promise-based activities and try/catch error handling.
+**Approach:** Standard worker with Promise-based activities using Clean Architecture.
 
 ### 📦✨ [boxed-order-processing](./boxed-order-processing)
 
-The same order processing system but using the **Result/Future pattern** from [@swan-io/boxed](https://swan-io.github.io/boxed/):
+The same order processing system using **Clean Architecture** + **Result/Future pattern** from [@swan-io/boxed](https://swan-io.github.io/boxed/):
 
-- Explicit error types in activity signatures
-- Functional error handling (Result.Ok / Result.Error)
-- Better testability (no try/catch in activities)
+**Architecture:**
+- Same Clean Architecture structure as basic sample
+- **Domain Layer:** Use cases return `Future<Result<T, E>>` for explicit error handling
+- **Infrastructure Layer:** Adapters return `Future<Result<T, E>>` instead of throwing
+- **Application Layer:** Activities unwrap Results automatically via worker-boxed
+
+**What it demonstrates:**
+- Explicit error types in function signatures (`PaymentError`, `InventoryError`, etc.)
+- Functional error handling without exceptions (Result.Ok / Result.Error)
+- Better testability (no try/catch needed in domain layer)
 - Railway-oriented programming pattern
-- Automatic Result unwrapping by worker-boxed
+- Type-safe error propagation through the stack
+- Automatic Result unwrapping by worker-boxed in workflows
 
-**What it does:** Same order processing flow as the basic sample, but activities return `Future<Result<T, ActivityError>>` for explicit, type-safe error handling.
+**What it does:** Same order processing flow as the basic sample, but with functional error handling throughout the entire stack.
 
-**Approach:** Boxed worker with Result/Future pattern for activities.
+**Approach:** Boxed worker with Result/Future pattern + Clean Architecture.
+
+**Note:** Currently demonstrates the architecture, but has runtime limitations with `@swan-io/boxed` in Temporal workflows due to non-deterministic GC APIs. Best used for learning the pattern in activities and domain layer.
 
 ## Running the Samples
 
@@ -82,23 +100,36 @@ pnpm turbo build --filter=@temporal-contract/sample-basic-order-processing  # Bu
 
 ## Creating Your Own Sample
 
-Want to contribute a new sample? Follow this structure:
+Want to contribute a new sample? Follow this structure based on **Clean Architecture**:
 
 ```
 samples/your-sample-name/
-├── package.json          # With workspace:* dependencies
-├── tsconfig.json         # Extending from standard config
-├── README.md             # Documentation
+├── package.json              # With workspace:* dependencies
+├── tsconfig.json             # Extending from standard config
+├── README.md                 # Documentation
 ├── src/
-│   ├── contract.ts       # Contract definition
-│   ├── activities/
-│   │   └── index.ts      # Activities implementation
-│   ├── workflows/
-│   │   └── *.ts          # Workflow implementations
-│   ├── worker.ts         # Worker setup
-│   └── client.ts         # Client example
-└── .gitignore            # Ignore dist/ and node_modules/
+│   ├── application/          # Temporal-specific layer
+│   │   ├── contract.ts       # Contract definition
+│   │   ├── activities.ts     # Activity wrappers (delegate to use cases)
+│   │   ├── workflows.ts      # Workflow orchestration
+│   │   ├── worker.ts         # Worker setup
+│   │   └── client.ts         # Client example
+│   ├── dependencies.ts       # DI container (wires adapters + use cases)
+│   ├── domain/               # Business logic layer
+│   │   ├── entities/         # Domain entities with Zod schemas
+│   │   ├── ports/            # Interfaces (contracts for adapters)
+│   │   └── usecases/         # Business logic (use cases)
+│   ├── infrastructure/       # Technical implementations
+│   │   └── adapters/         # Implementations of domain ports
+│   └── integration.spec.ts   # End-to-end tests
+└── .gitignore                # Ignore dist/ and node_modules/
 ```
+
+**Key principles:**
+1. **Domain layer:** Pure business logic, no dependencies on frameworks
+2. **Infrastructure layer:** Technical implementations (database, APIs, etc.)
+3. **Application layer:** Temporal-specific code (thin wrappers)
+4. **Dependencies:** Centralized DI for easy testing and configuration
 
 Make sure to:
 
