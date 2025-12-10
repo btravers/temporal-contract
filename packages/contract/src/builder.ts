@@ -115,15 +115,36 @@ const workflowDefinitionSchema = z.object({
 /**
  * Schema for validating a contract definition structure
  */
-const contractValidationSchema = z.object({
-  taskQueue: z.string().trim().min(1, "taskQueue cannot be empty"),
-  workflows: z
-    .record(identifierSchema, workflowDefinitionSchema)
-    .refine((workflows) => Object.keys(workflows).length > 0, {
-      message: "at least one workflow is required",
-    }),
-  activities: z.record(identifierSchema, activityDefinitionSchema).optional(),
-});
+const contractValidationSchema = z
+  .object({
+    taskQueue: z.string().trim().min(1, "taskQueue cannot be empty"),
+    workflows: z
+      .record(identifierSchema, workflowDefinitionSchema)
+      .refine((workflows) => Object.keys(workflows).length > 0, {
+        message: "at least one workflow is required",
+      }),
+    activities: z.record(identifierSchema, activityDefinitionSchema).optional(),
+  })
+  .superRefine((contract, ctx) => {
+    // Check for conflicts between global and workflow-specific activities
+    if (!contract.activities) {
+      return;
+    }
+
+    for (const [workflowName, workflow] of Object.entries(contract.workflows)) {
+      if (workflow.activities) {
+        for (const activityName of Object.keys(workflow.activities)) {
+          if (activityName in contract.activities) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: `workflow "${workflowName}" has activity "${activityName}" that conflicts with a global activity. Consider renaming the workflow-specific activity or removing the global activity "${activityName}".`,
+            });
+            return;
+          }
+        }
+      }
+    }
+  });
 
 /**
  * Builder for creating activity definitions
@@ -229,28 +250,12 @@ export const defineWorkflow = <TWorkflow extends WorkflowDefinition>(
 export const defineContract = <TContract extends ContractDefinition>(
   definition: TContract,
 ): TContract => {
-  // Validate entire contract structure with Zod
+  // Validate entire contract structure with Zod (including activity conflicts)
   const validationResult = contractValidationSchema.safeParse(definition);
 
   if (!validationResult.success) {
     const cleanMessage = getCleanErrorMessage(validationResult.error);
     throw new Error(`Contract error: ${cleanMessage}`);
-  }
-
-  // Check for conflicts between global and workflow-specific activities
-  if (definition.activities) {
-    for (const [workflowName, workflow] of Object.entries(definition.workflows)) {
-      if (workflow.activities) {
-        for (const activityName of Object.keys(workflow.activities)) {
-          if (activityName in definition.activities) {
-            throw new Error(
-              `Contract error: workflow "${workflowName}" has activity "${activityName}" that conflicts with a global activity. ` +
-                `Consider renaming the workflow-specific activity or removing the global activity "${activityName}".`,
-            );
-          }
-        }
-      }
-    }
   }
 
   return definition;
