@@ -11,6 +11,7 @@ Complete working examples demonstrating `temporal-contract` usage patterns.
 Order processing system with payment, inventory, and shipping management.
 
 **Demonstrates:**
+
 - Type-safe contracts with Zod schemas
 - Clean Architecture (Domain → Infrastructure → Application)
 - Dependency injection for testability
@@ -27,6 +28,7 @@ Order processing system with payment, inventory, and shipping management.
 Same order processing, but with explicit error handling using [@swan-io/boxed](https://swan-io.github.io/boxed/).
 
 **Demonstrates:**
+
 - Explicit error types in function signatures
 - Functional error handling (Result.Ok / Result.Error)
 - Railway-oriented programming
@@ -41,6 +43,7 @@ Same order processing, but with explicit error handling using [@swan-io/boxed](h
 ### Prerequisites
 
 1. **Temporal Server:**
+
    ```bash
    temporal server start-dev
    ```
@@ -88,6 +91,7 @@ src/
 ```
 
 **Key principles:**
+
 - **Domain:** No framework dependencies
 - **Infrastructure:** Technical implementations
 - **Application:** Temporal bindings (thin layer)

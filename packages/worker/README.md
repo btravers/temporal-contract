@@ -52,7 +52,7 @@ export const processOrder = declareWorkflow({
   implementation: async (context, { orderId, customerId }) => {
     const payment = await context.activities.processPayment({ customerId, amount: 100 });
     await context.activities.sendEmail({ to: customerId, subject: 'Confirmed', body: 'Done!' });
-    
+
     return {
       status: payment.success ? 'success' : 'failed',
       transactionId: payment.transactionId,
@@ -91,7 +91,7 @@ For cleaner activity signatures:
 ```typescript
 import type { ActivityHandler, WorkflowActivityHandler } from '@temporal-contract/contract';
 
-const sendEmail: ActivityHandler<typeof myContract, 'sendEmail'> = 
+const sendEmail: ActivityHandler<typeof myContract, 'sendEmail'> =
   async ({ to, subject, body }) => {
     // Fully typed without explicit annotations
     return { sent: true };

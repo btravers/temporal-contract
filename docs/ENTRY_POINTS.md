@@ -5,6 +5,7 @@ This document explains the separate entry points architecture used by `@temporal
 ## Problem Statement
 
 Temporal workflows must be **deterministic** - they cannot use non-deterministic APIs like:
+
 - Random number generators
 - System time (outside of Temporal APIs)
 - External network calls
@@ -13,7 +14,7 @@ Temporal workflows must be **deterministic** - they cannot use non-deterministic
 The `@swan-io/boxed` library, used by `@temporal-contract/worker-boxed`, includes `FinalizationRegistry` for memory management. When imported in workflow files, webpack bundles this code, causing Temporal to throw:
 
 ```
-DeterminismViolationError: FinalizationRegistry cannot be used in Workflows 
+DeterminismViolationError: FinalizationRegistry cannot be used in Workflows
 because v8 GC is non-deterministic
 ```
 
@@ -24,6 +25,7 @@ Both packages now export **three entry points**:
 ### 1. `/activity` - For Activity Implementations
 
 Contains everything needed for implementing activities:
+
 - Activity handlers and validation
 - Error classes
 - For `worker-boxed`: Includes `@swan-io/boxed` (Result, Future, Option, AsyncData)
@@ -33,6 +35,7 @@ Contains everything needed for implementing activities:
 ### 2. `/workflow` - For Workflow Implementations
 
 Contains only workflow-related exports:
+
 - Workflow declaration and types
 - Workflow context types
 - For `worker-boxed`: **Excludes** `@swan-io/boxed` to prevent bundling issues
@@ -126,15 +129,15 @@ export const processOrder = declareWorkflow({
 
 ```typescript
 // src/application/activities.ts
-import { 
+import {
   declareActivitiesHandler,
-  Result, 
-  Future 
+  Result,
+  Future
 } from '@temporal-contract/worker-boxed/activity';
 import type { BoxedActivityHandler } from '@temporal-contract/worker-boxed/activity';
 import { myContract } from './contract';
 
-const sendEmail: BoxedActivityHandler<typeof myContract, 'sendEmail'> = 
+const sendEmail: BoxedActivityHandler<typeof myContract, 'sendEmail'> =
   ({ to, subject, body }) => {
     return Future.make(async (resolve) => {
       try {
@@ -266,23 +269,29 @@ Both packages use `tsdown` to build multiple entry points:
 ```
 
 This generates:
+
 - CommonJS (`.cjs`) and ESM (`.mjs`) for runtime
 - Type definitions (`.d.cts`, `.d.mts`) for TypeScript
 
 ## Benefits
 
 ### 1. Tree Shaking
+
 Only imports what's needed - workflows don't bundle activity-related code
 
 ### 2. Safety
+
 Prevents accidental imports of non-deterministic code in workflows
 
 ### 3. Explicit Intent
+
 Clear separation shows which code runs where:
+
 - `/activity` → Worker process (Node.js)
 - `/workflow` → Workflow sandbox (deterministic V8)
 
 ### 4. Better DX
+
 Autocompletion shows only relevant exports for each context
 
 ## Migration Guide
@@ -323,6 +332,7 @@ import { declareWorkflow } from '@temporal-contract/worker-boxed/workflow';
 **Cause:** Old version of package or build artifacts not up to date
 
 **Solution:**
+
 ```bash
 pnpm install
 pnpm build --filter @temporal-contract/worker-boxed
@@ -333,6 +343,7 @@ pnpm build --filter @temporal-contract/worker-boxed
 **Cause:** Importing from default entry point in workflow file
 
 **Solution:** Change import to use `/workflow`:
+
 ```typescript
 // ❌ Before
 import { declareWorkflow } from '@temporal-contract/worker-boxed';
@@ -354,4 +365,3 @@ import { declareWorkflow } from '@temporal-contract/worker-boxed/workflow';
 - [Webpack Entry Points](https://webpack.js.org/configuration/entry-context/)
 - [Package Exports](https://nodejs.org/api/packages.html#exports)
 - [@swan-io/boxed Documentation](https://swan-io.github.io/boxed/)
-

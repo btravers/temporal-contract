@@ -28,6 +28,7 @@ const pay = (amount: number): Future<Result<PaymentResult, ActivityError>> => {
 ```
 
 **Benefits:**
+
 - Error types visible in signature
 - Better testability (no try/catch)
 - Functional composition
@@ -58,7 +59,7 @@ pnpm add @temporalio/worker @temporalio/workflow zod
 import { declareActivitiesHandler, Result, Future } from '@temporal-contract/worker-boxed/activity';
 import type { BoxedActivityHandler } from '@temporal-contract/worker-boxed/activity';
 
-const processPayment: BoxedActivityHandler<typeof contract, 'processOrder', 'processPayment'> = 
+const processPayment: BoxedActivityHandler<typeof contract, 'processOrder', 'processPayment'> =
   ({ customerId, amount }) => {
     return Future.make(async resolve => {
       try {
@@ -96,7 +97,7 @@ export const processOrder = declareWorkflow({
         customerId: order.customerId,
         amount: order.total,
       });
-      
+
       return { status: 'completed', transactionId: payment.transactionId };
     } catch (error) {
       // Access error.code, error.message, error.details
@@ -138,12 +139,14 @@ When `Result.Error(...)` is returned, it's automatically converted to an excepti
 ## When to Use
 
 **Use worker-boxed when:**
+
 - You want explicit error types in signatures
 - You prefer functional programming patterns
 - You need better testability for activities
 - You want railway-oriented programming
 
 **Use standard worker when:**
+
 - You prefer traditional exception handling
 - You have simple error cases
 
@@ -162,7 +165,7 @@ const sendEmail: BoxedActivityHandler<typeof contract, 'sendEmail'> = ({ to, sub
 };
 
 // Workflow-specific activity
-const pay: BoxedWorkflowActivityHandler<typeof contract, 'processOrder', 'processPayment'> = 
+const pay: BoxedWorkflowActivityHandler<typeof contract, 'processOrder', 'processPayment'> =
   ({ amount }) => {
     return Future.make(resolve => {
       // ...

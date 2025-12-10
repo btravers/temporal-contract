@@ -7,7 +7,7 @@ import {
   type UpdateHandlerImplementation,
   type WorkflowContext,
   type WorkflowImplementation,
-} from "@temporal-contract/worker";
+} from "@temporal-contract/worker/workflow";
 import type {
   ActivityDefinition,
   ContractDefinition,

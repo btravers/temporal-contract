@@ -7,6 +7,7 @@
 Instead of manually typing parameters with `WorkerInferInput` and `WorkerInferOutput`, use utility types that encapsulate the entire function signature.
 
 **Before (verbose):**
+
 ```typescript
 const log = async ({
   level,
@@ -17,6 +18,7 @@ const log = async ({
 ```
 
 **After (clean):**
+
 ```typescript
 import type { ActivityHandler } from "@temporal-contract/contract";
 

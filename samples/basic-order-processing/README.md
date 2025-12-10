@@ -5,6 +5,7 @@
 ## What It Does
 
 Processes orders through:
+
 1. Payment processing 💳
 2. Inventory reservation 📦
 3. Shipment creation 📮
@@ -29,6 +30,7 @@ src/
 ### Prerequisites
 
 1. Temporal Server:
+
    ```bash
    temporal server start-dev
    ```

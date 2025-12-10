@@ -48,6 +48,7 @@ src/
 ### Prerequisites
 
 1. Temporal Server:
+
    ```bash
    temporal server start-dev
    ```
@@ -80,11 +81,13 @@ pnpm dev:client
 ## When to Use
 
 **Use boxed worker when:**
+
 - You want explicit error types
 - You prefer functional programming
 - You need better testability
 
 **Use standard worker when:**
+
 - You prefer traditional exceptions
 - You have simple error cases
 

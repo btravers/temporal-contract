@@ -58,7 +58,7 @@ import { z } from 'zod';
 
 export const myContract = defineContract({
   taskQueue: 'my-service',
-  
+
   // Global activities (available in all workflows)
   activities: {
     sendEmail: {
@@ -66,13 +66,13 @@ export const myContract = defineContract({
       output: z.object({ sent: z.boolean() }),
     },
   },
-  
+
   // Workflows
   workflows: {
     processOrder: {
       input: z.object({ orderId: z.string() }),
       output: z.object({ status: z.string() }),
-      
+
       // Workflow-specific activities
       activities: {
         processPayment: {
@@ -104,4 +104,4 @@ const getStatus = defineQuery({ input: z.void(), output: z.object({ status: z.st
 const updateAmount = defineUpdate({ input: z.number(), output: z.boolean() });
 ```
 
-## Type Utilities\n\nHelper types for implementing activities with full type inference:\n\n### Activity Handlers\n\n```typescript\nimport type { ActivityHandler, WorkflowActivityHandler } from '@temporal-contract/contract';\n\n// Global activity\nconst sendEmail: ActivityHandler<typeof myContract, 'sendEmail'> = \n  async ({ to, subject }) => {\n    await emailService.send({ to, subject });\n    return { sent: true };\n  };\n\n// Workflow-specific activity\nconst processPayment: WorkflowActivityHandler<typeof myContract, 'processOrder', 'processPayment'> = \n  async ({ amount }) => {\n    const txId = await paymentGateway.charge(amount);\n    return { transactionId: txId };\n  };\n```\n\n### Contract Introspection\n\n```typescript\nimport type { InferWorkflowNames, InferActivityNames } from '@temporal-contract/contract';\n\ntype Workflows = InferWorkflowNames<typeof myContract>;  // \"processOrder\" | ...\ntype Activities = InferActivityNames<typeof myContract>;  // \"sendEmail\" | ...\n```\n\nSee [Activity Handlers documentation](../../docs/ACTIVITY_HANDLERS.md) for details.\n\n---\n\n## Learn More\n\n- [Main README](../../README.md) \u2014 Quick start guide\n- [Worker Implementation](../../docs/CONTRACT_HANDLER.md) \u2014 Implementing workers\n- [Activity Handlers](../../docs/ACTIVITY_HANDLERS.md) \u2014 Type utility details\n\n## License\n\nMIT
+## Type Utilities\n\nHelper types for implementing activities with full type inference:\n\n### Activity Handlers\n\n`typescript\nimport type { ActivityHandler, WorkflowActivityHandler } from '@temporal-contract/contract';\n\n// Global activity\nconst sendEmail: ActivityHandler<typeof myContract, 'sendEmail'> = \n  async ({ to, subject }) => {\n    await emailService.send({ to, subject });\n    return { sent: true };\n  };\n\n// Workflow-specific activity\nconst processPayment: WorkflowActivityHandler<typeof myContract, 'processOrder', 'processPayment'> = \n  async ({ amount }) => {\n    const txId = await paymentGateway.charge(amount);\n    return { transactionId: txId };\n  };\n`\n\n### Contract Introspection\n\n`typescript\nimport type { InferWorkflowNames, InferActivityNames } from '@temporal-contract/contract';\n\ntype Workflows = InferWorkflowNames<typeof myContract>;  // \"processOrder\" | ...\ntype Activities = InferActivityNames<typeof myContract>;  // \"sendEmail\" | ...\n`\n\nSee [Activity Handlers documentation](../../docs/ACTIVITY_HANDLERS.md) for details.\n\n---\n\n## Learn More\n\n- [Main README](../../README.md) \u2014 Quick start guide\n- [Worker Implementation](../../docs/CONTRACT_HANDLER.md) \u2014 Implementing workers\n- [Activity Handlers](../../docs/ACTIVITY_HANDLERS.md) \u2014 Type utility details\n\n## License\n\nMIT

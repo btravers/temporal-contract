@@ -75,19 +75,19 @@ import { z } from 'zod';
 
 export const orderContract = defineContract({
   taskQueue: 'orders',
-  
+
   activities: {
     sendEmail: {
       input: z.object({ to: z.string(), subject: z.string(), body: z.string() }),
       output: z.object({ sent: z.boolean() }),
     },
   },
-  
+
   workflows: {
     processOrder: {
       input: z.object({ orderId: z.string(), customerId: z.string() }),
       output: z.object({ status: z.enum(['success', 'failed']), transactionId: z.string() }),
-      
+
       activities: {
         processPayment: {
           input: z.object({ customerId: z.string(), amount: z.number() }),
@@ -126,17 +126,17 @@ export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: orderContract,
   implementation: async (context, { orderId, customerId }) => {
-    const payment = await context.activities.processPayment({ 
-      customerId, 
-      amount: 100 
+    const payment = await context.activities.processPayment({
+      customerId,
+      amount: 100
     });
-    
+
     await context.activities.sendEmail({
       to: customerId,
       subject: 'Order Confirmed',
       body: `Order ${orderId} processed`,
     });
-    
+
     return {
       status: payment.success ? 'success' : 'failed',
       transactionId: payment.transactionId,
@@ -180,27 +180,31 @@ console.log(result.status);  // 'success' | 'failed' — fully typed!
 ## Key Features
 
 ### Contract-First Design
+
 Define your workflow interface once with Zod schemas — types and validation flow from there.
 
 ### Automatic Validation
+
 All inputs and outputs are validated automatically at network boundaries (workflow entry/exit, activity calls).
 
 ### Type Inference
+
 Full TypeScript inference from contract to implementation — no manual type annotations needed.
 
 ### Compile-Time Safety
+
 TypeScript catches missing implementations, wrong types, and mismatched activity names before runtime.
 
 ---
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| [`@temporal-contract/contract`](./packages/contract) | Contract builder and type definitions |
-| [`@temporal-contract/worker`](./packages/worker) | Type-safe worker with automatic validation |
+| Package                                                      | Description                                           |
+| ------------------------------------------------------------ | ----------------------------------------------------- |
+| [`@temporal-contract/contract`](./packages/contract)         | Contract builder and type definitions                 |
+| [`@temporal-contract/worker`](./packages/worker)             | Type-safe worker with automatic validation            |
 | [`@temporal-contract/worker-boxed`](./packages/worker-boxed) | Worker with Result/Future pattern for explicit errors |
-| [`@temporal-contract/client`](./packages/client) | Type-safe client for consuming workflows |
+| [`@temporal-contract/client`](./packages/client)             | Type-safe client for consuming workflows              |
 
 ---
 
@@ -216,11 +220,13 @@ Explore complete working examples in [`samples/`](./samples):
 ## Documentation
 
 **Guides:**
+
 - [Worker Implementation Guide](./docs/CONTRACT_HANDLER.md) — Complete guide to implementing workers
 - [Entry Points Architecture](./docs/ENTRY_POINTS.md) — Separate entry points for activities/workflows
 - [Activity Handler Types](./docs/ACTIVITY_HANDLERS.md) — Type utilities for cleaner implementations
 
 **Project:**
+
 - [Contributing](./docs/CONTRIBUTING.md) — How to contribute
 - [Changesets](./docs/CHANGESETS.md) — Release process
 - [Roadmap](./docs/ROADMAP.md) — Future plans
