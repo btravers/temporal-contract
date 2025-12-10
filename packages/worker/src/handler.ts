@@ -147,7 +147,7 @@ export interface DeclareWorkflowOptions<
   TContract extends ContractDefinition,
   TWorkflowName extends keyof TContract["workflows"],
 > {
-  definition: TContract["workflows"][TWorkflowName];
+  workflowName: TWorkflowName;
   contract: TContract;
   implementation: WorkflowImplementation<TContract, TWorkflowName>;
   /**
@@ -397,7 +397,7 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
  * import myContract from '../contract';
  *
  * export const processOrder = declareWorkflow({
- *   definition: myContract.workflows.processOrder,
+ *   workflowName: 'processOrder',
  *   contract: myContract,
  *   implementation: async (context, orderId, customerId) => {
  *     // context.activities: typed activities (workflow + global)
@@ -451,8 +451,13 @@ export function declareWorkflow<
 ): (
   args: WorkerInferInput<TContract["workflows"][TWorkflowName]>,
 ) => Promise<WorkerInferOutput<TContract["workflows"][TWorkflowName]>> {
-  const { definition, contract, implementation, activityOptions, signals, queries, updates } =
+  const { workflowName, contract, implementation, activityOptions, signals, queries, updates } =
     options;
+
+  // Get the workflow definition from the contract
+  const definition = contract.workflows[
+    workflowName as string
+  ] as TContract["workflows"][TWorkflowName];
 
   return async (args) => {
     // Temporal passes args as array, extract first element which is our single parameter
@@ -466,7 +471,7 @@ export function declareWorkflow<
       >;
     } catch (error) {
       if (error instanceof ZodError) {
-        throw new WorkflowInputValidationError(String(options.definition), error);
+        throw new WorkflowInputValidationError(String(workflowName), error);
       }
       throw error;
     }
@@ -608,7 +613,7 @@ export function declareWorkflow<
       >;
     } catch (error) {
       if (error instanceof ZodError) {
-        throw new WorkflowOutputValidationError(String(options.definition), error);
+        throw new WorkflowOutputValidationError(String(workflowName), error);
       }
       throw error;
     }

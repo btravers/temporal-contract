@@ -1,0 +1,28 @@
+import type { NotificationPort } from "../../domain/ports/notification.port.js";
+import { pino } from "pino";
+
+const logger = pino({
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      translateTime: "SYS:standard",
+      ignore: "pid,hostname",
+    },
+  },
+});
+
+/**
+ * Console Notification Adapter
+ *
+ * Concrete implementation of NotificationPort using console logging
+ */
+export class ConsoleNotificationAdapter implements NotificationPort {
+  async sendNotification(customerId: string, subject: string, message: string): Promise<void> {
+    // Simulate sending notification via console
+    // In real implementation, this would call an email/SMS service
+    logger.info({ customerId, subject }, `📧 Sending notification to ${customerId}`);
+    logger.info({ subject, message }, `   Subject: ${subject}`);
+    logger.info({ customerId }, `✅ Notification sent to ${customerId}`);
+  }
+}

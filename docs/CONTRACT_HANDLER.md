@@ -60,7 +60,7 @@ import { declareWorkflow } from '@temporal-contract/worker';
 import myContract from '../contract';
 
 export const processOrder = declareWorkflow({
-  definition: myContract.workflows.processOrder,
+  workflowName: 'processOrder',
   contract: myContract,
   implementation: async (context, orderId, customerId) => {
     // context.activities: typed activities (workflow + global)
@@ -99,7 +99,7 @@ import { declareWorkflow } from '@temporal-contract/worker';
 import myContract from '../contract';
 
 export const cancelOrder = declareWorkflow({
-  definition: myContract.workflows.cancelOrder,
+  workflowName: 'cancelOrder',
   contract: myContract,
   implementation: async (context, orderId) => {
     await context.activities.sendEmail(
@@ -247,7 +247,7 @@ import { declareWorkflow } from '@temporal-contract/worker';
 import myContract from '../contract';
 
 export const processOrder = declareWorkflow({
-  definition: myContract.workflows.processOrder,
+  workflowName: 'processOrder',
   contract: myContract,
   implementation: async (context, orderId, customerId) => {
     const inventory = await context.activities.validateInventory(orderId);
@@ -321,7 +321,7 @@ type Contract = typeof myContract;
 
 // Option 1: Function signature with explicit types
 export const processOrder = declareWorkflow({
-  definition: myContract.workflows.processOrder,
+  workflowName: 'processOrder',
   contract: myContract,
   implementation: async (
     context: WorkflowContext<ProcessOrderWorkflow, Contract>,
@@ -339,7 +339,7 @@ const processOrderImpl: WorkflowImplementation<ProcessOrderWorkflow, Contract> =
   };
 
 export const processOrder = declareWorkflow({
-  definition: myContract.workflows.processOrder,
+  workflowName: 'processOrder',
   contract: myContract,
   implementation: processOrderImpl,
 });
@@ -353,7 +353,7 @@ All implementations are wrapped with Zod validation:
 
 ```typescript
 export const processOrder = declareWorkflow({
-  definition: myContract.workflows.processOrder,
+  workflowName: 'processOrder',
   contract: myContract,
   implementation: async (context, orderId, customerId) => {
     // 1. Input validated: [orderId, customerId] parsed with input schema
@@ -435,7 +435,7 @@ Add explicit types for better IDE support:
 import type { WorkflowContext } from '@temporal-contract/worker';
 
 export const processOrder = declareWorkflow({
-  definition: myContract.workflows.processOrder,
+  workflowName: 'processOrder',
   contract: myContract,
   implementation: async (
     context: WorkflowContext<
@@ -456,7 +456,7 @@ Set sensible defaults for workflow activities:
 
 ```typescript
 export const processOrder = declareWorkflow({
-  definition: myContract.workflows.processOrder,
+  workflowName: 'processOrder',
   contract: myContract,
   implementation: async (context, orderId, customerId) => { /* ... */ },
   activityOptions: {
@@ -508,7 +508,7 @@ export const paymentsActivitiesHandler = declareActivitiesHandler({
 import ordersContract from '../../contracts/orders';
 
 export const processOrder = declareWorkflow({
-  definition: ordersContract.workflows.processOrder,
+  workflowName: 'processOrder',
   contract: ordersContract,
   implementation: async (context, orderId) => { /* ... */ },
 });

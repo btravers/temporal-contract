@@ -134,7 +134,7 @@ const implementation: WorkflowImplementation<
  * Export the workflow for Temporal Worker
  */
 export const processOrder = declareWorkflow({
-  definition: orderProcessingContract.workflows.processOrder,
+  workflowName: "processOrder",
   contract: orderProcessingContract,
   implementation,
 });

@@ -162,7 +162,7 @@ describe("Worker Package", () => {
 
     it("should create a workflow with validation", () => {
       const workflow = declareWorkflow({
-        definition: testWorkflowDef,
+        workflowName: "processOrder",
         contract: testContract,
         implementation: async (_context, args) => {
           return { status: "completed", total: args.amount };
@@ -175,7 +175,7 @@ describe("Worker Package", () => {
 
     it("should validate workflow input", async () => {
       const workflow = declareWorkflow({
-        definition: testWorkflowDef,
+        workflowName: "processOrder",
         contract: testContract,
         implementation: async (_context, args) => {
           return { status: "completed", total: args.amount };
@@ -200,7 +200,7 @@ describe("Worker Package", () => {
 
     it("should validate workflow output", async () => {
       const workflow = declareWorkflow({
-        definition: testWorkflowDef,
+        workflowName: "processOrder",
         contract: testContract,
         implementation: async (_context, _args): Promise<{ status: string; total: number }> => {
           return { status: "completed", total: "invalid" } as unknown as {
@@ -238,7 +238,7 @@ describe("Worker Package", () => {
       } satisfies ContractDefinition;
 
       const workflow = declareWorkflow({
-        definition: workflowDef,
+        workflowName: "processOrder",
         contract: contractWithSignals,
         implementation: async (_context, args) => {
           return { status: "completed", total: args.amount };
@@ -272,7 +272,7 @@ describe("Worker Package", () => {
       } satisfies ContractDefinition;
 
       const workflow = declareWorkflow({
-        definition: workflowDef,
+        workflowName: "processOrder",
         contract: contractWithQueries,
         implementation: async (_context, args) => {
           return { status: "completed", total: args.amount };
@@ -306,7 +306,7 @@ describe("Worker Package", () => {
       } satisfies ContractDefinition;
 
       const workflow = declareWorkflow({
-        definition: workflowDef,
+        workflowName: "processOrder",
         contract: contractWithUpdates,
         implementation: async (_context, args) => {
           return { status: "completed", total: args.amount };
@@ -321,7 +321,7 @@ describe("Worker Package", () => {
 
     it("should handle single parameter (not array)", async () => {
       const workflow = declareWorkflow({
-        definition: testWorkflowDef,
+        workflowName: "processOrder",
         contract: testContract,
         implementation: async (_context, args) => {
           expect(args.orderId).toBe("123");
@@ -465,7 +465,7 @@ describe("Worker Package", () => {
       } satisfies ContractDefinition;
 
       const workflow = declareWorkflow({
-        definition: workflowDef,
+        workflowName: "processOrder",
         contract: contract,
         implementation: async () => {
           return { status: "completed" };
@@ -479,7 +479,7 @@ describe("Worker Package", () => {
         });
       } catch (error) {
         if (error instanceof WorkflowInputValidationError) {
-          expect(error.workflowName).toBe(String(workflowDef));
+          expect(error.workflowName).toBe("processOrder");
           expect(error.zodError).toBeDefined();
           expect(error.message).toContain("input validation failed");
         }
@@ -500,7 +500,7 @@ describe("Worker Package", () => {
       } satisfies ContractDefinition;
 
       const workflow = declareWorkflow({
-        definition: workflowDef,
+        workflowName: "processOrder",
         contract: contract,
         implementation: async () => {
           // Return invalid status to trigger validation error
@@ -515,7 +515,7 @@ describe("Worker Package", () => {
         await workflow([{ orderId: "123" }] as unknown as { orderId: string });
       } catch (error) {
         if (error instanceof WorkflowOutputValidationError) {
-          expect(error.workflowName).toBe(String(workflowDef));
+          expect(error.workflowName).toBe("processOrder");
           expect(error.zodError).toBeDefined();
           expect(error.message).toContain("output validation failed");
         }

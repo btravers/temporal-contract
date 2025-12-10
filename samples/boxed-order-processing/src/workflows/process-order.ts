@@ -25,7 +25,7 @@ import { boxedOrderContract } from "../contract.js";
  * - Return failed status with reason
  */
 export const processOrder = declareWorkflow({
-  definition: boxedOrderContract.workflows.processOrder,
+  workflowName: "processOrder",
   contract: boxedOrderContract,
   implementation: async (context, order) => {
     const { activities, info } = context;

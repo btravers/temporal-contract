@@ -113,7 +113,7 @@ import { declareWorkflow } from '@temporal-contract/worker';
 import myContract from '../contract';
 
 export const processOrder = declareWorkflow({
-  definition: myContract.workflows.processOrder,
+  workflowName: 'processOrder',
   contract: myContract,
   implementation: async (context, { orderId, customerId }) => {
     // context.activities: typed activities (workflow + global)

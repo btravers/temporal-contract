@@ -95,7 +95,7 @@ In workflows, activities still throw errors (Result is automatically unwrapped),
 import { declareWorkflow } from '@temporal-contract/worker-boxed';
 
 export const processOrder = declareWorkflow({
-  definition: orderContract.workflows.processOrder,
+  workflowName: 'processOrder',
   contract: orderContract,
   implementation: async (context, order) => {
     try {
@@ -258,7 +258,7 @@ Creates a typed workflow implementation with validation and typed activities.
 
 **Parameters:**
 
-- `definition` - Workflow definition from contract
+- `workflowName` - Name of the workflow (must match a key in contract.workflows)
 - `contract` - The full contract definition
 - `implementation` - Workflow implementation function (receives context and validated input)
 - `activityOptions` - Optional default activity options

@@ -1,115 +1,106 @@
 import { declareActivitiesHandler } from "@temporal-contract/worker";
 import type { ActivityHandler, WorkflowActivityHandler } from "@temporal-contract/contract";
 import { orderProcessingContract } from "../contract.js";
-import { pino } from "pino";
 
-const logger = pino({
-  transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-      translateTime: "SYS:standard",
-      ignore: "pid,hostname",
-    },
-  },
-});
+// Domain
+import { ProcessPaymentUseCase } from "../domain/usecases/process-payment.usecase.js";
+import { ReserveInventoryUseCase } from "../domain/usecases/reserve-inventory.usecase.js";
+import { ReleaseInventoryUseCase } from "../domain/usecases/release-inventory.usecase.js";
+import { CreateShipmentUseCase } from "../domain/usecases/create-shipment.usecase.js";
+import { SendNotificationUseCase } from "../domain/usecases/send-notification.usecase.js";
+
+// Infrastructure
+import { MockPaymentAdapter } from "../infrastructure/adapters/payment.adapter.js";
+import { MockInventoryAdapter } from "../infrastructure/adapters/inventory.adapter.js";
+import { MockShippingAdapter } from "../infrastructure/adapters/shipping.adapter.js";
+import { ConsoleNotificationAdapter } from "../infrastructure/adapters/notification.adapter.js";
+import { PinoLoggerAdapter } from "../infrastructure/adapters/logger.adapter.js";
+
+// ============================================================================
+// Dependency Injection - Create adapters and use cases
+// ============================================================================
+
+// Adapters
+const paymentAdapter = new MockPaymentAdapter();
+const inventoryAdapter = new MockInventoryAdapter();
+const shippingAdapter = new MockShippingAdapter();
+const notificationAdapter = new ConsoleNotificationAdapter();
+const loggerAdapter = new PinoLoggerAdapter();
+
+// Use Cases
+const processPaymentUseCase = new ProcessPaymentUseCase(paymentAdapter);
+const reserveInventoryUseCase = new ReserveInventoryUseCase(inventoryAdapter);
+const releaseInventoryUseCase = new ReleaseInventoryUseCase(inventoryAdapter);
+const createShipmentUseCase = new CreateShipmentUseCase(shippingAdapter);
+const sendNotificationUseCase = new SendNotificationUseCase(notificationAdapter);
 
 // ============================================================================
 // Global Activities Implementation
 // ============================================================================
 
+/**
+ * Log activity - delegates to logger adapter
+ */
 const log: ActivityHandler<typeof orderProcessingContract, "log"> = async ({ level, message }) => {
-  logger[level](message);
+  loggerAdapter.log(level, message);
 };
 
+/**
+ * Send notification activity - delegates to use case
+ */
 const sendNotification: ActivityHandler<
   typeof orderProcessingContract,
   "sendNotification"
 > = async ({ customerId, subject, message }) => {
-  logger.info({ customerId, subject }, `📧 Sending notification to ${customerId}`);
-  logger.info({ subject, message }, `   Subject: ${subject}`);
-  logger.info({ customerId }, `✅ Notification sent to ${customerId}`);
+  await sendNotificationUseCase.execute(customerId, subject, message);
 };
 
 // ============================================================================
 // Workflow-Specific Activities Implementation
 // ============================================================================
 
+/**
+ * Process payment activity - delegates to use case
+ */
 const processPayment: WorkflowActivityHandler<
   typeof orderProcessingContract,
   "processOrder",
   "processPayment"
 > = async ({ customerId, amount }) => {
-  logger.info(
-    { customerId, amount },
-    `💳 Processing payment of $${amount} for customer ${customerId}`,
-  );
-
-  // Simulate random payment failure (10% chance)
-  const success = Math.random() > 0.1;
-
-  const result = {
-    transactionId: `TXN${Date.now()}`,
-    status: success ? ("success" as const) : ("failed" as const),
-    paidAmount: success ? amount : 0,
-  };
-
-  if (success) {
-    logger.info(
-      { transactionId: result.transactionId },
-      `✅ Payment processed: ${result.transactionId}`,
-    );
-  } else {
-    logger.error(`❌ Payment failed`);
-  }
-
-  return result;
+  return processPaymentUseCase.execute(customerId, amount);
 };
 
+/**
+ * Reserve inventory activity - delegates to use case
+ */
 const reserveInventory: WorkflowActivityHandler<
   typeof orderProcessingContract,
   "processOrder",
   "reserveInventory"
 > = async (items) => {
-  logger.info({ itemCount: items.length }, `📦 Reserving inventory for ${items.length} items`);
-
-  // All items available
-  const reservationId = `RES${Date.now()}`;
-  const result = {
-    reserved: true,
-    reservationId,
-  };
-
-  logger.info({ reservationId }, `✅ Inventory reserved: ${reservationId}`);
-  return result;
+  return reserveInventoryUseCase.execute(items);
 };
 
+/**
+ * Release inventory activity - delegates to use case
+ */
 const releaseInventory: WorkflowActivityHandler<
   typeof orderProcessingContract,
   "processOrder",
   "releaseInventory"
 > = async (reservationId) => {
-  logger.info({ reservationId }, `🔓 Releasing inventory reservation: ${reservationId}`);
-  logger.info(`✅ Inventory released`);
+  await releaseInventoryUseCase.execute(reservationId);
 };
 
+/**
+ * Create shipment activity - delegates to use case
+ */
 const createShipment: WorkflowActivityHandler<
   typeof orderProcessingContract,
   "processOrder",
   "createShipment"
-> = async ({ orderId, customerId: _customerId }) => {
-  logger.info({ orderId }, `📮 Creating shipment for order ${orderId}`);
-
-  const trackingNumber = `TRACK${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-  const estimatedDelivery = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
-
-  const result = {
-    trackingNumber,
-    estimatedDelivery,
-  };
-
-  logger.info({ trackingNumber }, `✅ Shipment created: ${trackingNumber}`);
-  return result;
+> = async ({ orderId, customerId }) => {
+  return createShipmentUseCase.execute(orderId, customerId);
 };
 
 // ============================================================================

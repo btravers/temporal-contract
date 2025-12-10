@@ -48,7 +48,7 @@ import { declareWorkflow } from '@temporal-contract/worker';
 import { myContract } from './contract';
 
 const processOrder = declareWorkflow({
-  definition: myContract.workflows.processOrder,
+  workflowName: 'processOrder',
   contract: myContract,
   implementation: async (context, input) => {
     // input is fully typed based on the contract
@@ -129,7 +129,7 @@ Creates a typed workflow implementation with validation and typed activities.
 
 **Parameters:**
 
-- `definition` - Workflow definition from contract
+- `workflowName` - Name of the workflow (must match a key in contract.workflows)
 - `contract` - The full contract definition
 - `implementation` - Workflow implementation function (receives context and validated input)
 - `activityOptions` - Optional default activity options

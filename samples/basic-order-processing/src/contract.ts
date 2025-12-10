@@ -1,5 +1,13 @@
 import { defineContract } from "@temporal-contract/contract";
 import { z } from "zod";
+import {
+  OrderSchema,
+  OrderItemSchema,
+  PaymentResultSchema,
+  InventoryReservationSchema,
+  ShippingResultSchema,
+  OrderResultSchema,
+} from "./domain/entities/order.schema.js";
 
 /**
  * Order Processing Contract
@@ -7,48 +15,9 @@ import { z } from "zod";
  * This contract defines a simple order processing system with:
  * - Global activities for logging and notifications
  * - A workflow for processing orders with payment, inventory, and shipping
+ *
+ * The contract uses domain schemas as the source of truth for business entities.
  */
-
-// ============================================================================
-// Schemas
-// ============================================================================
-
-const OrderSchema = z.object({
-  orderId: z.string(),
-  customerId: z.string(),
-  items: z.array(
-    z.object({
-      productId: z.string(),
-      quantity: z.number().positive(),
-      price: z.number().positive(),
-    }),
-  ),
-  totalAmount: z.number().positive(),
-});
-
-const PaymentResultSchema = z.object({
-  transactionId: z.string(),
-  status: z.enum(["success", "failed"]),
-  paidAmount: z.number(),
-});
-
-const InventoryResultSchema = z.object({
-  reserved: z.boolean(),
-  reservationId: z.string().optional(),
-});
-
-const ShippingResultSchema = z.object({
-  trackingNumber: z.string(),
-  estimatedDelivery: z.string(),
-});
-
-const OrderResultSchema = z.object({
-  orderId: z.string(),
-  status: z.enum(["completed", "failed"]),
-  transactionId: z.string().optional(),
-  trackingNumber: z.string().optional(),
-  failureReason: z.string().optional(),
-});
 
 // ============================================================================
 // Contract Definition
@@ -108,13 +77,8 @@ export const orderProcessingContract = defineContract({
          * Reserve inventory for the order items
          */
         reserveInventory: {
-          input: z.array(
-            z.object({
-              productId: z.string(),
-              quantity: z.number(),
-            }),
-          ),
-          output: InventoryResultSchema,
+          input: z.array(OrderItemSchema),
+          output: InventoryReservationSchema,
         },
 
         /**
@@ -137,9 +101,12 @@ export const orderProcessingContract = defineContract({
   },
 });
 
-// Export types for use in implementation
-export type Order = z.infer<typeof OrderSchema>;
-export type PaymentResult = z.infer<typeof PaymentResultSchema>;
-export type InventoryResult = z.infer<typeof InventoryResultSchema>;
-export type ShippingResult = z.infer<typeof ShippingResultSchema>;
-export type OrderResult = z.infer<typeof OrderResultSchema>;
+// Re-export types from domain for convenience
+export type {
+  Order,
+  OrderItem,
+  PaymentResult,
+  InventoryReservation,
+  ShippingResult,
+  OrderResult,
+} from "./domain/entities/order.schema.js";
