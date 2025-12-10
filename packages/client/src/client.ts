@@ -155,7 +155,10 @@ export class TypedClient<TContract extends ContractDefinition> {
     const definition = this.contract.workflows[workflowName as string];
 
     if (!definition) {
-      throw new WorkflowNotFoundError(String(workflowName));
+      throw new WorkflowNotFoundError(
+        String(workflowName),
+        Object.keys(this.contract.workflows) as string[],
+      );
     }
 
     // Validate input with Zod schema (tuple)
@@ -210,7 +213,10 @@ export class TypedClient<TContract extends ContractDefinition> {
     const definition = this.contract.workflows[workflowName as string];
 
     if (!definition) {
-      throw new WorkflowNotFoundError(String(workflowName));
+      throw new WorkflowNotFoundError(
+        String(workflowName),
+        Object.keys(this.contract.workflows) as string[],
+      );
     }
 
     // Validate input with Zod schema
@@ -262,7 +268,10 @@ export class TypedClient<TContract extends ContractDefinition> {
     const definition = this.contract.workflows[workflowName as string];
 
     if (!definition) {
-      throw new WorkflowNotFoundError(String(workflowName));
+      throw new WorkflowNotFoundError(
+        String(workflowName),
+        Object.keys(this.contract.workflows) as string[],
+      );
     }
 
     const handle = this.client.workflow.getHandle(workflowId);

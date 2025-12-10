@@ -16,8 +16,8 @@ export const it = vitestIt.extend<{
   workerConnection: async ({}, use) => {
     const connection = await getTemporalWorkerConnection();
     await use(connection);
-    // fixme
-    // await connection.close();
+    // Note: NativeConnection.close() may cause issues in test cleanup,
+    // let the test framework handle cleanup instead
   },
 });
 

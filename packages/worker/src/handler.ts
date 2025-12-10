@@ -236,8 +236,9 @@ function createValidatedActivities<
       throw new ActivityImplementationNotFoundError(activityName, Object.keys(rawActivities));
     }
 
-    // @ts-expect-error fixme later
-    validatedActivities[activityName] = async (input: unknown) => {
+    // Create the wrapped activity with validation
+    // Type assertion to unknown is safe as we're building the object step by step
+    const wrappedActivity = async (input: unknown) => {
       // Validate input before sending over network
       let validatedInput: unknown;
       try {
@@ -262,6 +263,9 @@ function createValidatedActivities<
         throw error;
       }
     };
+
+    // Assign to validatedActivities with proper type handling
+    (validatedActivities as Record<string, unknown>)[activityName] = wrappedActivity;
   }
 
   return validatedActivities;

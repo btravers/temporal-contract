@@ -4,9 +4,13 @@ import type { ZodError } from "zod";
  * Base error class for worker-boxed errors
  */
 export class WorkerBoxedError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, cause?: unknown) {
+    super(message, { cause });
     this.name = "WorkerBoxedError";
+    // Maintains proper stack trace for where our error was thrown (only available on V8)
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
   }
 }
 
@@ -16,10 +20,11 @@ export class WorkerBoxedError extends Error {
 export class ActivityDefinitionNotFoundError extends WorkerBoxedError {
   constructor(
     public readonly activityName: string,
-    public readonly availableDefinitions: string[],
+    public readonly availableDefinitions: readonly string[] = [],
   ) {
+    const available = availableDefinitions.length > 0 ? availableDefinitions.join(", ") : "none";
     super(
-      `Activity definition not found for: ${activityName}.\nAvailable activities: ${availableDefinitions.join(", ")}`,
+      `Activity definition not found for: "${activityName}". Available activities: ${available}`,
     );
     this.name = "ActivityDefinitionNotFoundError";
   }
@@ -33,7 +38,7 @@ export class ActivityInputValidationError extends WorkerBoxedError {
     public readonly activityName: string,
     public readonly zodError: ZodError,
   ) {
-    super(`Activity "${activityName}" input validation failed: ${zodError.message}`);
+    super(`Activity "${activityName}" input validation failed: ${zodError.message}`, zodError);
     this.name = "ActivityInputValidationError";
   }
 }
@@ -46,7 +51,7 @@ export class ActivityOutputValidationError extends WorkerBoxedError {
     public readonly activityName: string,
     public readonly zodError: ZodError,
   ) {
-    super(`Activity "${activityName}" output validation failed: ${zodError.message}`);
+    super(`Activity "${activityName}" output validation failed: ${zodError.message}`, zodError);
     this.name = "ActivityOutputValidationError";
   }
 }

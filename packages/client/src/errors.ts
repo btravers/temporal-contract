@@ -18,8 +18,15 @@ export class TypedClientError extends Error {
  * Error thrown when a workflow is not found in the contract
  */
 export class WorkflowNotFoundError extends TypedClientError {
-  constructor(public readonly workflowName: string) {
-    super(`Workflow "${workflowName}" not found in contract`);
+  constructor(
+    public readonly workflowName: string,
+    public readonly availableWorkflows: readonly string[] = [],
+  ) {
+    const message =
+      availableWorkflows.length > 0
+        ? `Workflow "${workflowName}" not found in contract. Available workflows: ${availableWorkflows.join(", ")}`
+        : `Workflow "${workflowName}" not found in contract`;
+    super(message);
     this.name = "WorkflowNotFoundError";
   }
 }
