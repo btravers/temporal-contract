@@ -11,6 +11,7 @@ catalog:
   "@temporalio/worker": 1.13.2
   "@temporalio/workflow": 1.13.2
   "@types/node": 24.10.2
+  "@vitest/coverage-v8": 4.0.15
   lefthook: 2.0.9
   oxfmt: 0.17.0
   oxlint: 1.32.0

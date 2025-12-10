@@ -22,12 +22,9 @@
   "devDependencies": {
     "@changesets/cli": "catalog:",
     "@changesets/config": "catalog:",
-    "@types/node": "catalog:",
     "lefthook": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
-    "turbo": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "turbo": "catalog:"
   }
 }

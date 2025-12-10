@@ -2,7 +2,6 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    globalSetup: "@temporal-contract/testing/global-setup",
     reporters: ["default"],
     coverage: {
       provider: "v8",

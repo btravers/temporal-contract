@@ -50,6 +50,7 @@
     "@temporalio/client": "catalog:",
     "@temporal-contract/tsconfig": "workspace:*",
     "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "tsdown": "catalog:",
     "type-fest": "catalog:",
     "typescript": "catalog:",

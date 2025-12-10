@@ -60,6 +60,7 @@
     "@temporalio/workflow": "catalog:",
     "@temporal-contract/tsconfig": "workspace:*",
     "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
