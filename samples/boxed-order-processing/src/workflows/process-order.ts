@@ -92,7 +92,7 @@ export const processOrder = declareWorkflow({
         await activities.sendNotification({
           customerId: order.customerId,
           subject: "Order Confirmed",
-          message: `Your order ${order.orderId} has been confirmed and will be shipped via ${shippingResult.carrier}. Tracking: ${shippingResult.trackingNumber}`,
+          message: `Your order ${order.orderId} has been confirmed and will be shipped. Tracking: ${shippingResult.trackingNumber}`,
         });
       } catch (error) {
         // Non-critical: log but continue

@@ -105,7 +105,6 @@ async function runClient() {
             orderId: order.orderId,
             status: result.status,
             failureReason: result.failureReason,
-            errorCode: result.errorCode,
           },
           `   📋 Result for ${order.orderId}`,
         );
