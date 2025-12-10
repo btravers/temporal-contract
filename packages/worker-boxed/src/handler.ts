@@ -167,13 +167,7 @@ export interface DeclareWorkflowOptions<
 }
 
 // Re-export types from base worker
-export type {
-  WorkflowContext,
-  WorkflowImplementation,
-  SignalHandlerImplementation,
-  QueryHandlerImplementation,
-  UpdateHandlerImplementation,
-};
+export type { WorkflowContext, WorkflowImplementation };
 
 /**
  * Create a typed boxed activities handler with automatic validation and Result pattern

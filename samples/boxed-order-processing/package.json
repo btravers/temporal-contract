@@ -17,10 +17,7 @@
     "@temporal-contract/worker-boxed": "workspace:*",
     "@temporalio/client": "catalog:",
     "@temporalio/worker": "catalog:",
-    "@temporalio/workflow": "catalog:",
     "pino": "catalog:",
-    "pino-pretty": "catalog:",
-    "ts-pattern": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

@@ -21,7 +21,6 @@
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",
-    "@changesets/config": "catalog:",
     "knip": "catalog:",
     "lefthook": "catalog:",
     "oxfmt": "catalog:",
