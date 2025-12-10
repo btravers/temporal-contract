@@ -1,6 +1,5 @@
 {
   "name": "@temporal-contract/sample-basic-order-processing",
-  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Basic order processing sample using temporal-contract",

@@ -1,6 +1,5 @@
 {
   "name": "@temporal-contract/sample-boxed-order-processing",
-  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Order processing sample using temporal-contract with Result/Future pattern",

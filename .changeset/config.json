@@ -4,9 +4,9 @@
   "commit": false,
   "fixed": [
     [
-      "@temporal-contract/core",
       "@temporal-contract/contract",
       "@temporal-contract/worker",
+      "@temporal-contract/worker-boxed",
       "@temporal-contract/client"
     ]
   ],
