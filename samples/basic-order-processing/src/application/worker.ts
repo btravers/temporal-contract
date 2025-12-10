@@ -4,16 +4,7 @@ import { fileURLToPath } from "node:url";
 import { activitiesHandler } from "./activities.js";
 import pino from "pino";
 
-const logger = pino({
-  transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-      translateTime: "SYS:standard",
-      ignore: "pid,hostname",
-    },
-  },
-});
+const logger = pino();
 
 function workflowPath(filename: string): string {
   return fileURLToPath(new URL(`./${filename}${extname(import.meta.url)}`, import.meta.url));

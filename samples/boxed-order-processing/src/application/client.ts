@@ -4,16 +4,7 @@ import { boxedOrderContract } from "./contract.js";
 import type { Order, OrderResult } from "./contract.js";
 import pino from "pino";
 
-const logger = pino({
-  transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-      translateTime: "SYS:standard",
-      ignore: "pid,hostname",
-    },
-  },
-});
+const logger = pino();
 
 /**
  * Client for Boxed Order Processing

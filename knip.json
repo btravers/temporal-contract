@@ -9,11 +9,11 @@
       "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
     },
     "packages/worker": {
-      "entry": ["src/index.ts", "src/activity.ts", "src/workflow.ts"],
+      "entry": ["src/activity.ts", "src/workflow.ts"],
       "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
     },
     "packages/worker-boxed": {
-      "entry": ["src/index.ts", "src/activity.ts", "src/workflow.ts"],
+      "entry": ["src/activity.ts", "src/workflow.ts"],
       "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
     },
     "packages/testing": {
@@ -33,6 +33,5 @@
       "entry": ["*.json"]
     }
   },
-  "ignore": ["coverage/**", "**/dist/**"],
-  "ignoreDependencies": ["@temporal-contract/tsconfig"]
+  "ignore": ["coverage/**", "**/dist/**"]
 }

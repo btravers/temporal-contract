@@ -4,16 +4,7 @@ import { orderProcessingContract } from "./contract.js";
 import type { Order } from "./contract.js";
 import pino from "pino";
 
-const logger = pino({
-  transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-      translateTime: "SYS:standard",
-      ignore: "pid,hostname",
-    },
-  },
-});
+const logger = pino();
 
 /**
  * Example client to start order processing workflows

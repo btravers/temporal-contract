@@ -7,16 +7,7 @@ import { pino } from "pino";
  * Concrete implementation of LoggerPort using Pino
  */
 export class PinoLoggerAdapter implements LoggerPort {
-  private readonly logger = pino({
-    transport: {
-      target: "pino-pretty",
-      options: {
-        colorize: true,
-        translateTime: "SYS:standard",
-        ignore: "pid,hostname",
-      },
-    },
-  });
+  private readonly logger = pino();
 
   log(level: "fatal" | "error" | "warn" | "info" | "debug" | "trace", message: string): void {
     this.logger[level](message);
