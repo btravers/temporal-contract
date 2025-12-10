@@ -2,9 +2,6 @@ import { Future, Result } from "@swan-io/boxed";
 import { ZodError } from "zod";
 import {
   type DeclareWorkflowOptions as BaseDeclareWorkflowOptions,
-  type QueryHandlerImplementation,
-  type SignalHandlerImplementation,
-  type UpdateHandlerImplementation,
   type WorkflowContext,
   type WorkflowImplementation,
 } from "@temporal-contract/worker/workflow";
