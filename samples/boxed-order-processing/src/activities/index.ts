@@ -36,28 +36,9 @@ const logger = pino({
 // Global Activities
 // ============================================================================
 
-const log: BoxedActivityHandler<typeof boxedOrderContract, "log"> = ({
-  level,
-  message,
-}: {
-  level: string;
-  message: string;
-}) => {
+const log: BoxedActivityHandler<typeof boxedOrderContract, "log"> = ({ level, message }) => {
   return Future.make((resolve) => {
-    const logLevel = level.toLowerCase();
-    // Type guard pour vérifier que logLevel est un niveau valide
-    if (
-      logLevel === "info" ||
-      logLevel === "warn" ||
-      logLevel === "error" ||
-      logLevel === "debug" ||
-      logLevel === "fatal" ||
-      logLevel === "trace"
-    ) {
-      logger[logLevel](message);
-    } else {
-      logger.info(message);
-    }
+    logger[level](message);
     resolve(Result.Ok(undefined));
   });
 };
@@ -66,10 +47,6 @@ const sendNotification: BoxedActivityHandler<typeof boxedOrderContract, "sendNot
   customerId,
   subject,
   message,
-}: {
-  customerId: string;
-  subject: string;
-  message: string;
 }) => {
   return Future.make((resolve) => {
     logger.info({ customerId, subject }, `📧 Sending notification to customer ${customerId}`);
@@ -109,7 +86,7 @@ const processPayment: BoxedWorkflowActivityHandler<
   typeof boxedOrderContract,
   "processOrder",
   "processPayment"
-> = ({ customerId, amount }: { customerId: string; amount: number }) => {
+> = ({ customerId, amount }) => {
   return Future.make((resolve) => {
     logger.info(
       { customerId, amount },
@@ -154,7 +131,7 @@ const reserveInventory: BoxedWorkflowActivityHandler<
   typeof boxedOrderContract,
   "processOrder",
   "reserveInventory"
-> = (items: { productId: string; quantity: number }[]) => {
+> = (items) => {
   return Future.make((resolve) => {
     logger.info({ itemCount: items.length }, `📦 Reserving inventory for ${items.length} products`);
 
@@ -211,7 +188,7 @@ const releaseInventory: BoxedWorkflowActivityHandler<
   typeof boxedOrderContract,
   "processOrder",
   "releaseInventory"
-> = (reservationId: string) => {
+> = (reservationId) => {
   return Future.make((resolve) => {
     logger.info({ reservationId }, `🔓 Releasing inventory reservation: ${reservationId}`);
     // Inventory release rarely fails
@@ -223,7 +200,7 @@ const createShipment: BoxedWorkflowActivityHandler<
   typeof boxedOrderContract,
   "processOrder",
   "createShipment"
-> = ({ orderId, customerId }: { orderId: string; customerId: string }) => {
+> = ({ orderId, customerId }) => {
   return Future.make((resolve) => {
     logger.info({ orderId }, `📮 Creating shipment for order ${orderId}`);
 
@@ -279,7 +256,7 @@ const refundPayment: BoxedWorkflowActivityHandler<
   typeof boxedOrderContract,
   "processOrder",
   "refundPayment"
-> = (transactionId: string) => {
+> = (transactionId) => {
   return Future.make((resolve) => {
     logger.info({ transactionId }, `💰 Processing refund for transaction ${transactionId}`);
 

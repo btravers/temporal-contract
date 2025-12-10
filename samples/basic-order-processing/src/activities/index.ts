@@ -28,8 +28,6 @@ const sendNotification: ActivityHandler<
 > = async ({ customerId, subject, message }) => {
   logger.info({ customerId, subject }, `📧 Sending notification to ${customerId}`);
   logger.info({ subject, message }, `   Subject: ${subject}`);
-  // Simulate API call delay
-  await new Promise((resolve) => setTimeout(resolve, 500));
   logger.info({ customerId }, `✅ Notification sent to ${customerId}`);
 };
 
@@ -46,9 +44,6 @@ const processPayment: WorkflowActivityHandler<
     { customerId, amount },
     `💳 Processing payment of $${amount} for customer ${customerId}`,
   );
-
-  // Simulate payment processing delay
-  await new Promise((resolve) => setTimeout(resolve, 1000));
 
   // Simulate random payment failure (10% chance)
   const success = Math.random() > 0.1;
@@ -78,9 +73,6 @@ const reserveInventory: WorkflowActivityHandler<
 > = async (items) => {
   logger.info({ itemCount: items.length }, `📦 Reserving inventory for ${items.length} items`);
 
-  // Simulate inventory check delay
-  await new Promise((resolve) => setTimeout(resolve, 600));
-
   // All items available
   const reservationId = `RES${Date.now()}`;
   const result = {
@@ -98,7 +90,6 @@ const releaseInventory: WorkflowActivityHandler<
   "releaseInventory"
 > = async (reservationId) => {
   logger.info({ reservationId }, `🔓 Releasing inventory reservation: ${reservationId}`);
-  await new Promise((resolve) => setTimeout(resolve, 300));
   logger.info(`✅ Inventory released`);
 };
 
@@ -108,9 +99,6 @@ const createShipment: WorkflowActivityHandler<
   "createShipment"
 > = async ({ orderId, customerId: _customerId }) => {
   logger.info({ orderId }, `📮 Creating shipment for order ${orderId}`);
-
-  // Simulate shipment creation delay
-  await new Promise((resolve) => setTimeout(resolve, 800));
 
   const trackingNumber = `TRACK${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
   const estimatedDelivery = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
