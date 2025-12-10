@@ -38,3 +38,21 @@ export const releaseInventoryUseCase = new ReleaseInventoryUseCase(inventoryAdap
 export const createShipmentUseCase = new CreateShipmentUseCase(shippingAdapter);
 export const sendNotificationUseCase = new SendNotificationUseCase(notificationAdapter);
 export const refundPaymentUseCase = new RefundPaymentUseCase(paymentAdapter);
+
+// ============================================================================
+// Dependencies Object (for easy mocking in tests)
+// ============================================================================
+
+export const dependencies = {
+  paymentAdapter,
+  inventoryAdapter,
+  shippingAdapter,
+  notificationAdapter,
+  loggerAdapter,
+  processPaymentUseCase,
+  reserveInventoryUseCase,
+  releaseInventoryUseCase,
+  createShipmentUseCase,
+  sendNotificationUseCase,
+  refundPaymentUseCase,
+};

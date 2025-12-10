@@ -1,4 +1,4 @@
-import { describe, expect, vi } from "vitest";
+import { describe, expect, vi, beforeEach } from "vitest";
 import { Worker } from "@temporalio/worker";
 import { TypedClient } from "@temporal-contract/client";
 import { it as baseIt } from "@temporal-contract/testing/extension";
@@ -7,6 +7,9 @@ import { activitiesHandler } from "./application/activities.js";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Order } from "./application/contract.js";
+import { dependencies } from "./dependencies.js";
+import { Future, Result } from "@swan-io/boxed";
+import type { PaymentResult } from "./domain/entities/order.schema.js";
 
 const it = baseIt.extend<{
   worker: Worker;
@@ -50,6 +53,19 @@ const it = baseIt.extend<{
 });
 
 describe("Boxed Order Processing Workflow - Integration Tests", () => {
+  beforeEach(() => {
+    // Mock payment adapter to always succeed for deterministic tests
+    vi.spyOn(dependencies.paymentAdapter, "processPayment").mockReturnValue(
+      Future.value(
+        Result.Ok({
+          transactionId: `TXN-${Date.now()}`,
+          status: "success" as const,
+          paidAmount: 100,
+        }),
+      ),
+    );
+  });
+
   it("should process an order successfully with Result pattern", async ({ client }) => {
     // GIVEN
     const order: Order = {
@@ -143,7 +159,9 @@ describe("Boxed Order Processing Workflow - Integration Tests", () => {
       expect.objectContaining({
         workflowId: order.orderId,
         type: "processOrder",
-        status: "RUNNING",
+        status: expect.objectContaining({
+          name: "RUNNING",
+        }),
       }),
     );
 
@@ -203,6 +221,47 @@ describe("Boxed Order Processing Workflow - Integration Tests", () => {
         status: expect.stringMatching(/^(completed|failed|cancelled)$/),
       }),
     );
+  });
+
+  it("should handle payment failure and return failed status", async ({ client }) => {
+    // GIVEN
+    const order: Order = {
+      orderId: `ORD-BOXED-TEST-${Date.now()}`,
+      customerId: "CUST-TEST-006",
+      items: [
+        {
+          productId: "PROD-007",
+          quantity: 1,
+          price: 99.99,
+        },
+      ],
+      totalAmount: 99.99,
+    };
+
+    // Mock payment to fail
+    vi.spyOn(dependencies.paymentAdapter, "processPayment").mockReturnValue(
+      Future.value(
+        Result.Ok<PaymentResult>({
+          transactionId: "",
+          status: "failed" as const,
+          paidAmount: 0,
+        }),
+      ),
+    );
+
+    // WHEN
+    const result = await client.executeWorkflow("processOrder", {
+      workflowId: order.orderId,
+      args: order,
+    });
+
+    // THEN
+    expect(result).toEqual({
+      orderId: order.orderId,
+      status: "failed",
+      failureReason: "Payment was declined",
+      errorCode: "PAYMENT_FAILED",
+    });
   });
 });
 

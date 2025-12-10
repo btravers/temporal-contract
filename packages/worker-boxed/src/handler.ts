@@ -7,7 +7,7 @@ import {
   type UpdateHandlerImplementation,
   type WorkflowContext,
   type WorkflowImplementation,
-  declareWorkflow as createBaseWorkflow,
+  declareWorkflow,
 } from "@temporal-contract/worker";
 import type {
   ActivityDefinition,
@@ -164,6 +164,7 @@ export type {
   QueryHandlerImplementation,
   UpdateHandlerImplementation,
 };
+export { declareWorkflow };
 
 /**
  * Create a typed boxed activities handler with automatic validation and Result pattern
@@ -295,43 +296,4 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
     contract,
     activities: wrappedActivities,
   };
-}
-
-/**
- * Create a typed workflow implementation with automatic validation
- *
- * This is a re-export of the base declareWorkflow from @temporal-contract/worker.
- * Workflows in worker-boxed work the same as in worker - only activities use the Result pattern.
- *
- * @example
- * ```ts
- * import { declareWorkflow } from '@temporal-contract/worker-boxed';
- * import myContract from '../contract';
- *
- * export const processOrder = declareWorkflow({
- *   definition: myContract.workflows.processOrder,
- *   contract: myContract,
- *   implementation: async (context, order) => {
- *     // Activities throw on error (Result is unwrapped in handler)
- *     const payment = await context.activities.processPayment(order);
- *     return { status: 'success' };
- *   },
- *   signals: {
- *     cancel: () => {
- *       // Handle cancellation
- *     },
- *   },
- * });
- * ```
- */
-export function declareWorkflow<
-  TContract extends ContractDefinition,
-  TWorkflowName extends keyof TContract["workflows"],
->(
-  options: DeclareWorkflowOptions<TContract, TWorkflowName>,
-): (
-  args: WorkerInferInput<TContract["workflows"][TWorkflowName]>,
-) => Promise<WorkerInferOutput<TContract["workflows"][TWorkflowName]>> {
-  // Delegate to base worker implementation - workflows are the same
-  return createBaseWorkflow(options);
 }
