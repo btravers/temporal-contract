@@ -19,7 +19,7 @@ const it = baseIt.extend<{
         connection: workerConnection,
         namespace: "default",
         taskQueue: boxedOrderContract.taskQueue,
-        workflowsPath: workflowPath("workflows/processOrder"),
+        workflowsPath: workflowPath("workflows/process-order"),
         activities: activitiesHandler.activities,
       });
 

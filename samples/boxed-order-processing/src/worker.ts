@@ -1,5 +1,5 @@
 import { Worker } from "@temporalio/worker";
-import { dirname, resolve } from "node:path";
+import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { activitiesHandler } from "./activities/index.js";
 import { boxedOrderContract } from "./contract.js";
@@ -16,7 +16,9 @@ const logger = pino({
   },
 });
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+function workflowPath(filename: string): string {
+  return fileURLToPath(new URL(`./${filename}${extname(import.meta.url)}`, import.meta.url));
+}
 
 /**
  * Boxed Order Processing Worker
@@ -34,22 +36,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 async function run() {
   // Create Temporal Worker
   const worker = await Worker.create({
-    workflowsPath: resolve(__dirname, "workflows"),
+    workflowsPath: workflowPath("workflows/process-order"),
     activities: activitiesHandler.activities,
     taskQueue: boxedOrderContract.taskQueue,
   });
 
   logger.info("🚀 Boxed Order Processing Worker started");
-  logger.info(
-    { taskQueue: boxedOrderContract.taskQueue },
-    `   Task Queue: ${boxedOrderContract.taskQueue}`,
-  );
-  logger.info(
-    { workflowsPath: resolve(__dirname, "workflows") },
-    `   Workflows Path: ${resolve(__dirname, "workflows")}`,
-  );
-  logger.info("   Pattern: Result/Future for explicit error handling");
-  logger.info("Worker is running... Press Ctrl+C to stop.");
 
   await worker.run();
 }

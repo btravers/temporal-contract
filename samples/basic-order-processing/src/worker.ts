@@ -1,5 +1,5 @@
 import { NativeConnection, Worker } from "@temporalio/worker";
-import { dirname, join } from "node:path";
+import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { activitiesHandler } from "./activities/index.js";
 import pino from "pino";
@@ -15,9 +15,9 @@ const logger = pino({
   },
 });
 
-// Get the directory path for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+function workflowPath(filename: string): string {
+  return fileURLToPath(new URL(`./${filename}${extname(import.meta.url)}`, import.meta.url));
+}
 
 /**
  * Start the Temporal Worker
@@ -42,23 +42,13 @@ async function run() {
     taskQueue: "order-processing",
 
     // Load workflows from the file system
-    workflowsPath: join(__dirname, "workflows"),
+    workflowsPath: workflowPath("workflows/process-order"),
 
     // Register activities from the handler
     activities: activitiesHandler.activities,
   });
 
   logger.info("✅ Worker registered successfully");
-  logger.info({ taskQueue: "order-processing" }, `📝 Task Queue: order-processing`);
-  logger.info(
-    { workflowsPath: join(__dirname, "workflows") },
-    `📂 Workflows: ${join(__dirname, "workflows")}`,
-  );
-  logger.info(
-    { activitiesCount: Object.keys(activitiesHandler.activities).length },
-    `⚙️  Activities: ${Object.keys(activitiesHandler.activities).length} registered`,
-  );
-  logger.info("👂 Worker is now listening for tasks...");
 
   // Run the worker
   await worker.run();
