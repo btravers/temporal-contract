@@ -1,4 +1,4 @@
-import { describe, expect, vi } from "vitest";
+import { describe, expect, vi, beforeEach } from "vitest";
 import { Worker } from "@temporalio/worker";
 import { TypedClient } from "@temporal-contract/client";
 import { it as baseIt } from "@temporal-contract/testing/extension";
@@ -7,6 +7,7 @@ import { activitiesHandler } from "./application/activities.js";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Order } from "./application/contract.js";
+import { paymentAdapter } from "./dependencies.js";
 
 const it = baseIt.extend<{
   worker: Worker;
@@ -50,6 +51,15 @@ const it = baseIt.extend<{
 });
 
 describe("Order Processing Workflow - Integration Tests", () => {
+  beforeEach(() => {
+    // Mock payment adapter to always succeed for deterministic tests
+    vi.spyOn(paymentAdapter, "processPayment").mockResolvedValue({
+      transactionId: "TXN-MOCK-123",
+      status: "success",
+      paidAmount: 0, // Will be overridden by actual call
+    });
+  });
+
   it("should process an order successfully", async ({ client }) => {
     // GIVEN
     const order: Order = {
@@ -206,6 +216,41 @@ describe("Order Processing Workflow - Integration Tests", () => {
 
     // THEN
     await expect(execution).rejects.toThrow();
+  });
+
+  it("should handle payment failure", async ({ client }) => {
+    // GIVEN - Mock payment to fail
+    vi.spyOn(paymentAdapter, "processPayment").mockResolvedValue({
+      transactionId: "TXN-FAILED-123",
+      status: "failed",
+      paidAmount: 0,
+    });
+
+    const order: Order = {
+      orderId: `ORD-TEST-${Date.now()}`,
+      customerId: "CUST-TEST-006",
+      items: [
+        {
+          productId: "PROD-007",
+          quantity: 1,
+          price: 99.99,
+        },
+      ],
+      totalAmount: 99.99,
+    };
+
+    // WHEN
+    const result = await client.executeWorkflow("processOrder", {
+      workflowId: order.orderId,
+      args: order,
+    });
+
+    // THEN - Should return failed status
+    expect(result).toEqual({
+      orderId: order.orderId,
+      status: "failed",
+      failureReason: "Payment failed",
+    });
   });
 });
 
