@@ -1,7 +1,7 @@
 import { Worker } from "@temporalio/worker";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { activitiesHandler } from "./activities/index.js";
+import { activitiesHandler } from "./activities.js";
 import { boxedOrderContract } from "./contract.js";
 import pino from "pino";
 
@@ -36,7 +36,7 @@ function workflowPath(filename: string): string {
 async function run() {
   // Create Temporal Worker
   const worker = await Worker.create({
-    workflowsPath: workflowPath("workflows/process-order"),
+    workflowsPath: workflowPath("workflows"),
     activities: activitiesHandler.activities,
     taskQueue: boxedOrderContract.taskQueue,
   });

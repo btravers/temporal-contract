@@ -7,13 +7,14 @@ import {
   InventoryReservationSchema,
   ShippingResultSchema,
   OrderResultSchema,
-} from "./domain/entities/order.schema.js";
+} from "../domain/entities/order.schema.js";
 
 /**
- * Boxed Order Processing Contract
+ * Order Processing Contract
  *
- * This contract demonstrates the Result/Future pattern for explicit error handling.
- * Activities return Result<T, E> instead of throwing exceptions.
+ * This contract defines a simple order processing system with:
+ * - Global activities for logging and notifications
+ * - A workflow for processing orders with payment, inventory, and shipping
  *
  * The contract uses domain schemas as the source of truth for business entities.
  */
@@ -22,8 +23,8 @@ import {
 // Contract Definition
 // ============================================================================
 
-export const boxedOrderContract = defineContract({
-  taskQueue: "boxed-order-processing",
+export const orderProcessingContract = defineContract({
+  taskQueue: "order-processing",
 
   /**
    * Global activities available to all workflows
@@ -54,7 +55,7 @@ export const boxedOrderContract = defineContract({
    */
   workflows: {
     /**
-     * Process an order from payment to shipping with Result/Future pattern
+     * Process an order from payment to shipping
      */
     processOrder: {
       input: OrderSchema,
@@ -95,14 +96,6 @@ export const boxedOrderContract = defineContract({
           input: z.object({ orderId: z.string(), customerId: z.string() }),
           output: ShippingResultSchema,
         },
-
-        /**
-         * Refund a payment (used in case of errors)
-         */
-        refundPayment: {
-          input: z.string(),
-          output: z.void(),
-        },
       },
     },
   },
@@ -116,4 +109,4 @@ export type {
   InventoryReservation,
   ShippingResult,
   OrderResult,
-} from "./domain/entities/order.schema.js";
+} from "../domain/entities/order.schema.js";

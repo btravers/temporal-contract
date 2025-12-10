@@ -1,6 +1,6 @@
 import { type WorkflowImplementation, declareWorkflow } from "@temporal-contract/worker";
-import { orderProcessingContract } from "../contract.js";
-import type { OrderResult } from "../contract.js";
+import { orderProcessingContract } from "./contract.js";
+import type { OrderResult } from "./contract.js";
 
 /**
  * Process Order Workflow Implementation

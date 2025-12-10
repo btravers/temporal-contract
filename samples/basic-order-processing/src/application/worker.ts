@@ -1,7 +1,7 @@
 import { NativeConnection, Worker } from "@temporalio/worker";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { activitiesHandler } from "./activities/index.js";
+import { activitiesHandler } from "./activities.js";
 import pino from "pino";
 
 const logger = pino({
@@ -42,7 +42,7 @@ async function run() {
     taskQueue: "order-processing",
 
     // Load workflows from the file system
-    workflowsPath: workflowPath("workflows/process-order"),
+    workflowsPath: workflowPath("workflows"),
 
     // Register activities from the handler
     activities: activitiesHandler.activities,

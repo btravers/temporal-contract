@@ -2,11 +2,11 @@ import { describe, expect, vi } from "vitest";
 import { Worker } from "@temporalio/worker";
 import { TypedClient } from "@temporal-contract/client";
 import { it as baseIt } from "@temporal-contract/testing/extension";
-import { orderProcessingContract } from "./contract.js";
-import { activitiesHandler } from "./activities/index.js";
+import { orderProcessingContract } from "./application/contract.js";
+import { activitiesHandler } from "./application/activities.js";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Order } from "./contract.js";
+import type { Order } from "./application/contract.js";
 
 const it = baseIt.extend<{
   worker: Worker;
@@ -19,7 +19,7 @@ const it = baseIt.extend<{
         connection: workerConnection,
         namespace: "default",
         taskQueue: orderProcessingContract.taskQueue,
-        workflowsPath: workflowPath("workflows/process-order"),
+        workflowsPath: workflowPath("application/workflows"),
         activities: activitiesHandler.activities,
       });
 

@@ -1,5 +1,5 @@
 import { declareWorkflow } from "@temporal-contract/worker-boxed";
-import { boxedOrderContract } from "../contract.js";
+import { boxedOrderContract } from "./contract.js";
 
 /**
  * Process Order Workflow Implementation

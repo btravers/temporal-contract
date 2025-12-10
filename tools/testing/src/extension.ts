@@ -6,11 +6,13 @@ export const it = vitestIt.extend<{
   clientConnection: Connection;
   workerConnection: NativeConnection;
 }>({
+  // oxlint-disable-next-line no-empty-pattern
   clientConnection: async ({}, use) => {
     const connection = await getTemporalConnection();
     await use(connection);
     await connection.close();
   },
+  // oxlint-disable-next-line no-empty-pattern
   workerConnection: async ({}, use) => {
     const connection = await getTemporalWorkerConnection();
     await use(connection);
