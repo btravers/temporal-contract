@@ -1,0 +1,30 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["lefthook.yml"]
+    },
+    "packages/*": {
+      "entry": ["src/index.ts", "src/activity.ts", "src/workflow.ts"],
+      "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
+    },
+    "packages/testing": {
+      "entry": ["src/extension.ts", "src/global-setup.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "samples/*": {
+      "entry": [
+        "src/application/client.ts",
+        "src/application/worker.ts",
+        "src/application/workflows.ts",
+        "src/integration.spec.ts"
+      ],
+      "project": ["src/**/*.ts"]
+    },
+    "tools/*": {
+      "entry": ["*.json"]
+    }
+  },
+  "ignore": ["coverage/**", "**/dist/**"],
+  "ignoreDependencies": ["@temporal-contract/tsconfig"]
+}

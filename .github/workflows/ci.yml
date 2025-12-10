@@ -39,6 +39,19 @@ jobs:
       - name: Run type check
         run: pnpm typecheck
 
+  knip:
+    name: Knip
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Run knip
+        run: pnpm exec knip --reporter github-actions
+
   test:
     name: Test
     runs-on: ubuntu-latest
