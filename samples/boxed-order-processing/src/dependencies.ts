@@ -22,11 +22,11 @@ import { PinoLoggerAdapter } from "./infrastructure/adapters/logger.adapter.js";
 // Adapters
 // ============================================================================
 
+export const loggerAdapter = new PinoLoggerAdapter();
 const paymentAdapter = new MockPaymentAdapter();
 const inventoryAdapter = new MockInventoryAdapter();
 const shippingAdapter = new MockShippingAdapter();
 const notificationAdapter = new ConsoleNotificationAdapter();
-export const loggerAdapter = new PinoLoggerAdapter();
 
 // ============================================================================
 // Use Cases
