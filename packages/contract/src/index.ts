@@ -8,7 +8,7 @@ export {
 } from "./builder.js";
 
 export type {
-  AnyZodSchema,
+  AnySchema,
   ActivityDefinition,
   SignalDefinition,
   QueryDefinition,
