@@ -27,7 +27,7 @@
     "lefthook": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
-    "sort-package-json": "3.5.1",
+    "sort-package-json": "catalog:",
     "turbo": "catalog:"
   },
   "packageManager": "pnpm@10.25.0"

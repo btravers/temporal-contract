@@ -54,6 +54,9 @@ catalogs:
     pino:
       specifier: 10.1.0
       version: 10.1.0
+    sort-package-json:
+      specifier: 3.5.1
+      version: 3.5.1
     testcontainers:
       specifier: 11.10.0
       version: 11.10.0
@@ -104,7 +107,7 @@ importers:
         specifier: "catalog:"
         version: 1.32.0
       sort-package-json:
-        specifier: 3.5.1
+        specifier: "catalog:"
         version: 3.5.1
       turbo:
         specifier: "catalog:"

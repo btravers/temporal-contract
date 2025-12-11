@@ -21,6 +21,7 @@ catalog:
   oxfmt: 0.17.0
   oxlint: 1.32.0
   pino: 10.1.0
+  sort-package-json: 3.5.1
   testcontainers: 11.10.0
   tsdown: 0.17.2
   tsx: 4.21.0
