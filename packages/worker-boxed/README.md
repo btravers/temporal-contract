@@ -20,7 +20,7 @@ import { declareActivitiesHandler, Result, Future } from '@temporal-contract/wor
 const processPayment = ({ amount }) => {
   return Future.fromPromise(paymentService.charge(amount))
     .map(txId => ({ transactionId: txId }))
-    .mapError(error => ({ code: 'PAYMENT_FAILED', message: error.message }));
+    .mapError(error => ({ code: 'PAYMENT_FAILED', message: error instanceof Error ? error.message : 'Unknown error' }));
 };
 
 export const activities = declareActivitiesHandler({
