@@ -104,4 +104,49 @@ const getStatus = defineQuery({ input: z.void(), output: z.object({ status: z.st
 const updateAmount = defineUpdate({ input: z.number(), output: z.boolean() });
 ```
 
-## Type Utilities\n\nHelper types for implementing activities with full type inference:\n\n### Activity Handlers\n\n`typescript\nimport type { ActivityHandler, WorkflowActivityHandler } from '@temporal-contract/contract';\n\n// Global activity\nconst sendEmail: ActivityHandler<typeof myContract, 'sendEmail'> = \n  async ({ to, subject }) => {\n    await emailService.send({ to, subject });\n    return { sent: true };\n  };\n\n// Workflow-specific activity\nconst processPayment: WorkflowActivityHandler<typeof myContract, 'processOrder', 'processPayment'> = \n  async ({ amount }) => {\n    const txId = await paymentGateway.charge(amount);\n    return { transactionId: txId };\n  };\n`\n\n### Contract Introspection\n\n`typescript\nimport type { InferWorkflowNames, InferActivityNames } from '@temporal-contract/contract';\n\ntype Workflows = InferWorkflowNames<typeof myContract>;  // \"processOrder\" | ...\ntype Activities = InferActivityNames<typeof myContract>;  // \"sendEmail\" | ...\n`\n\nSee [Activity Handlers documentation](../../docs/ACTIVITY_HANDLERS.md) for details.\n\n---\n\n## Learn More\n\n- [Main README](../../README.md) \u2014 Quick start guide\n- [Worker Implementation](../../docs/CONTRACT_HANDLER.md) \u2014 Implementing workers\n- [Activity Handlers](../../docs/ACTIVITY_HANDLERS.md) \u2014 Type utility details\n\n## License\n\nMIT
+## Type Utilities
+
+Helper types for implementing activities with full type inference:
+
+### Activity Handlers
+
+```typescript
+import type { ActivityHandler, WorkflowActivityHandler } from '@temporal-contract/contract';
+
+// Global activity
+const sendEmail: ActivityHandler<typeof myContract, 'sendEmail'> = 
+  async ({ to, subject }) => {
+    await emailService.send({ to, subject });
+    return { sent: true };
+  };
+
+// Workflow-specific activity
+const processPayment: WorkflowActivityHandler<typeof myContract, 'processOrder', 'processPayment'> = 
+  async ({ amount }) => {
+    const txId = await paymentGateway.charge(amount);
+    return { transactionId: txId };
+  };
+```
+
+### Contract Introspection
+
+```typescript
+import type { InferWorkflowNames, InferActivityNames } from '@temporal-contract/contract';
+
+type Workflows = InferWorkflowNames<typeof myContract>;  // "processOrder" | ...
+type Activities = InferActivityNames<typeof myContract>;  // "sendEmail" | ...
+```
+
+See [Activity Handlers documentation](../../docs/ACTIVITY_HANDLERS.md) for details.
+
+---
+
+## Learn More
+
+- [Main README](../../README.md) — Quick start guide
+- [Worker Implementation](../../docs/CONTRACT_HANDLER.md) — Implementing workers
+- [Activity Handlers](../../docs/ACTIVITY_HANDLERS.md) — Type utility details
+
+## License
+
+MIT
