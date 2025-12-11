@@ -1,8 +1,13 @@
 {
   "name": "@temporal-contract/worker",
   "version": "0.0.3",
-  "type": "module",
   "description": "Worker utilities for implementing temporal-contract workflows and activities",
+  "keywords": [
+    "temporal",
+    "typescript",
+    "contract",
+    "worker"
+  ],
   "homepage": "https://github.com/btravers/temporal-contract#readme",
   "bugs": {
     "url": "https://github.com/btravers/temporal-contract/issues"
@@ -12,17 +17,9 @@
     "url": "https://github.com/btravers/temporal-contract.git",
     "directory": "packages/worker"
   },
-  "author": "Benoit TRAVERS <benoit.travers.frgmail.com>",
   "license": "MIT",
-  "keywords": [
-    "temporal",
-    "typescript",
-    "contract",
-    "worker"
-  ],
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
+  "author": "Benoit TRAVERS <benoit.travers.frgmail.com>",
+  "type": "module",
   "exports": {
     "./activity": {
       "import": {
@@ -46,23 +43,26 @@
     },
     "./package.json": "./package.json"
   },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "files": [
     "dist"
   ],
   "scripts": {
-    "dev": "tsdown src/activity.ts src/workflow.ts --format cjs,esm --dts --watch",
     "build": "tsdown src/activity.ts src/workflow.ts --format cjs,esm --dts --clean",
-    "typecheck": "tsc --noEmit",
+    "dev": "tsdown src/activity.ts src/workflow.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@temporal-contract/contract": "workspace:*",
-    "@standard-schema/spec": "catalog:"
+    "@standard-schema/spec": "catalog:",
+    "@temporal-contract/contract": "workspace:*"
   },
   "devDependencies": {
-    "@temporalio/workflow": "catalog:",
     "@temporal-contract/tsconfig": "workspace:*",
+    "@temporalio/workflow": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "tsdown": "catalog:",

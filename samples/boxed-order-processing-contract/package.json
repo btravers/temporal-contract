@@ -2,16 +2,16 @@
   "name": "@temporal-contract/sample-boxed-order-processing-contract",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "description": "Contract package for boxed order processing sample",
-  "main": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
+  "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     }
   },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "scripts": {
     "build": "tsdown src/index.ts --dts",
     "typecheck": "tsc --noEmit"
