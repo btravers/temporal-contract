@@ -112,12 +112,8 @@ const log: BoxedActivityHandler<typeof myContract, "log"> = ({
   level: string;
   message: string;
 }) => {
-  return Future.fromPromise(
-    Promise.resolve().then(() => logger[level](message))
-  ).mapError(error => ({
-    code: 'LOG_FAILED',
-    message: error instanceof Error ? error.message : 'Unknown error'
-  }));
+  logger[level](message);
+  return Future.value(Result.Ok(undefined));
 };
 ```
 
@@ -139,16 +135,13 @@ const processPayment: BoxedWorkflowActivityHandler<
   "processOrder",
   "processPayment"
 > = ({ customerId, amount }: { customerId: string; amount: number }) => {
-  return Future.fromPromise(
-    Promise.resolve({
+  return Future.value(
+    Result.Ok({
       transactionId: `txn-${Date.now()}`,
       status: "success" as const,
       paidAmount: amount,
     })
-  ).mapError(error => ({
-    code: 'PAYMENT_FAILED',
-    message: error instanceof Error ? error.message : 'Unknown error'
-  }));
+  );
 };
 ```
 
@@ -238,12 +231,8 @@ const log: BoxedActivityHandler<typeof boxedOrderContract, "log"> = ({
   level: string;
   message: string;
 }) => {
-  return Future.fromPromise(
-    Promise.resolve().then(() => logger[level](message))
-  ).mapError(error => ({
-    code: 'LOG_FAILED',
-    message: error instanceof Error ? error.message : 'Unknown error'
-  }));
+  logger[level](message);
+  return Future.value(Result.Ok(undefined));
 };
 
 // Activité du workflow

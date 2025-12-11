@@ -53,15 +53,8 @@ export class MockInventoryAdapter implements InventoryPort {
   }
 
   releaseInventory(reservationId: string): Future<Result<void, InventoryError>> {
-    return Future.fromPromise(
-      Promise.resolve().then(() => {
-        logger.info({ reservationId }, `🔓 Releasing inventory reservation: ${reservationId}`);
-        logger.info(`✅ Inventory released`);
-      }),
-    ).mapError((error) => ({
-      code: "INVALID_RESERVATION",
-      message: error instanceof Error ? error.message : "Unknown error",
-      details: { reservationId },
-    }));
+    logger.info({ reservationId }, `🔓 Releasing inventory reservation: ${reservationId}`);
+    logger.info(`✅ Inventory released`);
+    return Future.value(Result.Ok(undefined));
   }
 }
