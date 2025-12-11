@@ -117,6 +117,54 @@ const schema = yup.object({ name: yup.string() });
 - [ ] Contract versioning system
 - [ ] Migration tools
 
+## Phase 5: Nexus Support (v0.5.0)
+
+### Temporal Nexus Integration
+
+Temporal Nexus enables cross-namespace workflow orchestration, allowing independent Temporal applications to communicate durably and securely. Integration with temporal-contract will bring type-safe Nexus operations.
+
+- [ ] Nexus service definitions in contracts
+- [ ] Type-safe Nexus operation handlers
+- [ ] Nexus endpoint registration in workers
+- [ ] Type-safe Nexus client for invoking operations
+- [ ] Cross-namespace workflow invocation support
+- [ ] Nexus operation input/output validation with schemas
+- [ ] Documentation and guides for Nexus integration
+- [ ] Sample projects demonstrating Nexus usage
+
+### Benefits
+
+- **Type Safety**: End-to-end types for Nexus operations
+- **Validation**: Automatic schema validation at Nexus boundaries
+- **Decoupling**: Define service contracts once, use across namespaces
+- **Security**: Type-safe access to cross-namespace operations
+- **Developer Experience**: Autocomplete and refactoring support for Nexus
+
+### Example (Future API)
+
+```typescript
+// Define a Nexus service contract
+const paymentContract = defineContract({
+  taskQueue: 'payments',
+  nexusServices: {
+    PaymentService: {
+      operations: {
+        processPayment: {
+          input: z.object({ amount: z.number(), customerId: z.string() }),
+          output: z.object({ transactionId: z.string(), status: z.enum(['success', 'failed']) }),
+        }
+      }
+    }
+  }
+});
+
+// Call from another namespace
+const result = await nexus.invoke(paymentContract, 'PaymentService', 'processPayment', {
+  amount: 100,
+  customerId: 'cust-123'
+}); // Fully typed!
+```
+
 ## Future Ideas (Backlog)
 
 ### Advanced Type Features
