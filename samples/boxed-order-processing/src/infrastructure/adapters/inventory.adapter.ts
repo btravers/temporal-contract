@@ -10,26 +10,13 @@ import { logger } from "../../logger.js";
  */
 export class MockInventoryAdapter implements InventoryPort {
   reserveInventory(items: OrderItem[]): Future<Result<InventoryReservation, InventoryError>> {
-    return Future.fromPromise(
-      Promise.resolve().then(() => {
-        logger.info(
-          { itemCount: items.length },
-          `📦 Reserving inventory for ${items.length} items`,
-        );
+    return Future.make((resolve) => {
+      logger.info({ itemCount: items.length }, `📦 Reserving inventory for ${items.length} items`);
 
-        // Simulate inventory check with 95% success rate
-        const available = Math.random() > 0.05;
+      // Simulate inventory check with 95% success rate
+      const available = Math.random() > 0.05;
 
-        if (!available) {
-          const outOfStockItem = items[0];
-          logger.error(`❌ Inventory not available`);
-          throw {
-            code: "OUT_OF_STOCK",
-            message: `Product ${outOfStockItem?.productId} is out of stock`,
-            details: { productId: outOfStockItem?.productId },
-          };
-        }
-
+      if (available) {
         const reservationId = `RES${Date.now()}`;
         const result: InventoryReservation = {
           reserved: true,
@@ -37,24 +24,26 @@ export class MockInventoryAdapter implements InventoryPort {
         };
 
         logger.info({ reservationId }, `✅ Inventory reserved: ${reservationId}`);
-        return result;
-      }),
-    ).mapError((error) => {
-      // Convert thrown errors to InventoryError
-      if (error && typeof error === "object" && "code" in error) {
-        return error as InventoryError;
+        resolve(Result.Ok(result));
+      } else {
+        const outOfStockItem = items[0];
+        logger.error(`❌ Inventory not available`);
+        resolve(
+          Result.Error({
+            code: "OUT_OF_STOCK",
+            message: `Product ${outOfStockItem?.productId} is out of stock`,
+            details: { productId: outOfStockItem?.productId },
+          }),
+        );
       }
-      return {
-        code: "RESERVATION_FAILED",
-        message: error instanceof Error ? error.message : "Unknown inventory error",
-        details: { items },
-      };
     });
   }
 
   releaseInventory(reservationId: string): Future<Result<void, InventoryError>> {
-    logger.info({ reservationId }, `🔓 Releasing inventory reservation: ${reservationId}`);
-    logger.info(`✅ Inventory released`);
-    return Future.value(Result.Ok(undefined));
+    return Future.make((resolve) => {
+      logger.info({ reservationId }, `🔓 Releasing inventory reservation: ${reservationId}`);
+      logger.info(`✅ Inventory released`);
+      resolve(Result.Ok(undefined));
+    });
   }
 }

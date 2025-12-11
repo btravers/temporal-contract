@@ -241,37 +241,26 @@ const processPayment: BoxedWorkflowActivityHandler<
   "processOrder",
   "processPayment"
 > = ({ customerId, amount }: { customerId: string; amount: number }) => {
-  return Future.fromPromise(
-    Promise.resolve().then(() => {
-      const success = Math.random() > 0.1;
-      if (!success) {
-        throw {
+  return Future.make((resolve) => {
+    const success = Math.random() > 0.1;
+
+    if (success) {
+      resolve(
+        Result.Ok({
+          transactionId: `txn-${Date.now()}`,
+          status: "success" as const,
+          paidAmount: amount,
+        })
+      );
+    } else {
+      resolve(
+        Result.Error({
           code: "PAYMENT_FAILED",
           message: "Payment declined",
           details: { customerId, amount },
-        };
-      }
-      return {
-        transactionId: `txn-${Date.now()}`,
-        status: "success" as const,
-        paidAmount: amount,
-      };
-    })
-  ).mapError(error => {
-    // Handle both structured errors and generic errors
-    if (error && typeof error === 'object' && 'code' in error) {
-      const structuredError = error as { code?: string; message?: string; details?: unknown };
-      return {
-        code: structuredError.code || "PAYMENT_FAILED",
-        message: structuredError.message || "Payment declined",
-        details: structuredError.details || { customerId, amount },
-      };
+        })
+      );
     }
-    return {
-      code: "PAYMENT_FAILED",
-      message: error instanceof Error ? error.message : "Unknown error",
-      details: { customerId, amount },
-    };
   });
 };
 ```

@@ -13,34 +13,25 @@ export class ConsoleNotificationAdapter implements NotificationPort {
     subject: string,
     message: string,
   ): Future<Result<void, NotificationError>> {
-    return Future.fromPromise(
-      Promise.resolve().then(() => {
-        // Simulate sending notification with 98% success rate
-        const success = Math.random() > 0.02;
+    return Future.make((resolve) => {
+      // Simulate sending notification with 98% success rate
+      const success = Math.random() > 0.02;
 
-        if (!success) {
-          logger.error(`❌ Notification failed`);
-          throw {
-            code: "NOTIFICATION_FAILED",
-            message: "Failed to send customer notification",
-            details: { customerId, subject },
-          };
-        }
-
+      if (success) {
         logger.info({ customerId, subject }, `📧 Sending notification to ${customerId}`);
         logger.info({ subject, message }, `   Subject: ${subject}`);
         logger.info({ customerId }, `✅ Notification sent to ${customerId}`);
-      })
-    ).mapError(error => {
-      // Convert thrown errors to NotificationError
-      if (error && typeof error === 'object' && 'code' in error) {
-        return error as NotificationError;
+        resolve(Result.Ok(undefined));
+      } else {
+        logger.error(`❌ Notification failed`);
+        resolve(
+          Result.Error({
+            code: "NOTIFICATION_FAILED",
+            message: "Failed to send customer notification",
+            details: { customerId, subject },
+          }),
+        );
       }
-      return {
-        code: "NOTIFICATION_FAILED",
-        message: error instanceof Error ? error.message : "Unknown notification error",
-        details: { customerId, subject },
-      };
     });
   }
 }
