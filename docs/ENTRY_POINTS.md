@@ -143,7 +143,7 @@ const sendEmail: BoxedActivityHandler<typeof myContract, 'sendEmail'> =
       .map(() => ({ sent: true }))
       .mapError(error => ({
         code: 'EMAIL_FAILED',
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error',
       }));
   };
 

@@ -61,13 +61,13 @@ export const activities = declareActivitiesHandler({
     processPayment: ({ amount }) => {
       return Future.fromPromise(paymentGateway.charge(amount))
         .map(txId => ({ transactionId: txId, success: true }))
-        .mapError(error => ({ type: 'PaymentFailed', message: error.message }));
+        .mapError(error => ({ type: 'PaymentFailed', message: error instanceof Error ? error.message : 'Unknown error' }));
     },
 
     sendEmail: ({ to, body }) => {
       return Future.fromPromise(emailService.send({ to, body }))
         .map(() => ({ sent: true }))
-        .mapError(error => ({ type: 'EmailFailed', message: error.message }));
+        .mapError(error => ({ type: 'EmailFailed', message: error instanceof Error ? error.message : 'Unknown error' }));
     }
   }
 });
