@@ -8,7 +8,7 @@
  */
 
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import type { AnySchema } from "./types.js";
+import type { AnySchema, WorkflowDefinition, ActivityDefinition } from "./types.js";
 
 /**
  * Definition of a Nexus operation
@@ -73,8 +73,8 @@ export interface NexusServiceDefinition<
  * ```
  */
 export interface ContractDefinitionWithNexus<
-  TWorkflows extends Record<string, unknown> = Record<string, unknown>,
-  TActivities extends Record<string, unknown> = Record<string, unknown>,
+  TWorkflows extends Record<string, WorkflowDefinition> = Record<string, WorkflowDefinition>,
+  TActivities extends Record<string, ActivityDefinition> = Record<string, ActivityDefinition>,
   TNexusServices extends Record<string, NexusServiceDefinition> = Record<
     string,
     NexusServiceDefinition
