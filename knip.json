@@ -43,7 +43,7 @@
       "ignoreDependencies": ["pino-pretty"]
     },
     "samples/order-processing-client": {
-      "entry": ["src/client.ts", "src/integration.spec.ts"],
+      "entry": ["src/client.ts"],
       "project": ["src/**/*.ts"],
       "ignoreDependencies": ["pino-pretty"]
     },

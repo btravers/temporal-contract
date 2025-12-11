@@ -430,33 +430,18 @@ importers:
         specifier: "catalog:"
         version: 4.1.13
     devDependencies:
-      "@temporal-contract/testing":
-        specifier: workspace:*
-        version: link:../../packages/testing
       "@temporal-contract/tsconfig":
         specifier: workspace:*
         version: link:../../tools/tsconfig
-      "@temporal-contract/worker":
-        specifier: workspace:*
-        version: link:../../packages/worker
-      "@temporalio/worker":
-        specifier: "catalog:"
-        version: 1.13.2
       "@types/node":
         specifier: "catalog:"
         version: 24.10.2
-      "@vitest/coverage-v8":
-        specifier: "catalog:"
-        version: 4.0.15(vitest@4.0.15(@types/node@24.10.2)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2))
       tsx:
         specifier: "catalog:"
         version: 4.21.0
       typescript:
         specifier: "catalog:"
         version: 5.9.3
-      vitest:
-        specifier: "catalog:"
-        version: 4.0.15(@types/node@24.10.2)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
 
   tools/tsconfig: {}
 
