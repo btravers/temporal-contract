@@ -4,7 +4,7 @@
  * This file demonstrates how Nexus support could be integrated into temporal-contract.
  * These types are NOT yet implemented in the actual package but show the proposed API design.
  *
- * See docs/NEXUS_INTEGRATION.md for detailed documentation.
+ * See https://btravers.github.io/temporal-contract/guide/nexus-integration for detailed documentation.
  */
 
 import type { StandardSchemaV1 } from "@standard-schema/spec";

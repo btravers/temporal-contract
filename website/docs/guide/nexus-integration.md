@@ -41,8 +41,6 @@ Hide implementation details behind stable, versioned service contracts.
 **Temporal SDK Support**: ✅ Available (experimental)  
 **temporal-contract Support**: ⏳ Planned for v0.5.0
 
-See [Roadmap](https://github.com/btravers/temporal-contract/blob/main/docs/ROADMAP.md#phase-5-nexus-support-v050) for implementation timeline.
-
 ## Using Nexus Today
 
 You can use Nexus with the raw Temporal SDK while waiting for temporal-contract integration:
@@ -223,7 +221,7 @@ Future Nexus support will follow temporal-contract's existing patterns:
 
 ## Implementation Timeline
 
-See [Phase 5 in the Roadmap](https://github.com/btravers/temporal-contract/blob/main/docs/ROADMAP.md#phase-5-nexus-support-v050) for details:
+Planned for v0.5.0:
 
 - [ ] Core type definitions for Nexus operations
 - [ ] Worker integration with validation
@@ -250,9 +248,8 @@ See [Phase 5 in the Roadmap](https://github.com/btravers/temporal-contract/blob/
 
 Want to help implement Nexus support? 
 
-1. Check the [Roadmap](https://github.com/btravers/temporal-contract/blob/main/docs/ROADMAP.md#phase-5-nexus-support-v050)
-2. Review [CONTRIBUTING.md](https://github.com/btravers/temporal-contract/blob/main/docs/CONTRIBUTING.md)
-3. Join the discussion in [GitHub Issues](https://github.com/btravers/temporal-contract/issues)
+1. Review [CONTRIBUTING.md](https://github.com/btravers/temporal-contract/blob/main/CONTRIBUTING.md)
+2. Join the discussion in [GitHub Issues](https://github.com/btravers/temporal-contract/issues)
 
 ## Feedback
 
