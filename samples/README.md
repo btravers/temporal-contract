@@ -10,6 +10,11 @@ Standard Promise-based workflow with Clean Architecture
 ### 📦 [boxed-order-processing](./boxed-order-processing)
 Result/Future pattern with explicit error handling
 
+### 📦 [order-processing-client](./order-processing-client)
+Standalone client demonstrating interaction with the unified contract
+
+**Note**: The `basic-order-processing` and `boxed-order-processing` samples now share a unified contract. Both workers implement the same contract (`orderProcessingContract`) but with different internal implementations. The client sample demonstrates how to interact with either worker implementation.
+
 ## Running Samples
 
 ```bash
@@ -20,10 +25,13 @@ temporal server start-dev
 cd ../..
 pnpm install && pnpm build
 
-# Run a sample
+# Run a worker
 cd samples/basic-order-processing
 pnpm dev:worker  # Terminal 1
-pnpm dev:client  # Terminal 2
+
+# Run a client (in another terminal)
+cd samples/order-processing-client
+pnpm dev:basic  # Terminal 2
 ```
 
 ## Documentation
