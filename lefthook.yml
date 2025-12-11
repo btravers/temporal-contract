@@ -8,3 +8,8 @@ pre-commit:
     lint:
       glob: "*.{ts,tsx,js,jsx}"
       run: pnpm oxlint {staged_files}
+
+commit-msg:
+  commands:
+    commitlint:
+      run: npx --no -- commitlint --edit {1}

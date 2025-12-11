@@ -6,6 +6,8 @@ packages:
 
 catalog:
   "@changesets/cli": 2.29.8
+  "@commitlint/cli": 20.2.0
+  "@commitlint/config-conventional": 20.2.0
   "@standard-schema/spec": 1.0.0
   "@swan-io/boxed": 3.2.1
   "@temporalio/client": 1.13.2
