@@ -7,6 +7,7 @@ import {
   reserveInventoryUseCase,
   releaseInventoryUseCase,
   createShipmentUseCase,
+  refundPaymentUseCase,
 } from "../dependencies.js";
 
 // ============================================================================
@@ -44,6 +45,10 @@ export const activitiesHandler = declareActivitiesHandler({
 
     createShipment: async ({ orderId, customerId }) => {
       return createShipmentUseCase.execute(orderId, customerId);
+    },
+
+    refundPayment: async (transactionId) => {
+      await refundPaymentUseCase.execute(transactionId);
     },
   },
 });

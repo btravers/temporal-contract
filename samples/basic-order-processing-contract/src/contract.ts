@@ -12,9 +12,10 @@ import {
 /**
  * Order Processing Contract
  *
- * This contract defines a simple order processing system with:
+ * This contract defines a unified order processing system with:
  * - Global activities for logging and notifications
  * - A workflow for processing orders with payment, inventory, and shipping
+ * - Support for both standard Promise-based and Result/Future pattern implementations
  *
  * The contract uses domain schemas as the source of truth for business entities.
  */
@@ -95,6 +96,14 @@ export const orderProcessingContract = defineContract({
         createShipment: {
           input: z.object({ orderId: z.string(), customerId: z.string() }),
           output: ShippingResultSchema,
+        },
+
+        /**
+         * Refund a payment (used in case of errors)
+         */
+        refundPayment: {
+          input: z.string(),
+          output: z.void(),
         },
       },
     },

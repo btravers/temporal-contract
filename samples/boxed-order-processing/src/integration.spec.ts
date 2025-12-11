@@ -3,9 +3,9 @@ import { Worker } from "@temporalio/worker";
 import { TypedClient } from "@temporal-contract/client";
 import { it as baseIt } from "@temporal-contract/testing/extension";
 import {
-  boxedOrderContract,
+  orderProcessingContract,
   OrderSchema,
-} from "@temporal-contract/sample-boxed-order-processing-contract";
+} from "@temporal-contract/sample-basic-order-processing-contract";
 import { activitiesHandler } from "./application/activities.js";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,7 +18,7 @@ type Order = z.infer<typeof OrderSchema>;
 
 const it = baseIt.extend<{
   worker: Worker;
-  client: TypedClient<typeof boxedOrderContract>;
+  client: TypedClient<typeof orderProcessingContract>;
 }>({
   worker: [
     async ({ workerConnection }, use) => {
@@ -26,7 +26,7 @@ const it = baseIt.extend<{
       const worker = await Worker.create({
         connection: workerConnection,
         namespace: "default",
-        taskQueue: boxedOrderContract.taskQueue,
+        taskQueue: orderProcessingContract.taskQueue,
         workflowsPath: workflowPath("application/workflows"),
         activities: activitiesHandler.activities,
       });
@@ -48,7 +48,7 @@ const it = baseIt.extend<{
   ],
   client: async ({ clientConnection }, use) => {
     // Create typed client
-    const client = TypedClient.create(boxedOrderContract, {
+    const client = TypedClient.create(orderProcessingContract, {
       connection: clientConnection,
       namespace: "default",
     });

@@ -2,7 +2,7 @@ import { Worker } from "@temporalio/worker";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { activitiesHandler } from "./activities.js";
-import { boxedOrderContract } from "@temporal-contract/sample-boxed-order-processing-contract";
+import { orderProcessingContract } from "@temporal-contract/sample-basic-order-processing-contract";
 import { logger } from "../logger.js";
 
 function workflowPath(filename: string): string {
@@ -27,7 +27,7 @@ async function run() {
   const worker = await Worker.create({
     workflowsPath: workflowPath("workflows"),
     activities: activitiesHandler.activities,
-    taskQueue: boxedOrderContract.taskQueue,
+    taskQueue: orderProcessingContract.taskQueue,
   });
 
   logger.info("🚀 Boxed Order Processing Worker started");

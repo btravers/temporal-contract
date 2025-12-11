@@ -41,4 +41,18 @@ export class MockPaymentAdapter implements PaymentPort {
       return result;
     }
   }
+
+  async refundPayment(transactionId: string): Promise<void> {
+    logger.info({ transactionId }, `💰 Processing refund for transaction ${transactionId}`);
+
+    // Simulate refund processing with 99% success rate
+    const success = Math.random() > 0.01;
+
+    if (success) {
+      logger.info(`✅ Refund successful`);
+    } else {
+      logger.error(`❌ Refund failed`);
+      throw new Error("Payment processor rejected refund request");
+    }
+  }
 }

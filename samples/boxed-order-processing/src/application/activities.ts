@@ -1,6 +1,6 @@
 import { Future, Result } from "@swan-io/boxed";
 import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker-boxed/activity";
-import { boxedOrderContract } from "@temporal-contract/sample-boxed-order-processing-contract";
+import { orderProcessingContract } from "@temporal-contract/sample-basic-order-processing-contract";
 import {
   loggerAdapter,
   sendNotificationUseCase,
@@ -41,7 +41,7 @@ import {
  * Domain errors are wrapped in ActivityError to enable Temporal retry policies.
  */
 export const activitiesHandler = declareActivitiesHandler({
-  contract: boxedOrderContract,
+  contract: orderProcessingContract,
   activities: {
     // Global activities
     log: ({ level, message }) => {

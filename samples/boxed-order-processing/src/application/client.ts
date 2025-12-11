@@ -1,10 +1,10 @@
 import { Connection } from "@temporalio/client";
 import { TypedClient } from "@temporal-contract/client";
 import {
-  boxedOrderContract,
+  orderProcessingContract,
   OrderSchema,
   OrderResultSchema,
-} from "@temporal-contract/sample-boxed-order-processing-contract";
+} from "@temporal-contract/sample-basic-order-processing-contract";
 import type { z } from "zod";
 import { logger } from "../logger.js";
 
@@ -26,7 +26,7 @@ async function runClient() {
   });
 
   // Create type-safe client
-  const client = TypedClient.create(boxedOrderContract, {
+  const client = TypedClient.create(orderProcessingContract, {
     connection,
     namespace: "default",
   });

@@ -1,5 +1,5 @@
 import { declareWorkflow } from "@temporal-contract/worker-boxed/workflow";
-import { boxedOrderContract } from "@temporal-contract/sample-boxed-order-processing-contract";
+import { orderProcessingContract } from "@temporal-contract/sample-basic-order-processing-contract";
 
 /**
  * Process Order Workflow Implementation
@@ -22,7 +22,7 @@ import { boxedOrderContract } from "@temporal-contract/sample-boxed-order-proces
  */
 export const processOrder = declareWorkflow({
   workflowName: "processOrder",
-  contract: boxedOrderContract,
+  contract: orderProcessingContract,
   implementation: async (context, order) => {
     const { activities, info } = context;
 

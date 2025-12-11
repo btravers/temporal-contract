@@ -9,6 +9,7 @@ import { ReserveInventoryUseCase } from "./domain/usecases/reserve-inventory.use
 import { ReleaseInventoryUseCase } from "./domain/usecases/release-inventory.usecase.js";
 import { CreateShipmentUseCase } from "./domain/usecases/create-shipment.usecase.js";
 import { SendNotificationUseCase } from "./domain/usecases/send-notification.usecase.js";
+import { RefundPaymentUseCase } from "./domain/usecases/refund-payment.usecase.js";
 
 // Infrastructure
 import { MockPaymentAdapter } from "./infrastructure/adapters/payment.adapter.js";
@@ -36,3 +37,4 @@ export const reserveInventoryUseCase = new ReserveInventoryUseCase(inventoryAdap
 export const releaseInventoryUseCase = new ReleaseInventoryUseCase(inventoryAdapter);
 export const createShipmentUseCase = new CreateShipmentUseCase(shippingAdapter);
 export const sendNotificationUseCase = new SendNotificationUseCase(notificationAdapter);
+export const refundPaymentUseCase = new RefundPaymentUseCase(paymentAdapter);

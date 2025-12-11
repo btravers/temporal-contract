@@ -44,4 +44,5 @@ export const OrderResultSchema = z.object({
   transactionId: z.string().optional(),
   trackingNumber: z.string().optional(),
   failureReason: z.string().optional(),
+  errorCode: z.string().optional(),
 });

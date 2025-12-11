@@ -356,9 +356,9 @@ importers:
       "@temporal-contract/client":
         specifier: workspace:*
         version: link:../../packages/client
-      "@temporal-contract/sample-boxed-order-processing-contract":
+      "@temporal-contract/sample-basic-order-processing-contract":
         specifier: workspace:*
-        version: link:../boxed-order-processing-contract
+        version: link:../basic-order-processing-contract
       "@temporal-contract/worker-boxed":
         specifier: workspace:*
         version: link:../../packages/worker-boxed

@@ -11,7 +11,7 @@ import {
   PaymentResultSchema,
   InventoryReservationSchema,
   ShippingResultSchema,
-} from "@temporal-contract/sample-boxed-order-processing-contract";
+} from "@temporal-contract/sample-basic-order-processing-contract";
 
 export type OrderItem = z.infer<typeof OrderItemSchema>;
 export type PaymentResult = z.infer<typeof PaymentResultSchema>;
