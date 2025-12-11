@@ -22,6 +22,7 @@ End-to-end type safety and automatic validation for workflows and activities
 - ✅ **Automatic validation** — Zod schemas validate at all network boundaries
 - ✅ **Compile-time checks** — TypeScript catches missing or incorrect implementations
 - ✅ **Better DX** — Autocomplete, refactoring support, inline documentation
+- 🚧 **Nexus support** — Cross-namespace operations (planned for v0.5.0)
 
 ## Quick Example
 
@@ -57,6 +58,7 @@ pnpm add @temporal-contract/contract @temporal-contract/worker @temporal-contrac
 
 - [Getting Started](https://btravers.github.io/temporal-contract/guide/getting-started)
 - [Core Concepts](https://btravers.github.io/temporal-contract/guide/core-concepts)
+- [Nexus Integration](https://btravers.github.io/temporal-contract/guide/nexus-integration) (Planned)
 - [API Reference](https://btravers.github.io/temporal-contract/api/)
 - [Examples](https://btravers.github.io/temporal-contract/examples/)
 
