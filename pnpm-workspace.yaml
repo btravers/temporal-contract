@@ -2,6 +2,7 @@ packages:
   - packages/*
   - samples/*
   - tools/*
+  - website
 
 catalog:
   "@changesets/cli": 2.29.8
@@ -13,7 +14,7 @@ catalog:
   "@types/node": 24.10.2
   "@vitest/coverage-v8": 4.0.15
   arktype: 2.1.28
-  knip: 5.73.1
+  knip: 5.73.3
   lefthook: 2.0.9
   oxfmt: 0.17.0
   oxlint: 1.32.0
