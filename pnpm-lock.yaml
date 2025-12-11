@@ -125,6 +125,9 @@ importers:
       "@standard-schema/spec":
         specifier: 1.0.0
         version: 1.0.0
+      zod:
+        specifier: "catalog:"
+        version: 4.1.13
     devDependencies:
       "@temporal-contract/tsconfig":
         specifier: workspace:*
@@ -141,9 +144,6 @@ importers:
       vitest:
         specifier: "catalog:"
         version: 4.0.15(@types/node@24.10.2)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
-      zod:
-        specifier: "catalog:"
-        version: 4.1.13
 
   packages/testing:
     dependencies:
