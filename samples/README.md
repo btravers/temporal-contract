@@ -1,106 +1,39 @@
 # Samples
 
-Complete working examples demonstrating `temporal-contract` usage patterns.
+> Complete working examples demonstrating temporal-contract
 
 ## Available Samples
 
 ### 📦 [basic-order-processing](./basic-order-processing)
+Standard Promise-based workflow with Clean Architecture
 
-**Standard Promise-based workflow** with Clean Architecture
-
-Order processing system with payment, inventory, and shipping management.
-
-**Demonstrates:**
-
-- Type-safe contracts with Zod schemas
-- Clean Architecture (Domain → Infrastructure → Application)
-- Dependency injection for testability
-- Error handling and compensating transactions
-
-**Pattern:** Traditional async/await with exceptions
-
----
-
-### 📦✨ [boxed-order-processing](./boxed-order-processing)
-
-**Result/Future pattern** with Clean Architecture
-
-Same order processing, but with explicit error handling using [@swan-io/boxed](https://swan-io.github.io/boxed/).
-
-**Demonstrates:**
-
-- Explicit error types in function signatures
-- Functional error handling (Result.Ok / Result.Error)
-- Railway-oriented programming
-- Same Clean Architecture structure
-
-**Pattern:** Result/Future for explicit errors, auto-unwrapped in workflows
-
----
+### 📦 [boxed-order-processing](./boxed-order-processing)
+Result/Future pattern with explicit error handling
 
 ## Running Samples
 
-### Prerequisites
-
-1. **Temporal Server:**
-
-   ```bash
-   temporal server start-dev
-   ```
-
-2. **Install & Build:**
-   ```bash
-   cd ../..  # Repository root
-   pnpm install
-   pnpm build
-   ```
-
-### Run a Sample
-
 ```bash
+# Start Temporal server
+temporal server start-dev
+
+# Install and build from repository root
+cd ../..
+pnpm install && pnpm build
+
+# Run a sample
 cd samples/basic-order-processing
-
-# Terminal 1: Start worker
-pnpm dev:worker
-
-# Terminal 2: Run client
-pnpm dev:client
+pnpm dev:worker  # Terminal 1
+pnpm dev:client  # Terminal 2
 ```
 
----
+## Documentation
 
-## Architecture
+📖 **[Read the full documentation →](https://btravers.github.io/temporal-contract)**
 
-All samples follow **Clean Architecture**:
+- [Examples Overview](https://btravers.github.io/temporal-contract/examples/)
+- [Getting Started](https://btravers.github.io/temporal-contract/guide/getting-started)
+- [API Reference](https://btravers.github.io/temporal-contract/api/)
 
-```
-src/
-├── domain/                 # Pure business logic
-│   ├── entities/          # Domain models (Zod schemas)
-│   ├── ports/             # Interfaces for adapters
-│   └── usecases/          # Business logic
-├── infrastructure/        # Technical implementations
-│   └── adapters/          # Implementations of domain ports
-├── application/           # Temporal-specific layer
-│   ├── contract.ts        # Contract definition
-│   ├── activities.ts      # Activity wrappers (thin)
-│   ├── workflows.ts       # Workflow orchestration
-│   ├── worker.ts          # Worker setup
-│   └── client.ts          # Client example
-└── dependencies.ts        # Dependency injection
-```
+## License
 
-**Key principles:**
-
-- **Domain:** No framework dependencies
-- **Infrastructure:** Technical implementations
-- **Application:** Temporal bindings (thin layer)
-- **DI:** Centralized for easy testing
-
----
-
-## Learn More
-
-- [temporal-contract Documentation](../docs/)
-- [Temporal Documentation](https://docs.temporal.io/)
-- [Worker Implementation Guide](../docs/CONTRACT_HANDLER.md)
+MIT

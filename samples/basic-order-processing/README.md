@@ -1,67 +1,33 @@
-# Basic Order Processing Sample
+# Basic Order Processing
 
 > Standard Promise-based workflow with Clean Architecture
 
-## What It Does
-
-Processes orders through:
-
-1. Payment processing 💳
-2. Inventory reservation 📦
-3. Shipment creation 📮
-4. Customer notification 📧
-
-With automatic rollback on failures.
-
-## Architecture
-
-**Clean Architecture** layers:
-
-```
-src/
-├── domain/           # Business logic (pure)
-├── infrastructure/   # Technical adapters
-├── application/      # Temporal bindings
-└── dependencies.ts   # DI container
-```
-
 ## Running
 
-### Prerequisites
-
-1. Temporal Server:
-
-   ```bash
-   temporal server start-dev
-   ```
-
-2. From repo root:
-   ```bash
-   pnpm install && pnpm build
-   ```
-
-### Run
-
-From this directory:
-
 ```bash
-# Terminal 1: Worker
-pnpm dev:worker
+# Prerequisites: Temporal server running and packages built
+temporal server start-dev
 
-# Terminal 2: Client
-pnpm dev:client
+# Run from this directory
+pnpm dev:worker  # Terminal 1
+pnpm dev:client  # Terminal 2
 ```
 
 ## What It Demonstrates
 
-✅ Type-safe contracts with Zod  
-✅ Clean Architecture (Domain → Infrastructure → Application)  
-✅ Dependency injection for testability  
-✅ Error handling with compensating actions  
-✅ Workflow orchestration with Temporal
+- ✅ Type-safe contracts with Zod
+- ✅ Clean Architecture (Domain → Infrastructure → Application)
+- ✅ Dependency injection for testability
+- ✅ Error handling with compensating actions
 
-## Learn More
+## Documentation
 
-- [Main README](../../README.md)
-- [Samples Overview](../README.md)
-- [Worker Implementation Guide](../../docs/CONTRACT_HANDLER.md)
+📖 **[Read the full documentation →](https://btravers.github.io/temporal-contract)**
+
+- [Example Overview](https://btravers.github.io/temporal-contract/examples/basic-order-processing)
+- [Getting Started](https://btravers.github.io/temporal-contract/guide/getting-started)
+- [All Examples](https://btravers.github.io/temporal-contract/examples/)
+
+## License
+
+MIT

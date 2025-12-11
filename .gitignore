@@ -29,3 +29,7 @@ Thumbs.db
 .turbo
 
 coverage/
+
+# VitePress
+.vitepress/cache/
+.vitepress/dist/
