@@ -158,12 +158,14 @@ const paymentContract = defineContract({
   }
 });
 
+// Create a Nexus client instance (example)
+const nexusClient = createNexusClient();
+
 // Call from another namespace
-const result = await nexus.invoke(paymentContract, 'PaymentService', 'processPayment', {
+const result = await nexusClient.invoke('PaymentService', 'processPayment', {
   amount: 100,
   customerId: 'cust-123'
 }); // Fully typed!
-```
 
 ## Future Ideas (Backlog)
 
