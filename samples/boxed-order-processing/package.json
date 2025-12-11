@@ -4,13 +4,14 @@
   "type": "module",
   "description": "Order processing sample using temporal-contract with Result/Future pattern",
   "scripts": {
-    "dev:worker": "tsx watch src/worker.ts",
-    "dev:client": "tsx src/client.ts",
+    "dev:worker": "tsx watch src/application/worker.ts",
+    "dev:client": "tsx src/application/client.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@temporal-contract/sample-boxed-order-processing-contract": "workspace:*",
     "@swan-io/boxed": "catalog:",
     "@temporal-contract/client": "workspace:*",
     "@temporal-contract/contract": "workspace:*",

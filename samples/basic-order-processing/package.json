@@ -4,13 +4,14 @@
   "type": "module",
   "description": "Basic order processing sample using temporal-contract",
   "scripts": {
-    "dev:worker": "tsx watch src/worker.ts",
-    "dev:client": "tsx src/client.ts",
+    "dev:worker": "tsx watch src/application/worker.ts",
+    "dev:client": "tsx src/application/client.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@temporal-contract/sample-basic-order-processing-contract": "workspace:*",
     "@temporal-contract/client": "workspace:*",
     "@temporal-contract/contract": "workspace:*",
     "@temporal-contract/worker": "workspace:*",

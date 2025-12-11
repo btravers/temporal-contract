@@ -14,44 +14,56 @@ temporal-contract respects this architecture while providing type safety across 
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────┐
-│            Your Application             │
-├─────────────────────────────────────────┤
-│                                         │
-│  Contract Definition (contract.ts)      │
-│  ↓                                      │
-│  Activities Handler (activities.ts)     │
-│  Workflows (workflows/*.ts)             │
-│  ↓                                      │
-│  Worker Setup (worker.ts)               │
-│                                         │
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│              Contract Package (Shared)                   │
+│  - Contract definition (workflows & activities)          │
+│  - Domain schemas (validation)                           │
+│  - TypeScript types                                      │
+└──────────────────────────────────────────────────────────┘
+         ↑                                         ↑
+         │ imports                                 │ imports
+         │                                         │
+┌────────┴─────────────────┐         ┌────────────┴──────────┐
+│   Worker Application     │         │   Client Application  │
+│  - Activities Handler    │         │  - TypedClient        │
+│  - Workflows             │         │  - Start workflows    │
+│  - Worker Setup          │         │  - Get results        │
+└──────────────────────────┘         └───────────────────────┘
 ```
 
 ## File Structure
 
-Recommended project structure:
+Recommended project structure with separate contract package:
 
 ```
-src/
-├── contracts/
-│   └── order.contract.ts       # Contract definition
-├── activities/
-│   ├── payment.activities.ts   # Payment activities
-│   ├── email.activities.ts     # Email activities
-│   └── index.ts               # Activities handler
-├── workflows/
-│   ├── order.workflow.ts      # Order workflow
-│   └── shipment.workflow.ts   # Shipment workflow
-└── worker.ts                  # Worker setup
+contract-package/           # Shared contract package
+├── src/
+│   ├── contract.ts        # Contract definition
+│   ├── schemas.ts         # Domain schemas
+│   └── index.ts          # Package exports
+└── package.json          # Package configuration
+
+worker-application/        # Worker implementation
+├── src/
+│   ├── activities/
+│   │   └── index.ts      # Activities handler
+│   ├── workflows/
+│   │   └── order.workflow.ts  # Workflow implementations
+│   └── worker.ts         # Worker setup
+└── package.json          # Imports contract-package
+
+client-application/        # Client (can be separate app)
+├── src/
+│   └── client.ts         # Client code
+└── package.json          # Imports contract-package
 ```
 
 ## Contract Definition
 
-Define your contract once:
+Define your contract in a separate package that can be shared:
 
 ```typescript
-// contracts/order.contract.ts
+// contract-package/src/contract.ts
 import { defineContract } from '@temporal-contract/contract';
 import { z } from 'zod';
 
@@ -80,14 +92,20 @@ export const orderContract = defineContract({
 });
 ```
 
+```typescript
+// contract-package/src/index.ts
+export { orderContract } from './contract.js';
+// Export schemas and types as needed
+```
+
 ## Activities Entry Point
 
-Create a single activities handler:
+Create a single activities handler in your worker application:
 
 ```typescript
-// activities/index.ts
+// worker-application/src/activities/index.ts
 import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
-import { orderContract } from '../contracts/order.contract';
+import { orderContract } from 'contract-package';
 
 export const activities = declareActivitiesHandler({
   contract: orderContract,
@@ -106,12 +124,12 @@ export const activities = declareActivitiesHandler({
 
 ## Workflows Entry Point
 
-Create separate workflow files:
+Create separate workflow files in your worker application:
 
 ```typescript
-// workflows/order.workflow.ts
+// worker-application/src/workflows/order.workflow.ts
 import { declareWorkflow } from '@temporal-contract/worker/workflow';
-import { orderContract } from '../contracts/order.contract';
+import { orderContract } from 'contract-package';
 
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
@@ -133,10 +151,10 @@ export const processOrder = declareWorkflow({
 
 ## Worker Setup
 
-Wire everything together:
+Wire everything together in your worker application:
 
 ```typescript
-// worker.ts
+// worker-application/src/worker.ts
 import { Worker } from '@temporalio/worker';
 import { activities } from './activities';
 
@@ -152,6 +170,38 @@ const worker = await Worker.create({
 });
 
 await worker.run();
+```
+
+## Client Application
+
+Use the contract in a separate client application (can be in a different codebase):
+
+```typescript
+// client-application/src/client.ts
+import { Connection } from '@temporalio/client';
+import { TypedClient } from '@temporal-contract/client';
+import { orderContract } from 'contract-package';
+
+// Connect to Temporal server
+const connection = await Connection.connect({
+  address: 'localhost:7233',
+});
+
+// Create type-safe client from contract
+const client = TypedClient.create(orderContract, {
+  connection,
+  namespace: 'default',
+});
+
+// Start workflow with full type safety
+const handle = await client.startWorkflow('processOrder', {
+  workflowId: 'order-123',
+  args: { orderId: 'ORD-123' }  // ✅ Type-checked!
+});
+
+// Wait for result (also type-checked)
+const result = await handle.result();
+console.log(result.success);  // ✅ TypeScript knows the shape
 ```
 
 ## Multiple Workflows
@@ -225,22 +275,35 @@ declareWorkflow({
 
 ## Benefits of This Architecture
 
-### 1. Type Safety
+### 1. Contract Reusability
 
-Full TypeScript inference across all boundaries.
+The contract package can be imported by multiple applications:
+- Worker application (to implement)
+- Client applications (to consume)
+- Even other services that need the type definitions
 
-### 2. Validation
+### 2. Type Safety
+
+Full TypeScript inference across all boundaries and applications.
+
+### 3. Validation
 
 Automatic validation at:
 - Workflow entry/exit
 - Activity calls
 - Client requests
 
-### 3. Temporal Compliance
+### 4. Temporal Compliance
 
 Respects Temporal's architecture requirements.
 
-### 4. Testability
+### 5. Independent Deployment
+
+- Contract package can be versioned independently
+- Client applications can be in different codebases
+- Workers and clients can be deployed separately
+
+### 6. Testability
 
 Activities and workflows can be tested independently:
 
@@ -256,9 +319,12 @@ const mockContext = createMockContext();
 await workflow(mockContext, { orderId: 'ORD-123' });
 ```
 
-### 5. Organization
+### 7. Organization
 
-Clear separation of concerns with organized file structure.
+Clear separation of concerns:
+- Contract package: API definition
+- Worker application: Implementation
+- Client application: Consumption
 
 ## Common Patterns
 
