@@ -293,20 +293,18 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
       // Unwrap Future and Result
       const result = await futureResult.toPromise();
 
-      return result.match({
-        Ok: async (value: unknown) => {
-          // Validate output on success
-          const outputResult = await activityDef.output["~standard"].validate(value);
-          if (outputResult.issues) {
-            throw new ActivityOutputValidationError(activityName, outputResult.issues);
-          }
-          return outputResult.value;
-        },
-        Error: (error: ActivityError) => {
-          // Convert Result.Error to thrown ActivityError for Temporal
-          throw error;
-        },
-      });
+      // Handle the result - validation must be done before match to avoid async callbacks
+      if (result.isOk()) {
+        // Validate output on success
+        const outputResult = await activityDef.output["~standard"].validate(result.value);
+        if (outputResult.issues) {
+          throw new ActivityOutputValidationError(activityName, outputResult.issues);
+        }
+        return outputResult.value;
+      } else {
+        // Convert Result.Error to thrown ActivityError for Temporal
+        throw result.error;
+      }
     };
   }
 
