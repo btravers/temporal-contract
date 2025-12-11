@@ -17,11 +17,16 @@ export const OrderSchema = z.object({
   totalAmount: z.number().positive(),
 });
 
-export const PaymentResultSchema = z.object({
-  transactionId: z.string(),
-  status: z.enum(["success", "failed"]),
-  paidAmount: z.number(),
-});
+export const PaymentResultSchema = z.discriminatedUnion("status", [
+  z.object({
+    status: z.literal("success"),
+    transactionId: z.string(),
+    paidAmount: z.number(),
+  }),
+  z.object({
+    status: z.literal("failed"),
+  }),
+]);
 
 export const InventoryReservationSchema = z.object({
   reserved: z.boolean(),
@@ -40,13 +45,3 @@ export const OrderResultSchema = z.object({
   trackingNumber: z.string().optional(),
   failureReason: z.string().optional(),
 });
-
-/**
- * Domain Entity Types
- */
-export type OrderItem = z.infer<typeof OrderItemSchema>;
-export type Order = z.infer<typeof OrderSchema>;
-export type PaymentResult = z.infer<typeof PaymentResultSchema>;
-export type InventoryReservation = z.infer<typeof InventoryReservationSchema>;
-export type ShippingResult = z.infer<typeof ShippingResultSchema>;
-export type OrderResult = z.infer<typeof OrderResultSchema>;

@@ -11,9 +11,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@temporal-contract/sample-basic-order-processing-contract": "workspace:*",
     "@temporal-contract/client": "workspace:*",
     "@temporal-contract/contract": "workspace:*",
+    "@temporal-contract/sample-basic-order-processing-contract": "workspace:*",
     "@temporal-contract/worker": "workspace:*",
     "@temporalio/client": "catalog:",
     "@temporalio/worker": "catalog:",

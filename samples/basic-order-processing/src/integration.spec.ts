@@ -2,12 +2,17 @@ import { describe, expect, vi, beforeEach } from "vitest";
 import { Worker } from "@temporalio/worker";
 import { TypedClient } from "@temporal-contract/client";
 import { it as baseIt } from "@temporal-contract/testing/extension";
-import { orderProcessingContract } from "./application/contract.js";
+import {
+  orderProcessingContract,
+  OrderSchema,
+} from "@temporal-contract/sample-basic-order-processing-contract";
 import { activitiesHandler } from "./application/activities.js";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Order } from "./application/contract.js";
+import type { z } from "zod";
 import { paymentAdapter } from "./dependencies.js";
+
+type Order = z.infer<typeof OrderSchema>;
 
 const it = baseIt.extend<{
   worker: Worker;
@@ -221,9 +226,7 @@ describe("Order Processing Workflow - Integration Tests", () => {
   it("should handle payment failure", async ({ client }) => {
     // GIVEN - Mock payment to fail
     vi.spyOn(paymentAdapter, "processPayment").mockResolvedValue({
-      transactionId: "TXN-FAILED-123",
       status: "failed",
-      paidAmount: 0,
     });
 
     const order: Order = {

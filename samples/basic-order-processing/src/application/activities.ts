@@ -1,5 +1,5 @@
 import { declareActivitiesHandler } from "@temporal-contract/worker/activity";
-import { orderProcessingContract } from "./contract.js";
+import { orderProcessingContract } from "@temporal-contract/sample-basic-order-processing-contract";
 import {
   loggerAdapter,
   sendNotificationUseCase,

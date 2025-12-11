@@ -16,10 +16,9 @@ This contract demonstrates the **Result/Future pattern** for explicit error hand
 
 ```
 ┌─────────────────────────────────────┐
-│   Contract Package (this package)  │
+│   Contract Package (this package)   │
 │   - Contract definition             │
 │   - Domain schemas                  │
-│   - Type definitions                │
 └─────────────────────────────────────┘
          ↑                    ↑
          │                    │
@@ -33,7 +32,6 @@ This contract demonstrates the **Result/Future pattern** for explicit error hand
 
 - Contract definition with workflow and activity signatures
 - Domain schemas (Order, PaymentResult, etc.)
-- TypeScript type definitions
 - Additional `errorCode` field for better error tracking
 
 ## Usage

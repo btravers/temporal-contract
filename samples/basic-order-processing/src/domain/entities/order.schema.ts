@@ -1,21 +1,23 @@
 /**
- * Domain Schemas - Re-exported from contract package
+ * Domain Entity Types - Inferred from contract package schemas
  *
- * These schemas are now defined in the contract package and re-exported here
- * for use within the worker implementation.
+ * These types are inferred locally for use within the worker implementation.
+ * The schemas themselves are defined in the contract package.
  */
 
-export {
+import type { z } from "zod";
+import {
   OrderItemSchema,
   OrderSchema,
   PaymentResultSchema,
   InventoryReservationSchema,
   ShippingResultSchema,
   OrderResultSchema,
-  type OrderItem,
-  type Order,
-  type PaymentResult,
-  type InventoryReservation,
-  type ShippingResult,
-  type OrderResult,
 } from "@temporal-contract/sample-basic-order-processing-contract";
+
+export type OrderItem = z.infer<typeof OrderItemSchema>;
+export type Order = z.infer<typeof OrderSchema>;
+export type PaymentResult = z.infer<typeof PaymentResultSchema>;
+export type InventoryReservation = z.infer<typeof InventoryReservationSchema>;
+export type ShippingResult = z.infer<typeof ShippingResultSchema>;
+export type OrderResult = z.infer<typeof OrderResultSchema>;

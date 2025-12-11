@@ -1,6 +1,11 @@
 import { declareWorkflow } from "@temporal-contract/worker/workflow";
-import { orderProcessingContract } from "./contract.js";
-import type { OrderResult } from "./contract.js";
+import {
+  orderProcessingContract,
+  OrderResultSchema,
+} from "@temporal-contract/sample-basic-order-processing-contract";
+import type { z } from "zod";
+
+type OrderResult = z.infer<typeof OrderResultSchema>;
 
 /**
  * Process Order Workflow Implementation

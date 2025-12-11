@@ -1,6 +1,6 @@
 import { Future, Result } from "@swan-io/boxed";
 import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker-boxed/activity";
-import { boxedOrderContract } from "./contract.js";
+import { boxedOrderContract } from "@temporal-contract/sample-boxed-order-processing-contract";
 import {
   loggerAdapter,
   sendNotificationUseCase,

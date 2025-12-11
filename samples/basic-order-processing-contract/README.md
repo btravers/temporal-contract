@@ -12,10 +12,9 @@ This package is designed to be shared between:
 
 ```
 ┌─────────────────────────────────────┐
-│   Contract Package (this package)  │
+│   Contract Package (this package)   │
 │   - Contract definition             │
 │   - Domain schemas                  │
-│   - Type definitions                │
 └─────────────────────────────────────┘
          ↑                    ↑
          │                    │
@@ -29,7 +28,6 @@ This package is designed to be shared between:
 
 - Contract definition with workflow and activity signatures
 - Domain schemas (Order, PaymentResult, etc.)
-- TypeScript type definitions
 
 ## Usage
 

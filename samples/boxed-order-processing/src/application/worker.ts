@@ -2,7 +2,7 @@ import { Worker } from "@temporalio/worker";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { activitiesHandler } from "./activities.js";
-import { boxedOrderContract } from "./contract.js";
+import { boxedOrderContract } from "@temporal-contract/sample-boxed-order-processing-contract";
 import { logger } from "../logger.js";
 
 function workflowPath(filename: string): string {

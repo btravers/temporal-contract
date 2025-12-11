@@ -2,14 +2,19 @@ import { describe, expect, vi, beforeEach } from "vitest";
 import { Worker } from "@temporalio/worker";
 import { TypedClient } from "@temporal-contract/client";
 import { it as baseIt } from "@temporal-contract/testing/extension";
-import { boxedOrderContract } from "./application/contract.js";
+import {
+  boxedOrderContract,
+  OrderSchema,
+} from "@temporal-contract/sample-boxed-order-processing-contract";
 import { activitiesHandler } from "./application/activities.js";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Order } from "./application/contract.js";
+import type { z } from "zod";
 import { dependencies } from "./dependencies.js";
 import { Future, Result } from "@swan-io/boxed";
 import type { PaymentResult } from "./domain/entities/order.schema.js";
+
+type Order = z.infer<typeof OrderSchema>;
 
 const it = baseIt.extend<{
   worker: Worker;
@@ -242,9 +247,7 @@ describe("Boxed Order Processing Workflow - Integration Tests", () => {
     vi.spyOn(dependencies.paymentAdapter, "processPayment").mockReturnValue(
       Future.value(
         Result.Ok<PaymentResult>({
-          transactionId: "",
           status: "failed" as const,
-          paidAmount: 0,
         }),
       ),
     );
