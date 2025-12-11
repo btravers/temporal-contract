@@ -43,14 +43,16 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@standard-schema/spec": "1.0.0",
+    "@standard-schema/spec": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@temporal-contract/tsconfig": "workspace:*",
     "@vitest/coverage-v8": "catalog:",
+    "arktype": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
+    "valibot": "catalog:",
     "vitest": "catalog:"
   }
 }

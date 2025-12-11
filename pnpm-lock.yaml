@@ -9,6 +9,9 @@ catalogs:
     "@changesets/cli":
       specifier: 2.29.8
       version: 2.29.8
+    "@standard-schema/spec":
+      specifier: 1.0.0
+      version: 1.0.0
     "@swan-io/boxed":
       specifier: 3.2.1
       version: 3.2.1
@@ -27,6 +30,9 @@ catalogs:
     "@vitest/coverage-v8":
       specifier: 4.0.15
       version: 4.0.15
+    arktype:
+      specifier: 2.1.28
+      version: 2.1.28
     knip:
       specifier: 5.73.1
       version: 5.73.1
@@ -57,6 +63,9 @@ catalogs:
     typescript:
       specifier: 5.9.3
       version: 5.9.3
+    valibot:
+      specifier: 1.0.0
+      version: 1.0.0
     vitest:
       specifier: 4.0.15
       version: 4.0.15
@@ -89,7 +98,7 @@ importers:
   packages/client:
     dependencies:
       "@standard-schema/spec":
-        specifier: 1.0.0
+        specifier: "catalog:"
         version: 1.0.0
       "@temporal-contract/contract":
         specifier: workspace:*
@@ -123,7 +132,7 @@ importers:
   packages/contract:
     dependencies:
       "@standard-schema/spec":
-        specifier: 1.0.0
+        specifier: "catalog:"
         version: 1.0.0
       zod:
         specifier: "catalog:"
@@ -135,12 +144,18 @@ importers:
       "@vitest/coverage-v8":
         specifier: "catalog:"
         version: 4.0.15(vitest@4.0.15(@types/node@24.10.2)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2))
+      arktype:
+        specifier: "catalog:"
+        version: 2.1.28
       tsdown:
         specifier: "catalog:"
         version: 0.17.2(oxc-resolver@11.15.0)(typescript@5.9.3)
       typescript:
         specifier: "catalog:"
         version: 5.9.3
+      valibot:
+        specifier: "catalog:"
+        version: 1.0.0(typescript@5.9.3)
       vitest:
         specifier: "catalog:"
         version: 4.0.15(@types/node@24.10.2)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
@@ -176,7 +191,7 @@ importers:
   packages/worker:
     dependencies:
       "@standard-schema/spec":
-        specifier: 1.0.0
+        specifier: "catalog:"
         version: 1.0.0
       "@temporal-contract/contract":
         specifier: workspace:*
@@ -210,7 +225,7 @@ importers:
   packages/worker-boxed:
     dependencies:
       "@standard-schema/spec":
-        specifier: 1.0.0
+        specifier: "catalog:"
         version: 1.0.0
       "@swan-io/boxed":
         specifier: "catalog:"
@@ -348,6 +363,18 @@ importers:
   tools/tsconfig: {}
 
 packages:
+  "@ark/schema@0.56.0":
+    resolution:
+      {
+        integrity: sha512-ECg3hox/6Z/nLajxXqNhgPtNdHWC9zNsDyskwO28WinoFEnWow4IsERNz9AnXRhTZJnYIlAJ4uGn3nlLk65vZA==,
+      }
+
+  "@ark/util@0.56.0":
+    resolution:
+      {
+        integrity: sha512-BghfRC8b9pNs3vBoDJhcta0/c1J1rsoS1+HgVUreMFPdhz/CRAKReAu57YEllNaSy98rWAdY1gE+gFup7OXpgA==,
+      }
+
   "@babel/generator@7.28.5":
     resolution:
       {
@@ -2399,6 +2426,18 @@ packages:
     resolution:
       {
         integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==,
+      }
+
+  arkregex@0.0.4:
+    resolution:
+      {
+        integrity: sha512-biS/FkvSwQq59TZ453piUp8bxMui11pgOMV9WHAnli1F8o0ayNCZzUwQadL/bGIUic5TkS/QlPcyMuI8ZIwedQ==,
+      }
+
+  arktype@2.1.28:
+    resolution:
+      {
+        integrity: sha512-LVZqXl2zWRpNFnbITrtFmqeqNkPPo+KemuzbGSY6jvJwCb4v8NsDzrWOLHnQgWl26TkJeWWcUNUeBpq2Mst1/Q==,
       }
 
   array-union@2.1.0:
@@ -4700,6 +4739,17 @@ packages:
       }
     hasBin: true
 
+  valibot@1.0.0:
+    resolution:
+      {
+        integrity: sha512-1Hc0ihzWxBar6NGeZv7fPLY0QuxFMyxwYR2sF1Blu7Wq7EnremwY2W02tit2ij2VJT8HcSkHAQqmFfl77f73Yw==,
+      }
+    peerDependencies:
+      typescript: ">=5"
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   vite@7.2.6:
     resolution:
       {
@@ -4901,6 +4951,12 @@ packages:
       }
 
 snapshots:
+  "@ark/schema@0.56.0":
+    dependencies:
+      "@ark/util": 0.56.0
+
+  "@ark/util@0.56.0": {}
+
   "@babel/generator@7.28.5":
     dependencies:
       "@babel/parser": 7.28.5
@@ -6028,6 +6084,16 @@ snapshots:
       sprintf-js: 1.0.3
 
   argparse@2.0.1: {}
+
+  arkregex@0.0.4:
+    dependencies:
+      "@ark/util": 0.56.0
+
+  arktype@2.1.28:
+    dependencies:
+      "@ark/schema": 0.56.0
+      "@ark/util": 0.56.0
+      arkregex: 0.0.4
 
   array-union@2.1.0: {}
 
@@ -7384,6 +7450,10 @@ snapshots:
   uuid@10.0.0: {}
 
   uuid@11.1.0: {}
+
+  valibot@1.0.0(typescript@5.9.3):
+    optionalDependencies:
+      typescript: 5.9.3
 
   vite@7.2.6(@types/node@24.10.2)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2):
     dependencies:

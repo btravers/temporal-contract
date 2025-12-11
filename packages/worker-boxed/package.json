@@ -52,7 +52,7 @@
     "@swan-io/boxed": "catalog:",
     "@temporal-contract/contract": "workspace:*",
     "@temporal-contract/worker": "workspace:*",
-    "@standard-schema/spec": "1.0.0"
+    "@standard-schema/spec": "catalog:"
   },
   "devDependencies": {
     "@temporal-contract/tsconfig": "workspace:*",

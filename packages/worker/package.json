@@ -55,7 +55,7 @@
   },
   "dependencies": {
     "@temporal-contract/contract": "workspace:*",
-    "@standard-schema/spec": "1.0.0"
+    "@standard-schema/spec": "catalog:"
   },
   "devDependencies": {
     "@temporalio/workflow": "catalog:",

@@ -13,7 +13,12 @@ import type {
  * Check if a value is a Standard Schema compatible schema
  */
 function isStandardSchema(value: unknown): value is StandardSchemaV1 {
-  if (typeof value !== "object" || value === null || !("~standard" in value)) {
+  // Standard Schema can be either an object or a function (e.g., ArkType)
+  if (
+    (typeof value !== "object" && typeof value !== "function") ||
+    value === null ||
+    !("~standard" in value)
+  ) {
     return false;
   }
 
