@@ -7,7 +7,7 @@ This sample demonstrates how a client application can interact with workers impl
 ## Overview
 
 This client package demonstrates that:
-- Both `basic-order-processing` and `boxed-order-processing` workers implement the **same unified contract**
+- Both `basic-order-processing-worker` and `boxed-order-processing-worker` workers implement the **same unified contract**
 - From the client's perspective, both workers are identical
 - The only difference is in how they handle errors internally (Promise-based vs. Result/Future pattern)
 
@@ -30,7 +30,7 @@ pnpm install && pnpm build
 
 1. Start the basic worker (in a separate terminal):
 ```bash
-cd ../basic-order-processing
+cd ../basic-order-processing-worker
 pnpm dev:worker
 ```
 
@@ -44,7 +44,7 @@ pnpm dev:basic
 
 1. Start the boxed worker (in a separate terminal):
 ```bash
-cd ../boxed-order-processing
+cd ../boxed-order-processing-worker
 pnpm dev:worker
 ```
 
@@ -76,13 +76,13 @@ The unified contract (`orderProcessingContract`) defines:
 
 Both workers implement the exact same contract but with different patterns:
 
-1. **Basic Worker** (`samples/basic-order-processing`)
+1. **Basic Worker** (`samples/basic-order-processing-worker`)
    - Uses `@temporal-contract/worker`
    - Promise-based activities
    - Traditional error handling with try/catch
    - Simpler to understand and implement
 
-2. **Boxed Worker** (`samples/boxed-order-processing`)
+2. **Boxed Worker** (`samples/boxed-order-processing-worker`)
    - Uses `@temporal-contract/worker-boxed`
    - Result/Future pattern with `@swan-io/boxed`
    - Explicit error types in function signatures

@@ -13,6 +13,7 @@
     "@temporal-contract/sample-basic-order-processing-contract": "workspace:*",
     "@temporalio/client": "catalog:",
     "pino": "catalog:",
+    "pino-pretty": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

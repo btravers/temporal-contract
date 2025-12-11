@@ -20,14 +20,32 @@
       "entry": ["src/extension.ts", "src/global-setup.ts"],
       "project": ["src/**/*.ts"]
     },
-    "samples/*": {
+    "samples/basic-order-processing-contract": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "samples/basic-order-processing-worker": {
       "entry": [
-        "src/application/client.ts",
         "src/application/worker.ts",
         "src/application/workflows.ts",
         "src/integration.spec.ts"
       ],
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["pino-pretty"]
+    },
+    "samples/boxed-order-processing-worker": {
+      "entry": [
+        "src/application/worker.ts",
+        "src/application/workflows.ts",
+        "src/integration.spec.ts"
+      ],
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["pino-pretty"]
+    },
+    "samples/order-processing-client": {
+      "entry": ["src/client-basic.ts", "src/client-boxed.ts"],
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["pino-pretty"]
     },
     "tools/*": {
       "entry": ["*.json"]
