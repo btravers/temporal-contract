@@ -33,7 +33,7 @@
       "entry": ["*.json"]
     },
     "website": {
-      "entry": [".vitepress/config.ts"]
+      "entry": ["docs/.vitepress/config.ts"]
     }
   },
   "ignore": ["coverage/**", "**/dist/**"]
