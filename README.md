@@ -235,7 +235,7 @@ const userSchema = v.object({
 import { type } from 'arktype';
 const userSchema = type({ 
   name: 'string', 
-  'email': 'string.email' 
+  email: 'string.email' 
 });
 
 // All work the same way in your contracts!
