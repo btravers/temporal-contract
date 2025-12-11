@@ -112,10 +112,8 @@ const log: BoxedActivityHandler<typeof myContract, "log"> = ({
   level: string;
   message: string;
 }) => {
-  return Future.make((resolve) => {
-    logger[level](message);
-    resolve(Result.Ok(undefined));
-  });
+  logger[level](message);
+  return Future.value(Result.Ok(undefined));
 };
 ```
 
@@ -137,18 +135,13 @@ const processPayment: BoxedWorkflowActivityHandler<
   "processOrder",
   "processPayment"
 > = ({ customerId, amount }: { customerId: string; amount: number }) => {
-  return Future.make((resolve) => {
-    // Simulate payment processing
-    const transactionId = `txn-${Date.now()}`;
-
-    resolve(
-      Result.Ok({
-        transactionId,
-        status: "success" as const,
-        paidAmount: amount,
-      })
-    );
-  });
+  return Future.value(
+    Result.Ok({
+      transactionId: `txn-${Date.now()}`,
+      status: "success" as const,
+      paidAmount: amount,
+    })
+  );
 };
 ```
 
@@ -238,10 +231,8 @@ const log: BoxedActivityHandler<typeof boxedOrderContract, "log"> = ({
   level: string;
   message: string;
 }) => {
-  return Future.make((resolve) => {
-    logger[level](message);
-    resolve(Result.Ok(undefined));
-  });
+  logger[level](message);
+  return Future.value(Result.Ok(undefined));
 };
 
 // Activité du workflow

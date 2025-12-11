@@ -59,25 +59,15 @@ export const activities = declareActivitiesHandler({
   contract: orderContract,
   activities: {
     processPayment: ({ amount }) => {
-      return Future.make(async (resolve) => {
-        try {
-          const txId = await paymentGateway.charge(amount);
-          resolve(Result.Ok({ transactionId: txId, success: true }));
-        } catch (error) {
-          resolve(Result.Error({ type: 'PaymentFailed', message: error.message }));
-        }
-      });
+      return Future.fromPromise(paymentGateway.charge(amount))
+        .map(txId => ({ transactionId: txId, success: true }))
+        .mapError(error => ({ type: 'PaymentFailed', message: error instanceof Error ? error.message : 'Unknown error' }));
     },
 
     sendEmail: ({ to, body }) => {
-      return Future.make(async (resolve) => {
-        try {
-          await emailService.send({ to, body });
-          resolve(Result.Ok({ sent: true }));
-        } catch (error) {
-          resolve(Result.Error({ type: 'EmailFailed', message: error.message }));
-        }
-      });
+      return Future.fromPromise(emailService.send({ to, body }))
+        .map(() => ({ sent: true }))
+        .mapError(error => ({ type: 'EmailFailed', message: error instanceof Error ? error.message : 'Unknown error' }));
     }
   }
 });
@@ -194,9 +184,12 @@ type EmailError =
 
 // Activities return typed errors
 processPayment: ({ amount }) => {
-  return Future.make<{ transactionId: string }, PaymentError>(async (resolve) => {
-    // Implementation
-  });
+  return Future.fromPromise(paymentGateway.charge(amount))
+    .map<{ transactionId: string }>(txId => ({ transactionId: txId }))
+    .mapError<PaymentError>(error => ({
+      type: 'CardDeclined',
+      // error qualification logic
+    }));
 }
 ```
 

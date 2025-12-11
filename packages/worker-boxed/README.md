@@ -18,14 +18,9 @@ pnpm add @temporalio/worker @temporalio/workflow zod
 import { declareActivitiesHandler, Result, Future } from '@temporal-contract/worker-boxed/activity';
 
 const processPayment = ({ amount }) => {
-  return Future.make(async resolve => {
-    try {
-      const txId = await paymentService.charge(amount);
-      resolve(Result.Ok({ transactionId: txId }));
-    } catch (error) {
-      resolve(Result.Error({ code: 'PAYMENT_FAILED', message: error.message }));
-    }
-  });
+  return Future.fromPromise(paymentService.charge(amount))
+    .map(txId => ({ transactionId: txId }))
+    .mapError(error => ({ code: 'PAYMENT_FAILED', message: error instanceof Error ? error.message : 'Unknown error' }));
 };
 
 export const activities = declareActivitiesHandler({
