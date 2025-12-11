@@ -7,7 +7,7 @@ import {
   InventoryReservationSchema,
   ShippingResultSchema,
   OrderResultSchema,
-} from "../domain/entities/order.schema.js";
+} from "./schemas.js";
 
 /**
  * Boxed Order Processing Contract
@@ -107,6 +107,3 @@ export const boxedOrderContract = defineContract({
     },
   },
 });
-
-// Re-export types from domain for convenience
-export type { Order, OrderResult } from "../domain/entities/order.schema.js";

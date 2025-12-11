@@ -1,8 +1,15 @@
 import { Connection } from "@temporalio/client";
 import { TypedClient } from "@temporal-contract/client";
-import { boxedOrderContract } from "./contract.js";
-import type { Order, OrderResult } from "./contract.js";
+import {
+  boxedOrderContract,
+  OrderSchema,
+  OrderResultSchema,
+} from "@temporal-contract/sample-boxed-order-processing-contract";
+import type { z } from "zod";
 import { logger } from "../logger.js";
+
+type Order = z.infer<typeof OrderSchema>;
+type OrderResult = z.infer<typeof OrderResultSchema>;
 
 /**
  * Client for Boxed Order Processing

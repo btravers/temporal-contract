@@ -1,0 +1,29 @@
+{
+  "name": "@temporal-contract/sample-basic-order-processing-contract",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Contract package for basic order processing sample",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "tsdown src/index.ts --dts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@temporal-contract/contract": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@temporal-contract/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:"
+  }
+}

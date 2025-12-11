@@ -18,21 +18,27 @@ export class MockPaymentAdapter implements PaymentPort {
     // In real implementation, this would call a payment gateway API
     const success = Math.random() > 0.1; // 10% failure rate
 
-    const result: PaymentResult = {
-      transactionId: `TXN${Date.now()}`,
-      status: success ? ("success" as const) : ("failed" as const),
-      paidAmount: success ? amount : 0,
-    };
-
     if (success) {
+      const result: PaymentResult = {
+        status: "success" as const,
+        transactionId: `TXN${Date.now()}`,
+        paidAmount: amount,
+      };
+
       logger.info(
         { transactionId: result.transactionId },
         `✅ Payment processed: ${result.transactionId}`,
       );
-    } else {
-      logger.error(`❌ Payment failed`);
-    }
 
-    return result;
+      return result;
+    } else {
+      const result: PaymentResult = {
+        status: "failed" as const,
+      };
+
+      logger.error(`❌ Payment failed`);
+
+      return result;
+    }
   }
 }

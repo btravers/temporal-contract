@@ -1,8 +1,13 @@
 import { Connection } from "@temporalio/client";
 import { TypedClient } from "@temporal-contract/client";
-import { orderProcessingContract } from "./contract.js";
-import type { Order } from "./contract.js";
+import {
+  orderProcessingContract,
+  OrderSchema,
+} from "@temporal-contract/sample-basic-order-processing-contract";
+import type { z } from "zod";
 import { logger } from "../logger.js";
+
+type Order = z.infer<typeof OrderSchema>;
 
 /**
  * Example client to start order processing workflows
