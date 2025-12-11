@@ -53,3 +53,27 @@ export type {
   InferActivityNames,
   InferContractWorkflows,
 } from "./types.js";
+
+export { defineNexusOperation, defineNexusService } from "./nexus-types.js";
+
+export type {
+  NexusOperationDefinition,
+  NexusServiceDefinition,
+  ContractDefinitionWithNexus,
+  // Worker perspective types
+  WorkerInferNexusOperationInput,
+  WorkerInferNexusOperationOutput,
+  WorkerInferNexusOperationHandler,
+  WorkerInferNexusServiceHandlers,
+  WorkerInferNexusServices,
+  // Client perspective types
+  ClientInferNexusOperationInput,
+  ClientInferNexusOperationOutput,
+  ClientInferNexusOperationInvoker,
+  ClientInferNexusServiceOperations,
+  ClientInferNexusServices,
+  // Utility types
+  InferNexusServiceNames,
+  InferNexusOperationNames,
+  NexusOperationHandler,
+} from "./nexus-types.js";

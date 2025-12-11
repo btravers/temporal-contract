@@ -1,9 +1,9 @@
 /**
  * NEXUS INTEGRATION TYPES - PROOF OF CONCEPT
- * 
+ *
  * This file demonstrates how Nexus support could be integrated into temporal-contract.
  * These types are NOT yet implemented in the actual package but show the proposed API design.
- * 
+ *
  * See docs/NEXUS_INTEGRATION.md for detailed documentation.
  */
 
@@ -13,7 +13,7 @@ import type { AnySchema } from "./types.js";
 /**
  * Definition of a Nexus operation
  * Similar to ActivityDefinition but for cross-namespace operations
- * 
+ *
  * @example
  * ```typescript
  * const processPayment = {
@@ -32,7 +32,7 @@ export interface NexusOperationDefinition<
 
 /**
  * Definition of a Nexus service containing multiple operations
- * 
+ *
  * @example
  * ```typescript
  * const PaymentService = {
@@ -44,7 +44,10 @@ export interface NexusOperationDefinition<
  * ```
  */
 export interface NexusServiceDefinition<
-  TOperations extends Record<string, NexusOperationDefinition> = Record<string, NexusOperationDefinition>,
+  TOperations extends Record<string, NexusOperationDefinition> = Record<
+    string,
+    NexusOperationDefinition
+  >,
 > {
   readonly operations: TOperations;
 }
@@ -52,7 +55,7 @@ export interface NexusServiceDefinition<
 /**
  * Extended ContractDefinition that includes Nexus services
  * This would replace the current ContractDefinition when Nexus support is added
- * 
+ *
  * @example
  * ```typescript
  * const contract = defineContract({
@@ -70,9 +73,12 @@ export interface NexusServiceDefinition<
  * ```
  */
 export interface ContractDefinitionWithNexus<
-  TWorkflows extends Record<string, any> = Record<string, any>,
-  TActivities extends Record<string, any> = Record<string, any>,
-  TNexusServices extends Record<string, NexusServiceDefinition> = Record<string, NexusServiceDefinition>,
+  TWorkflows extends Record<string, unknown> = Record<string, unknown>,
+  TActivities extends Record<string, unknown> = Record<string, unknown>,
+  TNexusServices extends Record<string, NexusServiceDefinition> = Record<
+    string,
+    NexusServiceDefinition
+  >,
 > {
   readonly taskQueue: string;
   readonly workflows: TWorkflows;
@@ -99,7 +105,7 @@ export type WorkerInferNexusOperationOutput<T extends NexusOperationDefinition> 
 
 /**
  * Infer the handler function signature for a Nexus operation (worker perspective)
- * 
+ *
  * @example
  * ```typescript
  * type ProcessPaymentHandler = WorkerInferNexusOperationHandler<typeof processPaymentOperation>;
@@ -112,7 +118,7 @@ export type WorkerInferNexusOperationHandler<TOperation extends NexusOperationDe
 
 /**
  * Infer all operation handlers for a Nexus service (worker perspective)
- * 
+ *
  * @example
  * ```typescript
  * type PaymentServiceHandlers = WorkerInferNexusServiceHandlers<typeof PaymentService>;
@@ -128,7 +134,7 @@ export type WorkerInferNexusServiceHandlers<T extends NexusServiceDefinition> = 
 
 /**
  * Infer all Nexus service handlers from a contract (worker perspective)
- * 
+ *
  * @example
  * ```typescript
  * type AllNexusHandlers = WorkerInferNexusServices<typeof myContract>;
@@ -166,7 +172,7 @@ export type ClientInferNexusOperationOutput<T extends NexusOperationDefinition> 
 
 /**
  * Infer the client function signature for a Nexus operation (client perspective)
- * 
+ *
  * @example
  * ```typescript
  * type ProcessPaymentClient = ClientInferNexusOperationInvoker<typeof processPaymentOperation>;
@@ -186,7 +192,7 @@ export type ClientInferNexusServiceOperations<T extends NexusServiceDefinition> 
 
 /**
  * Infer all Nexus service operations from a contract (client perspective)
- * 
+ *
  * @example
  * ```typescript
  * type AllNexusOperations = ClientInferNexusServices<typeof myContract>;
@@ -211,7 +217,7 @@ export type ClientInferNexusServices<TContract extends ContractDefinitionWithNex
 
 /**
  * Extract service names from a contract as a union type
- * 
+ *
  * @example
  * ```typescript
  * type MyServiceNames = InferNexusServiceNames<typeof myContract>;
@@ -225,7 +231,7 @@ export type InferNexusServiceNames<TContract extends ContractDefinitionWithNexus
 
 /**
  * Extract operation names from a service as a union type
- * 
+ *
  * @example
  * ```typescript
  * type PaymentOperations = InferNexusOperationNames<typeof myContract, "PaymentService">;
@@ -242,7 +248,7 @@ export type InferNexusOperationNames<
 
 /**
  * Infer the handler type for a specific Nexus operation (worker perspective)
- * 
+ *
  * @example
  * ```typescript
  * const processPayment: NexusOperationHandler<
@@ -279,11 +285,11 @@ export type NexusOperationHandler<
 
 /**
  * Builder for creating Nexus operation definitions
- * 
+ *
  * @template TOperation - A NexusOperationDefinition containing input and output schemas
  * @param definition - The Nexus operation definition with typed input/output schemas
  * @returns The same definition with preserved types
- * 
+ *
  * @example
  * ```typescript
  * const processPayment = defineNexusOperation({
@@ -300,11 +306,11 @@ export function defineNexusOperation<TOperation extends NexusOperationDefinition
 
 /**
  * Builder for creating Nexus service definitions
- * 
+ *
  * @template TService - A NexusServiceDefinition containing a record of operations
  * @param definition - The Nexus service definition with typed operations
  * @returns The same definition with preserved types
- * 
+ *
  * @example
  * ```typescript
  * const PaymentService = defineNexusService({
@@ -323,13 +329,13 @@ export function defineNexusService<TService extends NexusServiceDefinition>(
 
 /**
  * USAGE EXAMPLE
- * 
+ *
  * This example demonstrates the complete type-safe Nexus workflow:
- * 
+ *
  * ```typescript
  * import { defineContract, defineNexusService, defineNexusOperation } from '@temporal-contract/contract';
  * import { z } from 'zod';
- * 
+ *
  * // 1. Define contract with Nexus service
  * const paymentContract = defineContract({
  *   taskQueue: 'payments',
@@ -351,10 +357,10 @@ export function defineNexusService<TService extends NexusServiceDefinition>(
  *     }),
  *   },
  * });
- * 
+ *
  * // 2. Worker implementation (type-safe handlers)
  * import { createNexusHandlers } from '@temporal-contract/worker';
- * 
+ *
  * const nexusHandlers = createNexusHandlers(paymentContract, {
  *   PaymentService: {
  *     processPayment: async ({ amount, customerId }) => {
@@ -369,20 +375,20 @@ export function defineNexusService<TService extends NexusServiceDefinition>(
  *     },
  *   },
  * });
- * 
+ *
  * // 3. Client usage (type-safe invocation)
  * import { createNexusClient } from '@temporal-contract/client';
- * 
+ *
  * const nexusClient = createNexusClient<typeof paymentContract>(connection, {
  *   namespace: 'payments-ns',
  * });
- * 
+ *
  * // ✅ Fully typed invocation
  * const result = await nexusClient.invoke('PaymentService', 'processPayment', {
  *   amount: 100,
  *   customerId: 'cust-123',
  * });
- * 
+ *
  * // ❌ TypeScript errors caught at compile time
  * await nexusClient.invoke('PaymentService', 'processPayment', {
  *   amount: -50, // Error: amount must be positive
