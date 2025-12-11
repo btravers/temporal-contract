@@ -116,7 +116,7 @@ const log: BoxedActivityHandler<typeof myContract, "log"> = ({
     Promise.resolve().then(() => logger[level](message))
   ).mapError(error => ({
     code: 'LOG_FAILED',
-    message: error.message
+    message: error instanceof Error ? error.message : 'Unknown error'
   }));
 };
 ```
@@ -147,7 +147,7 @@ const processPayment: BoxedWorkflowActivityHandler<
     })
   ).mapError(error => ({
     code: 'PAYMENT_FAILED',
-    message: error.message
+    message: error instanceof Error ? error.message : 'Unknown error'
   }));
 };
 ```
@@ -242,7 +242,7 @@ const log: BoxedActivityHandler<typeof boxedOrderContract, "log"> = ({
     Promise.resolve().then(() => logger[level](message))
   ).mapError(error => ({
     code: 'LOG_FAILED',
-    message: error.message
+    message: error instanceof Error ? error.message : 'Unknown error'
   }));
 };
 
@@ -268,11 +268,21 @@ const processPayment: BoxedWorkflowActivityHandler<
         paidAmount: amount,
       };
     })
-  ).mapError(error => ({
-    code: error.code || "PAYMENT_FAILED",
-    message: error.message || "Payment declined",
-    details: error.details || { customerId, amount },
-  }));
+  ).mapError(error => {
+    // Handle both structured errors and generic errors
+    if (error && typeof error === 'object' && 'code' in error) {
+      return {
+        code: (error as any).code || "PAYMENT_FAILED",
+        message: (error as any).message || "Payment declined",
+        details: (error as any).details || { customerId, amount },
+      };
+    }
+    return {
+      code: "PAYMENT_FAILED",
+      message: error instanceof Error ? error.message : "Unknown error",
+      details: { customerId, amount },
+    };
+  });
 };
 ```
 
