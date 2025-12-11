@@ -46,6 +46,9 @@
     },
     "./package.json": "./package.json"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "tsdown src/activity.ts src/workflow.ts --format cjs,esm --dts --watch",
     "build": "tsdown src/activity.ts src/workflow.ts --format cjs,esm --dts --clean",
