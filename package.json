@@ -26,8 +26,5 @@
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "turbo": "catalog:"
-  },
-  "dependencies": {
-    "@standard-schema/spec": "1.0.0"
   }
 }

@@ -22,8 +22,8 @@ function isStandardSchema(value: unknown): value is StandardSchemaV1 {
   return (
     typeof standard === "object" &&
     standard !== null &&
-    (standard as Record<string, unknown>).version === 1 &&
-    typeof (standard as Record<string, unknown>).validate === "function"
+    (standard as Record<string, unknown>)["version"] === 1 &&
+    typeof (standard as Record<string, unknown>)["validate"] === "function"
   );
 }
 

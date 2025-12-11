@@ -66,10 +66,6 @@ catalogs:
 
 importers:
   .:
-    dependencies:
-      "@standard-schema/spec":
-        specifier: 1.0.0
-        version: 1.0.0
     devDependencies:
       "@changesets/cli":
         specifier: "catalog:"
