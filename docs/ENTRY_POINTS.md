@@ -139,17 +139,12 @@ import { myContract } from './contract';
 
 const sendEmail: BoxedActivityHandler<typeof myContract, 'sendEmail'> =
   ({ to, subject, body }) => {
-    return Future.make(async (resolve) => {
-      try {
-        await emailService.send({ to, subject, body });
-        resolve(Result.Ok({ sent: true }));
-      } catch (error) {
-        resolve(Result.Error({
-          code: 'EMAIL_FAILED',
-          message: error.message,
-        }));
-      }
-    });
+    return Future.fromPromise(emailService.send({ to, subject, body }))
+      .map(() => ({ sent: true }))
+      .mapError(error => ({
+        code: 'EMAIL_FAILED',
+        message: error.message,
+      }));
   };
 
 export const activitiesHandler = declareActivitiesHandler({

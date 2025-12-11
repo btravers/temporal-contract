@@ -112,10 +112,12 @@ const log: BoxedActivityHandler<typeof myContract, "log"> = ({
   level: string;
   message: string;
 }) => {
-  return Future.make((resolve) => {
-    logger[level](message);
-    resolve(Result.Ok(undefined));
-  });
+  return Future.fromPromise(
+    Promise.resolve().then(() => logger[level](message))
+  ).mapError(error => ({
+    code: 'LOG_FAILED',
+    message: error.message
+  }));
 };
 ```
 
@@ -137,18 +139,16 @@ const processPayment: BoxedWorkflowActivityHandler<
   "processOrder",
   "processPayment"
 > = ({ customerId, amount }: { customerId: string; amount: number }) => {
-  return Future.make((resolve) => {
-    // Simulate payment processing
-    const transactionId = `txn-${Date.now()}`;
-
-    resolve(
-      Result.Ok({
-        transactionId,
-        status: "success" as const,
-        paidAmount: amount,
-      })
-    );
-  });
+  return Future.fromPromise(
+    Promise.resolve({
+      transactionId: `txn-${Date.now()}`,
+      status: "success" as const,
+      paidAmount: amount,
+    })
+  ).mapError(error => ({
+    code: 'PAYMENT_FAILED',
+    message: error.message
+  }));
 };
 ```
 
@@ -238,10 +238,12 @@ const log: BoxedActivityHandler<typeof boxedOrderContract, "log"> = ({
   level: string;
   message: string;
 }) => {
-  return Future.make((resolve) => {
-    logger[level](message);
-    resolve(Result.Ok(undefined));
-  });
+  return Future.fromPromise(
+    Promise.resolve().then(() => logger[level](message))
+  ).mapError(error => ({
+    code: 'LOG_FAILED',
+    message: error.message
+  }));
 };
 
 // Activité du workflow
@@ -250,27 +252,27 @@ const processPayment: BoxedWorkflowActivityHandler<
   "processOrder",
   "processPayment"
 > = ({ customerId, amount }: { customerId: string; amount: number }) => {
-  return Future.make((resolve) => {
-    const success = Math.random() > 0.1;
-
-    if (success) {
-      resolve(
-        Result.Ok({
-          transactionId: `txn-${Date.now()}`,
-          status: "success" as const,
-          paidAmount: amount,
-        })
-      );
-    } else {
-      resolve(
-        Result.Error({
+  return Future.fromPromise(
+    Promise.resolve().then(() => {
+      const success = Math.random() > 0.1;
+      if (!success) {
+        throw {
           code: "PAYMENT_FAILED",
           message: "Payment declined",
           details: { customerId, amount },
-        })
-      );
-    }
-  });
+        };
+      }
+      return {
+        transactionId: `txn-${Date.now()}`,
+        status: "success" as const,
+        paidAmount: amount,
+      };
+    })
+  ).mapError(error => ({
+    code: error.code || "PAYMENT_FAILED",
+    message: error.message || "Payment declined",
+    details: error.details || { customerId, amount },
+  }));
 };
 ```
 

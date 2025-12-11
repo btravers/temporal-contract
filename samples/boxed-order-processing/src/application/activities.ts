@@ -45,23 +45,18 @@ export const activitiesHandler = declareActivitiesHandler({
   activities: {
     // Global activities
     log: ({ level, message }) => {
-      return Future.make((resolve) => {
-        try {
+      return Future.fromPromise(
+        Promise.resolve().then(() => {
           loggerAdapter.log(level, message);
-          resolve(Result.Ok(undefined));
-        } catch (error) {
-          // Wrap any unexpected errors in ActivityError
-          resolve(
-            Result.Error(
-              new ActivityError(
-                "LOG_FAILED",
-                error instanceof Error ? error.message : "Failed to log message",
-                error,
-              ),
-            ),
-          );
-        }
-      });
+        })
+      ).mapError(error => 
+        // Wrap any unexpected errors in ActivityError
+        new ActivityError(
+          "LOG_FAILED",
+          error instanceof Error ? error.message : "Failed to log message",
+          error,
+        )
+      );
     },
 
     sendNotification: ({ customerId, subject, message }) => {

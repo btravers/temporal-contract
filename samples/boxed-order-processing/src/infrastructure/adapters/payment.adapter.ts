@@ -27,90 +27,99 @@ import { logger } from "../../logger.js";
  */
 export class MockPaymentAdapter implements PaymentPort {
   processPayment(customerId: string, amount: number): Future<Result<PaymentResult, PaymentError>> {
-    return Future.make((resolve) => {
+    return Future.fromPromise(
       (async () => {
-        try {
-          logger.info(
-            { customerId, amount },
-            `💳 Processing payment of $${amount} for customer ${customerId}`,
-          );
+        logger.info(
+          { customerId, amount },
+          `💳 Processing payment of $${amount} for customer ${customerId}`,
+        );
 
-          // Simulate different error scenarios
-          const random = Math.random();
+        // Simulate different error scenarios
+        const random = Math.random();
 
-          if (random < 0.05) {
-            // Simulate network error (5% chance) - should be retryable
-            logger.error(`❌ Network error during payment processing`);
-            throw new Error("ECONNREFUSED: Connection refused");
-          }
-
-          if (random < 0.1) {
-            // Simulate timeout error (5% chance) - should be retryable
-            logger.error(`❌ Timeout during payment processing`);
-            throw new Error("ETIMEDOUT: Request timeout");
-          }
-
-          if (random < 0.2) {
-            // Simulate business error (10% chance) - not retryable
-            logger.error(`❌ Payment declined - insufficient funds`);
-            resolve(
-              Result.Error({
-                code: "PAYMENT_FAILED",
-                message: "Insufficient funds",
-                details: { customerId, amount, reason: "insufficient_funds" },
-              }),
-            );
-            return;
-          }
-
-          // Success case (80% chance)
-          const result: PaymentResult = {
-            transactionId: `TXN${Date.now()}`,
-            status: "success" as const,
-            paidAmount: amount,
-          };
-
-          logger.info(
-            { transactionId: result.transactionId },
-            `✅ Payment processed: ${result.transactionId}`,
-          );
-          resolve(Result.Ok(result));
-        } catch (error) {
-          // Catch all technical exceptions and convert to Result.Error
-          // These will be wrapped in ActivityError by the activity handler for retry
-          logger.error({ error }, `❌ Technical error during payment processing`);
-          resolve(
-            Result.Error({
-              code: "PAYMENT_FAILED",
-              message: error instanceof Error ? error.message : "Unknown payment error",
-              details: { customerId, amount, originalError: error },
-            }),
-          );
+        if (random < 0.05) {
+          // Simulate network error (5% chance) - should be retryable
+          logger.error(`❌ Network error during payment processing`);
+          throw new Error("ECONNREFUSED: Connection refused");
         }
-      })();
+
+        if (random < 0.1) {
+          // Simulate timeout error (5% chance) - should be retryable
+          logger.error(`❌ Timeout during payment processing`);
+          throw new Error("ETIMEDOUT: Request timeout");
+        }
+
+        if (random < 0.2) {
+          // Simulate business error (10% chance) - not retryable
+          logger.error(`❌ Payment declined - insufficient funds`);
+          throw {
+            code: "PAYMENT_FAILED",
+            message: "Insufficient funds",
+            details: { customerId, amount, reason: "insufficient_funds" },
+          };
+        }
+
+        // Success case (80% chance)
+        const result: PaymentResult = {
+          transactionId: `TXN${Date.now()}`,
+          status: "success" as const,
+          paidAmount: amount,
+        };
+
+        logger.info(
+          { transactionId: result.transactionId },
+          `✅ Payment processed: ${result.transactionId}`,
+        );
+        return result;
+      })()
+    ).mapError(error => {
+      // Catch all technical exceptions and convert to PaymentError
+      // These will be wrapped in ActivityError by the activity handler for retry
+      logger.error({ error }, `❌ Technical error during payment processing`);
+      
+      // If it's already a structured error with code, use it
+      if (error && typeof error === 'object' && 'code' in error) {
+        return error as PaymentError;
+      }
+      
+      // Otherwise, wrap it
+      return {
+        code: "PAYMENT_FAILED",
+        message: error instanceof Error ? error.message : "Unknown payment error",
+        details: { customerId, amount, originalError: error },
+      };
     });
   }
 
   refundPayment(transactionId: string): Future<Result<void, PaymentError>> {
-    return Future.make((resolve) => {
-      logger.info({ transactionId }, `💰 Processing refund for transaction ${transactionId}`);
+    return Future.fromPromise(
+      Promise.resolve().then(() => {
+        logger.info({ transactionId }, `💰 Processing refund for transaction ${transactionId}`);
 
-      // Simulate refund processing with 99% success rate
-      const success = Math.random() > 0.01;
+        // Simulate refund processing with 99% success rate
+        const success = Math.random() > 0.01;
 
-      if (success) {
-        logger.info(`✅ Refund successful`);
-        resolve(Result.Ok(undefined));
-      } else {
-        logger.error(`❌ Refund failed`);
-        resolve(
-          Result.Error({
+        if (!success) {
+          logger.error(`❌ Refund failed`);
+          throw {
             code: "REFUND_FAILED",
             message: "Payment processor rejected refund request",
             details: { transactionId },
-          }),
-        );
+          };
+        }
+
+        logger.info(`✅ Refund successful`);
+      })
+    ).mapError(error => {
+      // Convert thrown errors to PaymentError
+      if (error && typeof error === 'object' && 'code' in error) {
+        return error as PaymentError;
       }
+      return {
+        code: "REFUND_FAILED",
+        message: error instanceof Error ? error.message : "Unknown refund error",
+        details: { transactionId },
+      };
     });
   }
 }
