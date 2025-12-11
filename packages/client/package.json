@@ -44,7 +44,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@temporal-contract/contract": "workspace:*"
+    "@temporal-contract/contract": "workspace:*",
+    "@standard-schema/spec": "catalog:"
   },
   "devDependencies": {
     "@temporalio/client": "catalog:",
@@ -57,7 +58,6 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "@temporalio/client": ">=1.13.0 <2.0.0",
-    "zod": "^4.0.0"
+    "@temporalio/client": ">=1.13.0 <2.0.0"
   }
 }

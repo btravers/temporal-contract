@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 /**
  * Base error class for worker errors
@@ -52,9 +52,10 @@ export class ActivityDefinitionNotFoundError extends WorkerError {
 export class ActivityInputValidationError extends WorkerError {
   constructor(
     public readonly activityName: string,
-    public readonly zodError: z.ZodError,
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    super(`Activity "${activityName}" input validation failed: ${zodError.message}`);
+    const message = issues.map((issue) => issue.message).join("; ");
+    super(`Activity "${activityName}" input validation failed: ${message}`);
     this.name = "ActivityInputValidationError";
   }
 }
@@ -65,9 +66,10 @@ export class ActivityInputValidationError extends WorkerError {
 export class ActivityOutputValidationError extends WorkerError {
   constructor(
     public readonly activityName: string,
-    public readonly zodError: z.ZodError,
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    super(`Activity "${activityName}" output validation failed: ${zodError.message}`);
+    const message = issues.map((issue) => issue.message).join("; ");
+    super(`Activity "${activityName}" output validation failed: ${message}`);
     this.name = "ActivityOutputValidationError";
   }
 }
@@ -78,9 +80,10 @@ export class ActivityOutputValidationError extends WorkerError {
 export class WorkflowInputValidationError extends WorkerError {
   constructor(
     public readonly workflowName: string,
-    public readonly zodError: z.ZodError,
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    super(`Workflow "${workflowName}" input validation failed: ${zodError.message}`);
+    const message = issues.map((issue) => issue.message).join("; ");
+    super(`Workflow "${workflowName}" input validation failed: ${message}`);
     this.name = "WorkflowInputValidationError";
   }
 }
@@ -91,9 +94,10 @@ export class WorkflowInputValidationError extends WorkerError {
 export class WorkflowOutputValidationError extends WorkerError {
   constructor(
     public readonly workflowName: string,
-    public readonly zodError: z.ZodError,
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    super(`Workflow "${workflowName}" output validation failed: ${zodError.message}`);
+    const message = issues.map((issue) => issue.message).join("; ");
+    super(`Workflow "${workflowName}" output validation failed: ${message}`);
     this.name = "WorkflowOutputValidationError";
   }
 }
@@ -104,9 +108,10 @@ export class WorkflowOutputValidationError extends WorkerError {
 export class SignalInputValidationError extends WorkerError {
   constructor(
     public readonly signalName: string,
-    public readonly zodError: z.ZodError,
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    super(`Signal "${signalName}" input validation failed: ${zodError.message}`);
+    const message = issues.map((issue) => issue.message).join("; ");
+    super(`Signal "${signalName}" input validation failed: ${message}`);
     this.name = "SignalInputValidationError";
   }
 }
@@ -117,9 +122,10 @@ export class SignalInputValidationError extends WorkerError {
 export class QueryInputValidationError extends WorkerError {
   constructor(
     public readonly queryName: string,
-    public readonly zodError: z.ZodError,
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    super(`Query "${queryName}" input validation failed: ${zodError.message}`);
+    const message = issues.map((issue) => issue.message).join("; ");
+    super(`Query "${queryName}" input validation failed: ${message}`);
     this.name = "QueryInputValidationError";
   }
 }
@@ -130,9 +136,10 @@ export class QueryInputValidationError extends WorkerError {
 export class QueryOutputValidationError extends WorkerError {
   constructor(
     public readonly queryName: string,
-    public readonly zodError: z.ZodError,
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    super(`Query "${queryName}" output validation failed: ${zodError.message}`);
+    const message = issues.map((issue) => issue.message).join("; ");
+    super(`Query "${queryName}" output validation failed: ${message}`);
     this.name = "QueryOutputValidationError";
   }
 }
@@ -143,9 +150,10 @@ export class QueryOutputValidationError extends WorkerError {
 export class UpdateInputValidationError extends WorkerError {
   constructor(
     public readonly updateName: string,
-    public readonly zodError: z.ZodError,
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    super(`Update "${updateName}" input validation failed: ${zodError.message}`);
+    const message = issues.map((issue) => issue.message).join("; ");
+    super(`Update "${updateName}" input validation failed: ${message}`);
     this.name = "UpdateInputValidationError";
   }
 }
@@ -156,9 +164,10 @@ export class UpdateInputValidationError extends WorkerError {
 export class UpdateOutputValidationError extends WorkerError {
   constructor(
     public readonly updateName: string,
-    public readonly zodError: z.ZodError,
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    super(`Update "${updateName}" output validation failed: ${zodError.message}`);
+    const message = issues.map((issue) => issue.message).join("; ");
+    super(`Update "${updateName}" output validation failed: ${message}`);
     this.name = "UpdateOutputValidationError";
   }
 }

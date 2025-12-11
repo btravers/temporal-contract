@@ -8,7 +8,6 @@ import {
   setHandler,
   workflowInfo,
 } from "@temporalio/workflow";
-import { ZodError } from "zod";
 import type {
   ActivityDefinition,
   ContractDefinition,
@@ -240,28 +239,21 @@ function createValidatedActivities<
     // Type assertion to unknown is safe as we're building the object step by step
     const wrappedActivity = async (input: unknown) => {
       // Validate input before sending over network
-      let validatedInput: unknown;
-      try {
-        validatedInput = activityDef.input.parse(input);
-      } catch (error) {
-        if (error instanceof ZodError) {
-          throw new ActivityInputValidationError(activityName, error);
-        }
-        throw error;
+      const inputResult = await activityDef.input["~standard"].validate(input);
+      if (inputResult.issues) {
+        throw new ActivityInputValidationError(activityName, inputResult.issues);
       }
 
       // Call the actual activity (pass the single parameter directly)
-      const result = await rawActivity(validatedInput);
+      const result = await rawActivity(inputResult.value);
 
       // Validate output after receiving from network
-      try {
-        return activityDef.output.parse(result);
-      } catch (error) {
-        if (error instanceof ZodError) {
-          throw new ActivityOutputValidationError(activityName, error);
-        }
-        throw error;
+      const outputResult = await activityDef.output["~standard"].validate(result);
+      if (outputResult.issues) {
+        throw new ActivityOutputValidationError(activityName, outputResult.issues);
       }
+
+      return outputResult.value;
     };
 
     // Assign to validatedActivities with proper type handling
@@ -352,28 +344,21 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
 
     wrappedActivities[activityName] = async (input: unknown) => {
       // Validate input
-      let validatedInput: unknown;
-      try {
-        validatedInput = activityDef.input.parse(input);
-      } catch (error) {
-        if (error instanceof ZodError) {
-          throw new ActivityInputValidationError(activityName, error);
-        }
-        throw error;
+      const inputResult = await activityDef.input["~standard"].validate(input);
+      if (inputResult.issues) {
+        throw new ActivityInputValidationError(activityName, inputResult.issues);
       }
 
       // Execute activity
-      const result = await activityImpl(validatedInput);
+      const result = await activityImpl(inputResult.value);
 
       // Validate output
-      try {
-        return activityDef.output.parse(result);
-      } catch (error) {
-        if (error instanceof ZodError) {
-          throw new ActivityOutputValidationError(activityName, error);
-        }
-        throw error;
+      const outputResult = await activityDef.output["~standard"].validate(result);
+      if (outputResult.issues) {
+        throw new ActivityOutputValidationError(activityName, outputResult.issues);
       }
+
+      return outputResult.value;
     };
   }
 
@@ -468,17 +453,13 @@ export function declareWorkflow<
     const singleArg = Array.isArray(args) ? args[0] : args;
 
     // Validate workflow input
-    let validatedInput: WorkerInferInput<TContract["workflows"][TWorkflowName]>;
-    try {
-      validatedInput = definition.input.parse(singleArg) as WorkerInferInput<
-        TContract["workflows"][TWorkflowName]
-      >;
-    } catch (error) {
-      if (error instanceof ZodError) {
-        throw new WorkflowInputValidationError(String(workflowName), error);
-      }
-      throw error;
+    const inputResult = await definition.input["~standard"].validate(singleArg);
+    if (inputResult.issues) {
+      throw new WorkflowInputValidationError(String(workflowName), inputResult.issues);
     }
+    const validatedInput = inputResult.value as WorkerInferInput<
+      TContract["workflows"][TWorkflowName]
+    >;
 
     // Register signal handlers
     if (definition.signals && signals) {
@@ -492,16 +473,11 @@ export function declareWorkflow<
           setHandler(signal, async (...args: unknown[]) => {
             // Extract single parameter (Temporal passes as args array)
             const input = args.length === 1 ? args[0] : args;
-            let validatedInput: unknown;
-            try {
-              validatedInput = signalDef.input.parse(input);
-            } catch (error) {
-              if (error instanceof ZodError) {
-                throw new SignalInputValidationError(signalName, error);
-              }
-              throw error;
+            const inputResult = await signalDef.input["~standard"].validate(input);
+            if (inputResult.issues) {
+              throw new SignalInputValidationError(signalName, inputResult.issues);
             }
-            await (handler as SignalHandlerImplementation<SignalDefinition>)(validatedInput);
+            await (handler as SignalHandlerImplementation<SignalDefinition>)(inputResult.value);
           });
         }
       }
@@ -519,24 +495,37 @@ export function declareWorkflow<
           setHandler(query, (...args: unknown[]) => {
             // Extract single parameter (Temporal passes as args array)
             const input = args.length === 1 ? args[0] : args;
-            let validatedInput: unknown;
-            try {
-              validatedInput = queryDef.input.parse(input);
-            } catch (error) {
-              if (error instanceof ZodError) {
-                throw new QueryInputValidationError(queryName, error);
-              }
-              throw error;
+            // Note: Query handlers must be synchronous, so we need to handle validation synchronously
+            // Standard Schema validate can return sync or async results
+            const inputResult = queryDef.input["~standard"].validate(input);
+
+            // Handle both sync and async validation results
+            if (inputResult instanceof Promise) {
+              throw new Error(
+                `Query "${queryName}" validation must be synchronous. Use a schema library that supports synchronous validation for queries.`,
+              );
             }
-            const result = (handler as QueryHandlerImplementation<QueryDefinition>)(validatedInput);
-            try {
-              return queryDef.output.parse(result);
-            } catch (error) {
-              if (error instanceof ZodError) {
-                throw new QueryOutputValidationError(queryName, error);
-              }
-              throw error;
+
+            if (inputResult.issues) {
+              throw new QueryInputValidationError(queryName, inputResult.issues);
             }
+
+            const result = (handler as QueryHandlerImplementation<QueryDefinition>)(
+              inputResult.value,
+            );
+
+            const outputResult = queryDef.output["~standard"].validate(result);
+            if (outputResult instanceof Promise) {
+              throw new Error(
+                `Query "${queryName}" output validation must be synchronous. Use a schema library that supports synchronous validation for queries.`,
+              );
+            }
+
+            if (outputResult.issues) {
+              throw new QueryOutputValidationError(queryName, outputResult.issues);
+            }
+
+            return outputResult.value;
           });
         }
       }
@@ -554,26 +543,21 @@ export function declareWorkflow<
           setHandler(update, async (...args: unknown[]) => {
             // Extract single parameter (Temporal passes as args array)
             const input = args.length === 1 ? args[0] : args;
-            let validatedInput: unknown;
-            try {
-              validatedInput = updateDef.input.parse(input);
-            } catch (error) {
-              if (error instanceof ZodError) {
-                throw new UpdateInputValidationError(updateName, error);
-              }
-              throw error;
+            const inputResult = await updateDef.input["~standard"].validate(input);
+            if (inputResult.issues) {
+              throw new UpdateInputValidationError(updateName, inputResult.issues);
             }
+
             const result = await (handler as UpdateHandlerImplementation<UpdateDefinition>)(
-              validatedInput,
+              inputResult.value,
             );
-            try {
-              return updateDef.output.parse(result);
-            } catch (error) {
-              if (error instanceof ZodError) {
-                throw new UpdateOutputValidationError(updateName, error);
-              }
-              throw error;
+
+            const outputResult = await updateDef.output["~standard"].validate(result);
+            if (outputResult.issues) {
+              throw new UpdateOutputValidationError(updateName, outputResult.issues);
             }
+
+            return outputResult.value;
           });
         }
       }
@@ -611,15 +595,11 @@ export function declareWorkflow<
     const result = await implementation(context, validatedInput);
 
     // Validate workflow output
-    try {
-      return definition.output.parse(result) as WorkerInferOutput<
-        TContract["workflows"][TWorkflowName]
-      >;
-    } catch (error) {
-      if (error instanceof ZodError) {
-        throw new WorkflowOutputValidationError(String(workflowName), error);
-      }
-      throw error;
+    const outputResult = await definition.output["~standard"].validate(result);
+    if (outputResult.issues) {
+      throw new WorkflowOutputValidationError(String(workflowName), outputResult.issues);
     }
+
+    return outputResult.value as WorkerInferOutput<TContract["workflows"][TWorkflowName]>;
   };
 }

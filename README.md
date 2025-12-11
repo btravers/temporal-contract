@@ -58,7 +58,8 @@ console.log(result.status);  // 'success' | 'failed' — full autocomplete!
 ## What You Get
 
 ✅ **End-to-end type safety** — From contract to client, workflows, and activities  
-✅ **Automatic validation** — Zod schemas validate at all network boundaries  
+✅ **Automatic validation** — [Standard Schema](https://standardschema.dev) compatible validation at all network boundaries  
+✅ **Multiple validation libraries** — Use Zod, Valibot, ArkType, or any Standard Schema compatible library  
 ✅ **Compile-time checks** — TypeScript catches missing or incorrect implementations  
 ✅ **Better DX** — Autocomplete, refactoring support, inline documentation
 
@@ -68,7 +69,9 @@ console.log(result.status);  // 'success' | 'failed' — full autocomplete!
 
 ```bash
 pnpm add @temporal-contract/contract @temporal-contract/worker @temporal-contract/client
-pnpm add zod @temporalio/client @temporalio/worker @temporalio/workflow
+# Choose your preferred validation library (all implement Standard Schema)
+pnpm add zod  # or valibot, or arktype
+pnpm add @temporalio/client @temporalio/worker @temporalio/workflow
 ```
 
 ### Usage in 3 Steps
@@ -187,7 +190,15 @@ console.log(result.status);  // 'success' | 'failed' — fully typed!
 
 ### Contract-First Design
 
-Define your workflow interface once with Zod schemas — types and validation flow from there.
+Define your workflow interface once with validation schemas — types and validation flow from there.
+
+### Multiple Validation Library Support
+
+Use **any** validation library that implements [Standard Schema](https://standardschema.dev):
+- **Zod** — TypeScript-first schema validation
+- **Valibot** — Modular and lightweight schema library
+- **ArkType** — TypeScript's 1:1 validator
+- And more coming soon!
 
 ### Automatic Validation
 
@@ -200,6 +211,44 @@ Full TypeScript inference from contract to implementation — no manual type ann
 ### Compile-Time Safety
 
 TypeScript catches missing implementations, wrong types, and mismatched activity names before runtime.
+
+### Using Different Validation Libraries
+
+Thanks to [Standard Schema](https://standardschema.dev), you can use **any** compatible validation library:
+
+```typescript
+// With Zod
+import { z } from 'zod';
+const userSchema = z.object({ 
+  name: z.string(), 
+  email: z.string().email() 
+});
+
+// With Valibot
+import * as v from 'valibot';
+const userSchema = v.object({ 
+  name: v.string(), 
+  email: v.pipe(v.string(), v.email()) 
+});
+
+// With ArkType
+import { type } from 'arktype';
+const userSchema = type({ 
+  name: 'string', 
+  email: 'string.email' 
+});
+
+// All work the same way in your contracts!
+const contract = defineContract({
+  taskQueue: 'users',
+  workflows: {
+    registerUser: {
+      input: userSchema,
+      output: z.object({ success: z.boolean() })
+    }
+  }
+});
+```
 
 ---
 
@@ -281,4 +330,7 @@ MIT
 ## Related
 
 - [Temporal.io](https://temporal.io/) — Durable workflow engine
+- [Standard Schema](https://standardschema.dev) — Universal schema validation interface
 - [Zod](https://zod.dev/) — TypeScript-first schema validation
+- [Valibot](https://valibot.dev/) — Modular schema library
+- [ArkType](https://arktype.io/) — TypeScript's 1:1 validator

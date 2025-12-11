@@ -622,4 +622,96 @@ describe("Contract Builder", () => {
       ).toThrow("Contract error");
     });
   });
+
+  describe("Standard Schema compatibility", () => {
+    it("should work with Valibot schemas", async () => {
+      const v = await import("valibot");
+
+      const contract = defineContract({
+        taskQueue: "test-queue",
+        workflows: {
+          processOrder: {
+            input: v.object({ orderId: v.string() }),
+            output: v.object({ status: v.string() }),
+          },
+        },
+        activities: {
+          sendEmail: {
+            input: v.object({ to: v.string(), subject: v.string() }),
+            output: v.object({ sent: v.boolean() }),
+          },
+        },
+      });
+
+      expect(contract.taskQueue).toBe("test-queue");
+      expect(contract.workflows.processOrder).toBeDefined();
+      expect(contract.activities?.sendEmail).toBeDefined();
+
+      // Verify Standard Schema properties exist
+      expect(contract.workflows.processOrder.input["~standard"]).toBeDefined();
+      expect(contract.workflows.processOrder.input["~standard"].version).toBe(1);
+      expect(contract.workflows.processOrder.input["~standard"].vendor).toBe("valibot");
+    });
+
+    it("should work with ArkType schemas", async () => {
+      const { type } = await import("arktype");
+
+      const contract = defineContract({
+        taskQueue: "test-queue",
+        workflows: {
+          processOrder: {
+            input: type({ orderId: "string" }),
+            output: type({ status: "string" }),
+          },
+        },
+        activities: {
+          validatePayment: {
+            input: type({ amount: "number" }),
+            output: type({ valid: "boolean" }),
+          },
+        },
+      });
+
+      expect(contract.taskQueue).toBe("test-queue");
+      expect(contract.workflows.processOrder).toBeDefined();
+      expect(contract.activities?.validatePayment).toBeDefined();
+
+      // Verify Standard Schema properties exist
+      expect(contract.workflows.processOrder.input["~standard"]).toBeDefined();
+      expect(contract.workflows.processOrder.input["~standard"].version).toBe(1);
+      expect(contract.workflows.processOrder.input["~standard"].vendor).toBe("arktype");
+    });
+
+    it("should work with mixed validation libraries", async () => {
+      const v = await import("valibot");
+      const { type } = await import("arktype");
+
+      const contract = defineContract({
+        taskQueue: "test-queue",
+        workflows: {
+          processZod: {
+            input: z.object({ id: z.string() }),
+            output: z.object({ result: z.string() }),
+          },
+          processValibot: {
+            input: v.object({ id: v.string() }),
+            output: v.object({ result: v.string() }),
+          },
+          processArkType: {
+            input: type({ id: "string" }),
+            output: type({ result: "string" }),
+          },
+        },
+      });
+
+      expect(contract.workflows.processZod).toBeDefined();
+      expect(contract.workflows.processValibot).toBeDefined();
+      expect(contract.workflows.processArkType).toBeDefined();
+
+      // Verify each has correct vendor
+      expect(contract.workflows.processZod.input["~standard"].vendor).toBe("zod");
+      expect(contract.workflows.processValibot.input["~standard"].vendor).toBe("valibot");
+      expect(contract.workflows.processArkType.input["~standard"].vendor).toBe("arktype");
+    });
+  });
 });
