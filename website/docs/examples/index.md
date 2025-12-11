@@ -262,4 +262,4 @@ export const processOrder = declareWorkflow({
 
 ## Contributing Examples
 
-Have an interesting use case? We welcome example contributions! See our [Contributing Guide](https://github.com/btravers/temporal-contract/blob/main/docs/CONTRIBUTING.md).
+Have an interesting use case? We welcome example contributions! See our [Contributing Guide](https://github.com/btravers/temporal-contract/blob/main/CONTRIBUTING.md).

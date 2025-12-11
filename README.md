@@ -74,7 +74,7 @@ pnpm add @temporal-contract/contract @temporal-contract/worker @temporal-contrac
 
 ## Contributing
 
-See [CONTRIBUTING.md](https://github.com/btravers/temporal-contract/blob/main/docs/CONTRIBUTING.md).
+See [CONTRIBUTING.md](https://github.com/btravers/temporal-contract/blob/main/CONTRIBUTING.md).
 
 ## License
 

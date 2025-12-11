@@ -26,7 +26,7 @@ pnpm typecheck
 temporal-contract/
 ├── packages/       # Core packages (contract, worker, worker-boxed, client)
 ├── samples/        # Working examples
-├── docs/           # Documentation
+├── website/        # Documentation website
 └── tools/          # Dev tools (testing utilities, configs)
 ```
 
@@ -74,8 +74,6 @@ We use [Changesets](https://github.com/changesets/changesets):
 2. Run `pnpm changeset` and describe changes
 3. Commit changeset file
 4. CI creates release PR automatically
-
-See [CHANGESETS.md](./CHANGESETS.md) for details.
 
 ## Questions?
 
