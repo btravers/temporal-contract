@@ -280,6 +280,10 @@ export type NexusOperationHandler<
 /**
  * Builder for creating Nexus operation definitions
  * 
+ * @template TOperation - A NexusOperationDefinition containing input and output schemas
+ * @param definition - The Nexus operation definition with typed input/output schemas
+ * @returns The same definition with preserved types
+ * 
  * @example
  * ```typescript
  * const processPayment = defineNexusOperation({
@@ -296,6 +300,10 @@ export function defineNexusOperation<TOperation extends NexusOperationDefinition
 
 /**
  * Builder for creating Nexus service definitions
+ * 
+ * @template TService - A NexusServiceDefinition containing a record of operations
+ * @param definition - The Nexus service definition with typed operations
+ * @returns The same definition with preserved types
  * 
  * @example
  * ```typescript

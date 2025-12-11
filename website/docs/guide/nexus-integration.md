@@ -104,7 +104,7 @@ export async function processOrderWorkflow(order: Order) {
 ```
 
 ::: tip
-See [Temporal's Nexus documentation](https://docs.temporal.io/develop/typescript/nexus) for complete SDK details.
+See [Temporal Nexus documentation](https://docs.temporal.io/develop/typescript/nexus) for complete SDK details.
 :::
 
 ## Future: temporal-contract Integration
