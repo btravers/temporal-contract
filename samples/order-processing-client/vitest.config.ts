@@ -2,9 +2,12 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    globals: true,
-    globalSetup: ["../../packages/testing/dist/global-setup.mjs"],
-    setupFiles: [],
-    testTimeout: 30000,
+    globalSetup: "@temporal-contract/testing/global-setup",
+    reporters: ["default"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json", "json-summary", "html"],
+      include: ["src/**"],
+    },
   },
 });
