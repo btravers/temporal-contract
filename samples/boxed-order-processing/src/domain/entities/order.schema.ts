@@ -8,16 +8,12 @@
 import type { z } from "zod";
 import {
   OrderItemSchema,
-  OrderSchema,
   PaymentResultSchema,
   InventoryReservationSchema,
   ShippingResultSchema,
-  OrderResultSchema,
 } from "@temporal-contract/sample-boxed-order-processing-contract";
 
 export type OrderItem = z.infer<typeof OrderItemSchema>;
-export type Order = z.infer<typeof OrderSchema>;
 export type PaymentResult = z.infer<typeof PaymentResultSchema>;
 export type InventoryReservation = z.infer<typeof InventoryReservationSchema>;
 export type ShippingResult = z.infer<typeof ShippingResultSchema>;
-export type OrderResult = z.infer<typeof OrderResultSchema>;
