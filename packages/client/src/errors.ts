@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 /**
  * Base error class for typed client errors
@@ -38,9 +38,10 @@ export class WorkflowValidationError extends TypedClientError {
   constructor(
     public readonly workflowName: string,
     public readonly phase: "input" | "output",
-    public readonly zodError: z.ZodError,
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    super(`Validation failed for workflow "${workflowName}" ${phase}: ${zodError.message}`);
+    const message = issues.map((issue) => issue.message).join("; ");
+    super(`Validation failed for workflow "${workflowName}" ${phase}: ${message}`);
     this.name = "WorkflowValidationError";
   }
 }
@@ -52,9 +53,10 @@ export class QueryValidationError extends TypedClientError {
   constructor(
     public readonly queryName: string,
     public readonly phase: "input" | "output",
-    public readonly zodError: z.ZodError,
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    super(`Validation failed for query "${queryName}" ${phase}: ${zodError.message}`);
+    const message = issues.map((issue) => issue.message).join("; ");
+    super(`Validation failed for query "${queryName}" ${phase}: ${message}`);
     this.name = "QueryValidationError";
   }
 }
@@ -65,9 +67,10 @@ export class QueryValidationError extends TypedClientError {
 export class SignalValidationError extends TypedClientError {
   constructor(
     public readonly signalName: string,
-    public readonly zodError: z.ZodError,
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    super(`Validation failed for signal "${signalName}" input: ${zodError.message}`);
+    const message = issues.map((issue) => issue.message).join("; ");
+    super(`Validation failed for signal "${signalName}" input: ${message}`);
     this.name = "SignalValidationError";
   }
 }
@@ -79,9 +82,10 @@ export class UpdateValidationError extends TypedClientError {
   constructor(
     public readonly updateName: string,
     public readonly phase: "input" | "output",
-    public readonly zodError: z.ZodError,
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    super(`Validation failed for update "${updateName}" ${phase}: ${zodError.message}`);
+    const message = issues.map((issue) => issue.message).join("; ");
+    super(`Validation failed for update "${updateName}" ${phase}: ${message}`);
     this.name = "UpdateValidationError";
   }
 }

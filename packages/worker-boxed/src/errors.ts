@@ -1,4 +1,4 @@
-import type { ZodError } from "zod";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 /**
  * Base error class for worker-boxed errors
@@ -36,9 +36,10 @@ export class ActivityDefinitionNotFoundError extends WorkerBoxedError {
 export class ActivityInputValidationError extends WorkerBoxedError {
   constructor(
     public readonly activityName: string,
-    public readonly zodError: ZodError,
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    super(`Activity "${activityName}" input validation failed: ${zodError.message}`, zodError);
+    const message = issues.map((issue) => issue.message).join("; ");
+    super(`Activity "${activityName}" input validation failed: ${message}`);
     this.name = "ActivityInputValidationError";
   }
 }
@@ -49,9 +50,10 @@ export class ActivityInputValidationError extends WorkerBoxedError {
 export class ActivityOutputValidationError extends WorkerBoxedError {
   constructor(
     public readonly activityName: string,
-    public readonly zodError: ZodError,
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    super(`Activity "${activityName}" output validation failed: ${zodError.message}`, zodError);
+    const message = issues.map((issue) => issue.message).join("; ");
+    super(`Activity "${activityName}" output validation failed: ${message}`);
     this.name = "ActivityOutputValidationError";
   }
 }

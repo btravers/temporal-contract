@@ -92,6 +92,9 @@ importers:
 
   packages/client:
     dependencies:
+      "@standard-schema/spec":
+        specifier: 1.0.0
+        version: 1.0.0
       "@temporal-contract/contract":
         specifier: workspace:*
         version: link:../contract
@@ -122,6 +125,10 @@ importers:
         version: 4.1.13
 
   packages/contract:
+    dependencies:
+      "@standard-schema/spec":
+        specifier: 1.0.0
+        version: 1.0.0
     devDependencies:
       "@temporal-contract/tsconfig":
         specifier: workspace:*
@@ -172,6 +179,9 @@ importers:
 
   packages/worker:
     dependencies:
+      "@standard-schema/spec":
+        specifier: 1.0.0
+        version: 1.0.0
       "@temporal-contract/contract":
         specifier: workspace:*
         version: link:../contract
@@ -203,6 +213,9 @@ importers:
 
   packages/worker-boxed:
     dependencies:
+      "@standard-schema/spec":
+        specifier: 1.0.0
+        version: 1.0.0
       "@swan-io/boxed":
         specifier: "catalog:"
         version: 3.2.1(typescript@5.9.3)

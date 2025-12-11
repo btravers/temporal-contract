@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type {
   ActivityDefinition,
   ContractDefinition,
@@ -7,6 +8,24 @@ import type {
   UpdateDefinition,
   WorkflowDefinition,
 } from "./types.js";
+
+/**
+ * Check if a value is a Standard Schema compatible schema
+ */
+function isStandardSchema(value: unknown): value is StandardSchemaV1 {
+  if (typeof value !== "object" || value === null || !("~standard" in value)) {
+    return false;
+  }
+
+  const standard = (value as Record<string, unknown>)["~standard"];
+
+  return (
+    typeof standard === "object" &&
+    standard !== null &&
+    (standard as Record<string, unknown>).version === 1 &&
+    typeof (standard as Record<string, unknown>).validate === "function"
+  );
+}
 
 /**
  * Schema for validating JavaScript identifiers (workflow names, activity names, etc.)
@@ -52,14 +71,14 @@ const getCleanErrorMessage = (error: z.ZodError): string => {
 
 /**
  * Schema for validating activity definitions
- * Checks that input and output are Zod schemas
+ * Checks that input and output are Standard Schema compatible schemas
  */
 const activityDefinitionSchema = z.object({
-  input: z.instanceof(z.ZodType, {
-    message: "input must be a Zod schema",
+  input: z.custom<StandardSchemaV1>((val) => isStandardSchema(val), {
+    message: "input must be a Standard Schema compatible schema (e.g., Zod, Valibot, ArkType)",
   }),
-  output: z.instanceof(z.ZodType, {
-    message: "output must be a Zod schema",
+  output: z.custom<StandardSchemaV1>((val) => isStandardSchema(val), {
+    message: "output must be a Standard Schema compatible schema (e.g., Zod, Valibot, ArkType)",
   }),
 });
 
@@ -67,8 +86,8 @@ const activityDefinitionSchema = z.object({
  * Schema for validating signal definitions
  */
 const signalDefinitionSchema = z.object({
-  input: z.instanceof(z.ZodType, {
-    message: "input must be a Zod schema",
+  input: z.custom<StandardSchemaV1>((val) => isStandardSchema(val), {
+    message: "input must be a Standard Schema compatible schema (e.g., Zod, Valibot, ArkType)",
   }),
 });
 
@@ -76,11 +95,11 @@ const signalDefinitionSchema = z.object({
  * Schema for validating query definitions
  */
 const queryDefinitionSchema = z.object({
-  input: z.instanceof(z.ZodType, {
-    message: "input must be a Zod schema",
+  input: z.custom<StandardSchemaV1>((val) => isStandardSchema(val), {
+    message: "input must be a Standard Schema compatible schema (e.g., Zod, Valibot, ArkType)",
   }),
-  output: z.instanceof(z.ZodType, {
-    message: "output must be a Zod schema",
+  output: z.custom<StandardSchemaV1>((val) => isStandardSchema(val), {
+    message: "output must be a Standard Schema compatible schema (e.g., Zod, Valibot, ArkType)",
   }),
 });
 
@@ -88,11 +107,11 @@ const queryDefinitionSchema = z.object({
  * Schema for validating update definitions
  */
 const updateDefinitionSchema = z.object({
-  input: z.instanceof(z.ZodType, {
-    message: "input must be a Zod schema",
+  input: z.custom<StandardSchemaV1>((val) => isStandardSchema(val), {
+    message: "input must be a Standard Schema compatible schema (e.g., Zod, Valibot, ArkType)",
   }),
-  output: z.instanceof(z.ZodType, {
-    message: "output must be a Zod schema",
+  output: z.custom<StandardSchemaV1>((val) => isStandardSchema(val), {
+    message: "output must be a Standard Schema compatible schema (e.g., Zod, Valibot, ArkType)",
   }),
 });
 
@@ -100,11 +119,11 @@ const updateDefinitionSchema = z.object({
  * Schema for validating workflow definitions
  */
 const workflowDefinitionSchema = z.object({
-  input: z.instanceof(z.ZodType, {
-    message: "input must be a Zod schema",
+  input: z.custom<StandardSchemaV1>((val) => isStandardSchema(val), {
+    message: "input must be a Standard Schema compatible schema (e.g., Zod, Valibot, ArkType)",
   }),
-  output: z.instanceof(z.ZodType, {
-    message: "output must be a Zod schema",
+  output: z.custom<StandardSchemaV1>((val) => isStandardSchema(val), {
+    message: "output must be a Standard Schema compatible schema (e.g., Zod, Valibot, ArkType)",
   }),
   activities: z.record(identifierSchema, activityDefinitionSchema).optional(),
   signals: z.record(identifierSchema, signalDefinitionSchema).optional(),

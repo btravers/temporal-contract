@@ -1,5 +1,4 @@
 import { Future, Result } from "@swan-io/boxed";
-import { ZodError } from "zod";
 import {
   type DeclareWorkflowOptions as BaseDeclareWorkflowOptions,
   type WorkflowContext,
@@ -281,35 +280,27 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
       const input = args.length === 1 ? args[0] : args;
 
       // Validate input
-      let validatedInput: unknown;
-      try {
-        validatedInput = activityDef.input.parse(input);
-      } catch (error) {
-        if (error instanceof ZodError) {
-          throw new ActivityInputValidationError(activityName, error);
-        }
-        throw error;
+      const inputResult = await activityDef.input["~standard"].validate(input);
+      if (inputResult.issues) {
+        throw new ActivityInputValidationError(activityName, inputResult.issues);
       }
 
       // Execute boxed activity (pass single parameter, returns Future<Result<T, E>>)
       const futureResult = (
         activityImpl as (args: unknown) => Future<Result<unknown, ActivityError>>
-      )(validatedInput);
+      )(inputResult.value);
 
       // Unwrap Future and Result
       const result = await futureResult.toPromise();
 
       return result.match({
-        Ok: (value: unknown) => {
+        Ok: async (value: unknown) => {
           // Validate output on success
-          try {
-            return activityDef.output.parse(value);
-          } catch (error) {
-            if (error instanceof ZodError) {
-              throw new ActivityOutputValidationError(activityName, error);
-            }
-            throw error;
+          const outputResult = await activityDef.output["~standard"].validate(value);
+          if (outputResult.issues) {
+            throw new ActivityOutputValidationError(activityName, outputResult.issues);
           }
+          return outputResult.value;
         },
         Error: (error: ActivityError) => {
           // Convert Result.Error to thrown ActivityError for Temporal

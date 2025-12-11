@@ -1,17 +1,18 @@
-import type { z } from "zod";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 /**
  * Base types for validation schemas
- * Constrained to avoid implicit any types
+ * Any schema that implements the Standard Schema specification
+ * This includes Zod, Valibot, ArkType, and other compatible libraries
  */
-export type AnyZodSchema = z.ZodType<unknown, unknown>;
+export type AnySchema = StandardSchemaV1;
 
 /**
  * Definition of an activity
  */
 export interface ActivityDefinition<
-  TInput extends AnyZodSchema = AnyZodSchema,
-  TOutput extends AnyZodSchema = AnyZodSchema,
+  TInput extends AnySchema = AnySchema,
+  TOutput extends AnySchema = AnySchema,
 > {
   readonly input: TInput;
   readonly output: TOutput;
@@ -20,7 +21,7 @@ export interface ActivityDefinition<
 /**
  * Definition of a signal
  */
-export interface SignalDefinition<TInput extends AnyZodSchema = AnyZodSchema> {
+export interface SignalDefinition<TInput extends AnySchema = AnySchema> {
   readonly input: TInput;
 }
 
@@ -28,8 +29,8 @@ export interface SignalDefinition<TInput extends AnyZodSchema = AnyZodSchema> {
  * Definition of a query
  */
 export interface QueryDefinition<
-  TInput extends AnyZodSchema = AnyZodSchema,
-  TOutput extends AnyZodSchema = AnyZodSchema,
+  TInput extends AnySchema = AnySchema,
+  TOutput extends AnySchema = AnySchema,
 > {
   readonly input: TInput;
   readonly output: TOutput;
@@ -39,8 +40,8 @@ export interface QueryDefinition<
  * Definition of an update
  */
 export interface UpdateDefinition<
-  TInput extends AnyZodSchema = AnyZodSchema,
-  TOutput extends AnyZodSchema = AnyZodSchema,
+  TInput extends AnySchema = AnySchema,
+  TOutput extends AnySchema = AnySchema,
 > {
   readonly input: TInput;
   readonly output: TOutput;
@@ -55,8 +56,8 @@ export interface WorkflowDefinition<
   TQueries extends Record<string, QueryDefinition> = Record<string, QueryDefinition>,
   TUpdates extends Record<string, UpdateDefinition> = Record<string, UpdateDefinition>,
 > {
-  readonly input: AnyZodSchema;
-  readonly output: AnyZodSchema;
+  readonly input: AnySchema;
+  readonly output: AnySchema;
   readonly activities?: TActivities;
   readonly signals?: TSignals;
   readonly queries?: TQueries;
@@ -77,27 +78,35 @@ export interface ContractDefinition<
 
 /**
  * Infer input type from a definition (worker perspective)
- * Worker receives z.output (after input schema parsing/transformation)
+ * Worker receives the output type (after input schema parsing/transformation)
  */
-export type WorkerInferInput<T extends { input: AnyZodSchema }> = z.output<T["input"]>;
+export type WorkerInferInput<T extends { input: AnySchema }> = StandardSchemaV1.InferOutput<
+  T["input"]
+>;
 
 /**
  * Infer output type from a definition (worker perspective)
- * Worker returns z.input (before output schema parsing/transformation)
+ * Worker returns the input type (before output schema parsing/transformation)
  */
-export type WorkerInferOutput<T extends { output: AnyZodSchema }> = z.input<T["output"]>;
+export type WorkerInferOutput<T extends { output: AnySchema }> = StandardSchemaV1.InferInput<
+  T["output"]
+>;
 
 /**
  * Infer input type from a definition (client perspective)
- * Client sends z.input (before input schema parsing/transformation)
+ * Client sends the input type (before input schema parsing/transformation)
  */
-export type ClientInferInput<T extends { input: AnyZodSchema }> = z.input<T["input"]>;
+export type ClientInferInput<T extends { input: AnySchema }> = StandardSchemaV1.InferInput<
+  T["input"]
+>;
 
 /**
  * Infer output type from a definition (client perspective)
- * Client receives z.output (after output schema parsing/transformation)
+ * Client receives the output type (after output schema parsing/transformation)
  */
-export type ClientInferOutput<T extends { output: AnyZodSchema }> = z.output<T["output"]>;
+export type ClientInferOutput<T extends { output: AnySchema }> = StandardSchemaV1.InferOutput<
+  T["output"]
+>;
 
 /**
  * WORKER PERSPECTIVE

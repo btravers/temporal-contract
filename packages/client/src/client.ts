@@ -1,6 +1,5 @@
 import { Client, WorkflowHandle } from "@temporalio/client";
 import type { ClientOptions, WorkflowStartOptions, WorkflowOptions } from "@temporalio/client";
-import { ZodError } from "zod";
 import type {
   ClientInferInput,
   ClientInferOutput,
@@ -161,18 +160,14 @@ export class TypedClient<TContract extends ContractDefinition> {
       );
     }
 
-    // Validate input with Zod schema (tuple)
-    let validatedInput: ClientInferInput<TContract["workflows"][TWorkflowName]>;
-    try {
-      validatedInput = definition.input.parse(args) as ClientInferInput<
-        TContract["workflows"][TWorkflowName]
-      >;
-    } catch (error) {
-      if (error instanceof ZodError) {
-        throw new WorkflowValidationError(String(workflowName), "input", error);
-      }
-      throw error;
+    // Validate input with Standard Schema
+    const inputResult = await definition.input["~standard"].validate(args);
+    if (inputResult.issues) {
+      throw new WorkflowValidationError(String(workflowName), "input", inputResult.issues);
     }
+    const validatedInput = inputResult.value as ClientInferInput<
+      TContract["workflows"][TWorkflowName]
+    >;
 
     // Start workflow (Temporal expects args as array, so wrap single parameter)
     const handle = await this.client.workflow.start(workflowName as string, {
@@ -219,18 +214,14 @@ export class TypedClient<TContract extends ContractDefinition> {
       );
     }
 
-    // Validate input with Zod schema
-    let validatedInput: ClientInferInput<TContract["workflows"][TWorkflowName]>;
-    try {
-      validatedInput = definition.input.parse(args) as ClientInferInput<
-        TContract["workflows"][TWorkflowName]
-      >;
-    } catch (error) {
-      if (error instanceof ZodError) {
-        throw new WorkflowValidationError(String(workflowName), "input", error);
-      }
-      throw error;
+    // Validate input with Standard Schema
+    const inputResult = await definition.input["~standard"].validate(args);
+    if (inputResult.issues) {
+      throw new WorkflowValidationError(String(workflowName), "input", inputResult.issues);
     }
+    const validatedInput = inputResult.value as ClientInferInput<
+      TContract["workflows"][TWorkflowName]
+    >;
 
     // Execute workflow (Temporal expects args as array, so wrap single parameter)
     const result = await this.client.workflow.execute(workflowName as string, {
@@ -239,17 +230,13 @@ export class TypedClient<TContract extends ContractDefinition> {
       args: [validatedInput],
     });
 
-    // Validate output with Zod schema
-    try {
-      return definition.output.parse(result) as ClientInferOutput<
-        TContract["workflows"][TWorkflowName]
-      >;
-    } catch (error) {
-      if (error instanceof ZodError) {
-        throw new WorkflowValidationError(String(workflowName), "output", error);
-      }
-      throw error;
+    // Validate output with Standard Schema
+    const outputResult = await definition.output["~standard"].validate(result);
+    if (outputResult.issues) {
+      throw new WorkflowValidationError(String(workflowName), "output", outputResult.issues);
     }
+
+    return outputResult.value as ClientInferOutput<TContract["workflows"][TWorkflowName]>;
   }
 
   /**
@@ -292,26 +279,19 @@ export class TypedClient<TContract extends ContractDefinition> {
       (queries as Record<string, unknown>)[queryName] = async (
         args: ClientInferInput<typeof queryDef>,
       ) => {
-        let validatedInput: ClientInferInput<typeof queryDef>;
-        try {
-          validatedInput = queryDef.input.parse(args) as ClientInferInput<typeof queryDef>;
-        } catch (error) {
-          if (error instanceof ZodError) {
-            throw new QueryValidationError(queryName, "input", error);
-          }
-          throw error;
+        const inputResult = await queryDef.input["~standard"].validate(args);
+        if (inputResult.issues) {
+          throw new QueryValidationError(queryName, "input", inputResult.issues);
         }
 
-        const result = await handle.query(queryName as string, validatedInput);
+        const result = await handle.query(queryName as string, inputResult.value);
 
-        try {
-          return queryDef.output.parse(result);
-        } catch (error) {
-          if (error instanceof ZodError) {
-            throw new QueryValidationError(queryName, "output", error);
-          }
-          throw error;
+        const outputResult = await queryDef.output["~standard"].validate(result);
+        if (outputResult.issues) {
+          throw new QueryValidationError(queryName, "output", outputResult.issues);
         }
+
+        return outputResult.value;
       };
     }
 
@@ -323,16 +303,11 @@ export class TypedClient<TContract extends ContractDefinition> {
       (signals as Record<string, unknown>)[signalName] = async (
         args: ClientInferInput<typeof signalDef>,
       ) => {
-        let validatedInput: ClientInferInput<typeof signalDef>;
-        try {
-          validatedInput = signalDef.input.parse(args) as ClientInferInput<typeof signalDef>;
-        } catch (error) {
-          if (error instanceof ZodError) {
-            throw new SignalValidationError(signalName, error);
-          }
-          throw error;
+        const inputResult = await signalDef.input["~standard"].validate(args);
+        if (inputResult.issues) {
+          throw new SignalValidationError(signalName, inputResult.issues);
         }
-        await handle.signal(signalName as string, validatedInput);
+        await handle.signal(signalName as string, inputResult.value);
       };
     }
 
@@ -344,26 +319,21 @@ export class TypedClient<TContract extends ContractDefinition> {
       (updates as Record<string, unknown>)[updateName] = async (
         args: ClientInferInput<typeof updateDef>,
       ) => {
-        let validatedInput: ClientInferInput<typeof updateDef>;
-        try {
-          validatedInput = updateDef.input.parse(args) as ClientInferInput<typeof updateDef>;
-        } catch (error) {
-          if (error instanceof ZodError) {
-            throw new UpdateValidationError(updateName, "input", error);
-          }
-          throw error;
+        const inputResult = await updateDef.input["~standard"].validate(args);
+        if (inputResult.issues) {
+          throw new UpdateValidationError(updateName, "input", inputResult.issues);
         }
 
-        const result = await handle.executeUpdate(updateName as string, { args: [validatedInput] });
+        const result = await handle.executeUpdate(updateName as string, {
+          args: [inputResult.value],
+        });
 
-        try {
-          return updateDef.output.parse(result);
-        } catch (error) {
-          if (error instanceof ZodError) {
-            throw new UpdateValidationError(updateName, "output", error);
-          }
-          throw error;
+        const outputResult = await updateDef.output["~standard"].validate(result);
+        if (outputResult.issues) {
+          throw new UpdateValidationError(updateName, "output", outputResult.issues);
         }
+
+        return outputResult.value;
       };
     }
 
@@ -374,15 +344,12 @@ export class TypedClient<TContract extends ContractDefinition> {
       updates,
       result: async () => {
         const result = await handle.result();
-        // Validate output with Zod schema
-        try {
-          return definition.output.parse(result) as ClientInferOutput<TWorkflow>;
-        } catch (error) {
-          if (error instanceof ZodError) {
-            throw new WorkflowValidationError(handle.workflowId, "output", error);
-          }
-          throw error;
+        // Validate output with Standard Schema
+        const outputResult = await definition.output["~standard"].validate(result);
+        if (outputResult.issues) {
+          throw new WorkflowValidationError(handle.workflowId, "output", outputResult.issues);
         }
+        return outputResult.value as ClientInferOutput<TWorkflow>;
       },
       terminate: async (reason?: string) => {
         await handle.terminate(reason);
