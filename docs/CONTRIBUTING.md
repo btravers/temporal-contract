@@ -49,6 +49,8 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 - `test:` — Add tests
 - `chore:` — Maintenance
 
+**Note:** Commit messages are automatically validated via git hooks using [commitlint](https://commitlint.js.org/). Non-conventional commits will be rejected.
+
 ## Commands
 
 ```bash
