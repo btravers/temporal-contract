@@ -8,6 +8,10 @@ pre-commit:
     lint:
       glob: "*.{ts,tsx,js,jsx}"
       run: pnpm oxlint {staged_files}
+    sort-package-json:
+      glob: "**/package.json"
+      run: pnpm sort-package-json {staged_files}
+      stage_fixed: true
 
 commit-msg:
   commands:

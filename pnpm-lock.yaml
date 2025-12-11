@@ -103,6 +103,9 @@ importers:
       oxlint:
         specifier: "catalog:"
         version: 1.32.0
+      sort-package-json:
+        specifier: 3.5.1
+        version: 3.5.1
       turbo:
         specifier: "catalog:"
         version: 2.6.3
@@ -3763,6 +3766,20 @@ packages:
       }
     engines: { node: ">=8" }
 
+  detect-indent@7.0.2:
+    resolution:
+      {
+        integrity: sha512-y+8xyqdGLL+6sh0tVeHcfP/QDd8gUgbasolJJpY7NgeQGSZ739bDtSiaiDgtoicy+mtYB81dKLxO9xRhCyIB3A==,
+      }
+    engines: { node: ">=12.20" }
+
+  detect-newline@4.0.1:
+    resolution:
+      {
+        integrity: sha512-qE3Veg1YXzGHQhlA6jzebZN2qVf6NX+A7m7qlhCGG30dJixrAQhYOsJjsnBjJkCSmuOPpCk30145fr8FV0bzog==,
+      }
+    engines: { node: ^12.20.0 || ^14.13.1 || >=16.0.0 }
+
   devlop@1.1.0:
     resolution:
       {
@@ -4156,6 +4173,12 @@ packages:
         integrity: sha512-1VKTZJCwBrvbd+Wn3AOgQP/2Av+TfTCOlE4AcRJE72W1ksZXbAx8PPBR9RzgTeSPzlPMHrbANMH3LbltH73wxQ==,
       }
 
+  git-hooks-list@4.1.1:
+    resolution:
+      {
+        integrity: sha512-cmP497iLq54AZnv4YRAEMnEyQ1eIn4tGKbmswqwmFV4GBnAqE8NLtWxxdXa++AalfgL5EBH4IxTPyquEuGY/jA==,
+      }
+
   git-raw-commits@4.0.0:
     resolution:
       {
@@ -4371,6 +4394,13 @@ packages:
         integrity: sha512-drqDG3cbczxxEJRoOXcOjtdp1J/lyp1mNn0xaznRs8+muBhgQcrnbspox5X5fOw0HnMnbfDzvnEMEtqDEJEo8w==,
       }
     engines: { node: ">=8" }
+
+  is-plain-obj@4.1.0:
+    resolution:
+      {
+        integrity: sha512-+Pgi+vMuUNkJyExiMBt5IlFoMyKnr5zhJ4Uspz58WOhBF5QoIZkFyNHIbBAtHwzVAgk5RtndVNsDRN61/mmDqg==,
+      }
+    engines: { node: ">=12" }
 
   is-stream@2.0.1:
     resolution:
@@ -5559,6 +5589,20 @@ packages:
       {
         integrity: sha512-INb7TM37/mAcsGmc9hyyI6+QR3rR1zVRu36B0NeGXKnOOLiZOfER5SA+N7X7k3yUYRzLWafduTDvJAfDswwEww==,
       }
+
+  sort-object-keys@2.0.1:
+    resolution:
+      {
+        integrity: sha512-R89fO+z3x7hiKPXX5P0qim+ge6Y60AjtlW+QQpRozrrNcR1lw9Pkpm5MLB56HoNvdcLHL4wbpq16OcvGpEDJIg==,
+      }
+
+  sort-package-json@3.5.1:
+    resolution:
+      {
+        integrity: sha512-LfwyHQuTnJ3336Sexi6yDz1QxvSjXKbc78pOw2HQy8BJHFXzONu+zLvLald0NpLWM0exsYyI7M8PeJAngNgpbA==,
+      }
+    engines: { node: ">=20" }
+    hasBin: true
 
   source-map-js@1.2.1:
     resolution:
@@ -8364,6 +8408,10 @@ snapshots:
 
   detect-indent@6.1.0: {}
 
+  detect-indent@7.0.2: {}
+
+  detect-newline@4.0.1: {}
+
   devlop@1.1.0:
     dependencies:
       dequal: 2.0.3
@@ -8643,6 +8691,8 @@ snapshots:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
+  git-hooks-list@4.1.1: {}
+
   git-raw-commits@4.0.0:
     dependencies:
       dargs: 8.1.0
@@ -8753,6 +8803,8 @@ snapshots:
   is-number@7.0.0: {}
 
   is-obj@2.0.0: {}
+
+  is-plain-obj@4.1.0: {}
 
   is-stream@2.0.1: {}
 
@@ -9441,6 +9493,18 @@ snapshots:
   sonic-boom@4.2.0:
     dependencies:
       atomic-sleep: 1.0.0
+
+  sort-object-keys@2.0.1: {}
+
+  sort-package-json@3.5.1:
+    dependencies:
+      detect-indent: 7.0.2
+      detect-newline: 4.0.1
+      git-hooks-list: 4.1.1
+      is-plain-obj: 4.1.0
+      semver: 7.7.3
+      sort-object-keys: 2.0.1
+      tinyglobby: 0.2.15
 
   source-map-js@1.2.1: {}
 

@@ -2,12 +2,12 @@
   "name": "@temporal-contract/website",
   "private": true,
   "description": "Documentation website for temporal-contract",
-  "type": "module",
-  "author": "Benoit TRAVERS",
   "license": "MIT",
+  "author": "Benoit TRAVERS",
+  "type": "module",
   "scripts": {
-    "dev": "vitepress dev docs",
     "build": "vitepress build docs",
+    "dev": "vitepress dev docs",
     "preview": "vitepress preview docs"
   },
   "devDependencies": {

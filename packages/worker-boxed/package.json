@@ -2,6 +2,15 @@
   "name": "@temporal-contract/worker-boxed",
   "version": "0.0.3",
   "description": "Type-safe Temporal worker with boxed Result/Future pattern for activities",
+  "keywords": [
+    "temporal",
+    "workflow",
+    "contract",
+    "type-safe",
+    "boxed",
+    "result",
+    "future"
+  ],
   "type": "module",
   "exports": {
     "./activity": {
@@ -34,25 +43,16 @@
   ],
   "scripts": {
     "build": "tsdown src/activity.ts src/workflow.ts --format cjs,esm --dts --clean",
-    "typecheck": "tsc --noEmit",
     "dev": "tsdown src/activity.ts src/workflow.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
-  "keywords": [
-    "temporal",
-    "workflow",
-    "contract",
-    "type-safe",
-    "boxed",
-    "result",
-    "future"
-  ],
   "dependencies": {
+    "@standard-schema/spec": "catalog:",
     "@swan-io/boxed": "catalog:",
     "@temporal-contract/contract": "workspace:*",
-    "@temporal-contract/worker": "workspace:*",
-    "@standard-schema/spec": "catalog:"
+    "@temporal-contract/worker": "workspace:*"
   },
   "devDependencies": {
     "@temporal-contract/tsconfig": "workspace:*",

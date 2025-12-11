@@ -1,8 +1,12 @@
 {
   "name": "@temporal-contract/contract",
   "version": "0.0.3",
-  "type": "module",
   "description": "Contract builder for temporal-contract",
+  "keywords": [
+    "temporal",
+    "typescript",
+    "contract"
+  ],
   "homepage": "https://github.com/btravers/temporal-contract#readme",
   "bugs": {
     "url": "https://github.com/btravers/temporal-contract/issues"
@@ -12,16 +16,9 @@
     "url": "https://github.com/btravers/temporal-contract.git",
     "directory": "packages/contract"
   },
-  "author": "Benoit TRAVERS <benoit.travers.frgmail.com>",
   "license": "MIT",
-  "keywords": [
-    "temporal",
-    "typescript",
-    "contract"
-  ],
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
+  "author": "Benoit TRAVERS <benoit.travers.frgmail.com>",
+  "type": "module",
   "exports": {
     ".": {
       "import": {
@@ -35,15 +32,18 @@
     },
     "./package.json": "./package.json"
   },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "files": [
     "dist"
   ],
   "scripts": {
-    "dev": "tsdown src/index.ts --format cjs,esm --dts --watch",
     "build": "tsdown src/index.ts --format cjs,esm --dts --clean",
-    "typecheck": "tsc --noEmit",
+    "dev": "tsdown src/index.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@standard-schema/spec": "catalog:",
