@@ -1,6 +1,6 @@
 {
   "name": "@temporal-contract/tsconfig",
-  "private": true,
+  "version": "0.0.2",
   "description": "Shared TypeScript configuration for temporal-contract packages",
   "files": [
     "base.json",
