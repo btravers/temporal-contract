@@ -2,14 +2,15 @@
 
 > Standalone client sample demonstrating how to interact with the unified order processing contract
 
-This sample demonstrates how a client application can interact with workers implementing the same contract but with different internal implementations (basic vs. boxed).
+This sample demonstrates that a single client can interact with any worker implementation of the unified contract.
 
 ## Overview
 
 This client package demonstrates that:
 - Both `basic-order-processing-worker` and `boxed-order-processing-worker` workers implement the **same unified contract**
-- From the client's perspective, both workers are identical
-- The only difference is in how they handle errors internally (Promise-based vs. Result/Future pattern)
+- A single client works with any worker implementation
+- From the client's perspective, all workers are identical
+- The only difference is in how workers handle errors internally (Promise-based vs. Result/Future pattern)
 
 ## Running the Sample
 
@@ -26,42 +27,47 @@ cd ../..
 pnpm install && pnpm build
 ```
 
-### Option A: Using the Basic Worker
+### Running with Any Worker
 
-1. Start the basic worker (in a separate terminal):
+1. Start a worker (choose one):
+
+**Option A: Basic Worker**
 ```bash
 cd ../basic-order-processing-worker
 pnpm dev:worker
 ```
 
-2. Run the basic client:
-```bash
-cd ../order-processing-client
-pnpm dev:basic
-```
-
-### Option B: Using the Boxed Worker
-
-1. Start the boxed worker (in a separate terminal):
+**Option B: Boxed Worker**
 ```bash
 cd ../boxed-order-processing-worker
 pnpm dev:worker
 ```
 
-2. Run the boxed client:
+2. Run the client:
 ```bash
 cd ../order-processing-client
-pnpm dev:boxed
+pnpm dev
+```
+
+## Testing
+
+The client includes integration tests that verify:
+- Workflow execution through the contract
+- Proper input validation via contract schema
+- Correct output types matching contract schema
+- Workflow history and metadata access
+
+Run tests:
+```bash
+pnpm test
 ```
 
 ## What to Notice
 
-- **Same Contract**: Both clients use `orderProcessingContract` from `@temporal-contract/sample-basic-order-processing-contract`
-- **Same Task Queue**: Both workers listen on the same task queue: `"order-processing"`
-- **Identical Client Code**: The client code is nearly identical - the only difference is in the workflow IDs and logging messages
-- **Different Error Handling**: The difference is internal to the workers:
-  - Basic worker: Traditional Promise-based activities with try/catch
-  - Boxed worker: Result/Future pattern with explicit error types
+- **Same Contract**: The client uses `orderProcessingContract` from `@temporal-contract/sample-basic-order-processing-contract`
+- **Same Task Queue**: All workers listen on the same task queue: `"order-processing"`
+- **Worker Agnostic**: The client doesn't know or care which worker implementation is running
+- **Type Safety**: All inputs and outputs are validated against the contract schemas
 
 ## Key Concepts
 
@@ -90,7 +96,7 @@ Both workers implement the exact same contract but with different patterns:
 
 ### Client Perspective
 
-From the client's perspective, there's **no difference** between the two workers:
+From the client's perspective, there's **no difference** between the workers:
 - Same contract import
 - Same workflow names
 - Same activity signatures

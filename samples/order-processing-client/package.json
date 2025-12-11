@@ -4,8 +4,9 @@
   "description": "Client sample for unified order processing contract",
   "type": "module",
   "scripts": {
-    "dev:basic": "tsx src/client-basic.ts",
-    "dev:boxed": "tsx src/client-boxed.ts",
+    "dev": "tsx src/client.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -17,9 +18,14 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@temporal-contract/testing": "workspace:*",
     "@temporal-contract/tsconfig": "workspace:*",
+    "@temporal-contract/worker": "workspace:*",
+    "@temporalio/worker": "catalog:",
     "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "tsx": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

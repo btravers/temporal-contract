@@ -13,7 +13,7 @@ Result/Future pattern worker with explicit error handling
 ### 📦 [order-processing-client](./order-processing-client)
 Standalone client demonstrating interaction with the unified contract
 
-**Note**: The `basic-order-processing-worker` and `boxed-order-processing-worker` samples share a unified contract. Both workers implement the same contract (`orderProcessingContract`) but with different internal implementations. The client sample demonstrates how to interact with either worker implementation.
+**Note**: The `basic-order-processing-worker` and `boxed-order-processing-worker` samples share a unified contract. Both workers implement the same contract (`orderProcessingContract`) but with different internal implementations. The client sample works with either worker implementation seamlessly.
 
 ## Running Samples
 
@@ -25,13 +25,13 @@ temporal server start-dev
 cd ../..
 pnpm install && pnpm build
 
-# Run a worker
+# Run a worker (choose one)
 cd samples/basic-order-processing-worker
 pnpm dev:worker  # Terminal 1
 
-# Run a client (in another terminal)
+# Run the client (in another terminal)
 cd samples/order-processing-client
-pnpm dev:basic  # Terminal 2
+pnpm dev  # Terminal 2
 ```
 
 ## Documentation

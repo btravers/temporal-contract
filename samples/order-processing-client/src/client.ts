@@ -10,22 +10,21 @@ import { logger } from "./logger.js";
 type Order = z.infer<typeof OrderSchema>;
 
 /**
- * Client for Boxed Order Processing Worker
+ * Order Processing Client
  *
- * This client demonstrates how to interact with the boxed worker
- * implementation of the unified order processing contract.
- *
- * Note: From the client perspective, both basic and boxed workers
- * look identical - they implement the same contract. The difference
- * is only in how they handle errors internally.
+ * This client demonstrates how to interact with the unified order processing contract.
+ * It works with any worker implementation (basic or boxed) since they all implement
+ * the same contract.
  *
  * Usage:
  *   1. Start Temporal server: temporal server start-dev
- *   2. Start boxed worker: cd samples/boxed-order-processing && pnpm dev:worker
- *   3. Run this client: cd samples/order-processing-client && pnpm dev:boxed
+ *   2. Start a worker:
+ *      - Basic: cd samples/basic-order-processing-worker && pnpm dev:worker
+ *      - Boxed: cd samples/boxed-order-processing-worker && pnpm dev:worker
+ *   3. Run this client: cd samples/order-processing-client && pnpm dev
  */
 async function run() {
-  logger.info("🚀 Starting Order Processing Client (Boxed Worker)...");
+  logger.info("🚀 Starting Order Processing Client...");
 
   // Connect to Temporal server
   const connection = await Connection.connect({
@@ -33,7 +32,6 @@ async function run() {
   });
 
   // Create type-safe client for our contract
-  // Note: Same contract as basic worker!
   const contractClient = TypedClient.create(orderProcessingContract, {
     connection,
     namespace: "default",
@@ -42,16 +40,16 @@ async function run() {
   // Example orders to process
   const orders: Order[] = [
     {
-      orderId: `ORD-BOXED-${Date.now()}-001`,
-      customerId: "CUST-789",
+      orderId: `ORD-${Date.now()}-001`,
+      customerId: "CUST-123",
       items: [
         {
-          productId: "PROD-A",
+          productId: "PROD-001",
           quantity: 2,
           price: 29.99,
         },
         {
-          productId: "PROD-B",
+          productId: "PROD-002",
           quantity: 1,
           price: 49.99,
         },
@@ -59,37 +57,20 @@ async function run() {
       totalAmount: 109.97,
     },
     {
-      orderId: `ORD-BOXED-${Date.now()}-002`,
-      customerId: "CUST-012",
+      orderId: `ORD-${Date.now()}-002`,
+      customerId: "CUST-456",
       items: [
         {
-          productId: "PROD-C",
+          productId: "PROD-003",
           quantity: 3,
           price: 19.99,
         },
       ],
       totalAmount: 59.97,
     },
-    {
-      orderId: `ORD-BOXED-${Date.now()}-003`,
-      customerId: "CUST-345",
-      items: [
-        {
-          productId: "PROD-D",
-          quantity: 1,
-          price: 199.99,
-        },
-        {
-          productId: "PROD-E",
-          quantity: 2,
-          price: 39.99,
-        },
-      ],
-      totalAmount: 279.97,
-    },
   ];
 
-  logger.info("📦 Processing orders with boxed worker implementation...");
+  logger.info("📦 Processing orders...");
 
   for (const order of orders) {
     try {
@@ -134,9 +115,8 @@ async function run() {
 
   logger.info("✨ Done!");
   logger.info("");
-  logger.info("💡 Note: This client uses the BOXED worker implementation");
-  logger.info("   (Result/Future pattern with explicit error types)");
-  logger.info("   From the client's perspective, it's identical to the basic worker!");
+  logger.info("💡 Note: This client works with any worker implementation");
+  logger.info("   (basic or boxed) since they implement the same contract.");
 
   process.exit(0);
 }
