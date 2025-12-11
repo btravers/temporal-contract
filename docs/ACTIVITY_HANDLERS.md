@@ -271,10 +271,11 @@ const processPayment: BoxedWorkflowActivityHandler<
   ).mapError(error => {
     // Handle both structured errors and generic errors
     if (error && typeof error === 'object' && 'code' in error) {
+      const structuredError = error as { code?: string; message?: string; details?: unknown };
       return {
-        code: (error as any).code || "PAYMENT_FAILED",
-        message: (error as any).message || "Payment declined",
-        details: (error as any).details || { customerId, amount },
+        code: structuredError.code || "PAYMENT_FAILED",
+        message: structuredError.message || "Payment declined",
+        details: structuredError.details || { customerId, amount },
       };
     }
     return {
