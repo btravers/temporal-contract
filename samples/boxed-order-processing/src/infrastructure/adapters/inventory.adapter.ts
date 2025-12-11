@@ -12,7 +12,10 @@ export class MockInventoryAdapter implements InventoryPort {
   reserveInventory(items: OrderItem[]): Future<Result<InventoryReservation, InventoryError>> {
     return Future.fromPromise(
       Promise.resolve().then(() => {
-        logger.info({ itemCount: items.length }, `📦 Reserving inventory for ${items.length} items`);
+        logger.info(
+          { itemCount: items.length },
+          `📦 Reserving inventory for ${items.length} items`,
+        );
 
         // Simulate inventory check with 95% success rate
         const available = Math.random() > 0.05;
@@ -35,10 +38,10 @@ export class MockInventoryAdapter implements InventoryPort {
 
         logger.info({ reservationId }, `✅ Inventory reserved: ${reservationId}`);
         return result;
-      })
-    ).mapError(error => {
+      }),
+    ).mapError((error) => {
       // Convert thrown errors to InventoryError
-      if (error && typeof error === 'object' && 'code' in error) {
+      if (error && typeof error === "object" && "code" in error) {
         return error as InventoryError;
       }
       return {
@@ -54,9 +57,9 @@ export class MockInventoryAdapter implements InventoryPort {
       Promise.resolve().then(() => {
         logger.info({ reservationId }, `🔓 Releasing inventory reservation: ${reservationId}`);
         logger.info(`✅ Inventory released`);
-      })
-    ).mapError(error => ({
-      code: "RELEASE_FAILED",
+      }),
+    ).mapError((error) => ({
+      code: "INVALID_RESERVATION",
       message: error instanceof Error ? error.message : "Unknown error",
       details: { reservationId },
     }));

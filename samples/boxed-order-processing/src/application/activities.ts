@@ -1,4 +1,4 @@
-import { Future, Result } from "@swan-io/boxed";
+import { Future } from "@swan-io/boxed";
 import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker-boxed/activity";
 import { boxedOrderContract } from "@temporal-contract/sample-boxed-order-processing-contract";
 import {
@@ -48,14 +48,15 @@ export const activitiesHandler = declareActivitiesHandler({
       return Future.fromPromise(
         Promise.resolve().then(() => {
           loggerAdapter.log(level, message);
-        })
-      ).mapError(error => 
-        // Wrap any unexpected errors in ActivityError
-        new ActivityError(
-          "LOG_FAILED",
-          error instanceof Error ? error.message : "Failed to log message",
-          error,
-        )
+        }),
+      ).mapError(
+        (error) =>
+          // Wrap any unexpected errors in ActivityError
+          new ActivityError(
+            "LOG_FAILED",
+            error instanceof Error ? error.message : "Failed to log message",
+            error,
+          ),
       );
     },
 
