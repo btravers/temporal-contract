@@ -23,16 +23,11 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
-
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
-
+**Environment (please complete the following information):**
+ - Node.js version: [e.g. 18.16.0]
+ - Package manager (npm/pnpm/yarn) and version: [e.g. npm 9.5.1]
+ - Operating System: [e.g. Ubuntu 22.04, macOS Ventura]
+ - Library version (@temporal-contract packages): [e.g. 0.5.0]
+ - Temporal server version (if applicable): [e.g. 1.20.2]
 **Additional context**
 Add any other context about the problem here.
