@@ -222,9 +222,10 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
             args: [validatedInput],
           });
 
-          const typedHandle = this.createTypedHandle(handle, definition) as TypedWorkflowHandleBoxed<
-            TContract["workflows"][TWorkflowName]
-          >;
+          const typedHandle = this.createTypedHandle(
+            handle,
+            definition,
+          ) as TypedWorkflowHandleBoxed<TContract["workflows"][TWorkflowName]>;
           resolve(Result.Ok(typedHandle));
         } catch (error) {
           resolve(
@@ -318,7 +319,9 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
           }
 
           resolve(
-            Result.Ok(outputResult.value as ClientInferOutput<TContract["workflows"][TWorkflowName]>),
+            Result.Ok(
+              outputResult.value as ClientInferOutput<TContract["workflows"][TWorkflowName]>,
+            ),
           );
         } catch (error) {
           resolve(
@@ -403,7 +406,9 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
           (async () => {
             const inputResult = await queryDef.input["~standard"].validate(args);
             if (inputResult.issues) {
-              resolve(Result.Error(new QueryValidationError(queryName, "input", inputResult.issues)));
+              resolve(
+                Result.Error(new QueryValidationError(queryName, "input", inputResult.issues)),
+              );
               return;
             }
 
@@ -492,7 +497,9 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
               const outputResult = await updateDef.output["~standard"].validate(result);
               if (outputResult.issues) {
                 resolve(
-                  Result.Error(new UpdateValidationError(updateName, "output", outputResult.issues)),
+                  Result.Error(
+                    new UpdateValidationError(updateName, "output", outputResult.issues),
+                  ),
                 );
                 return;
               }
