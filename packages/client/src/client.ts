@@ -214,7 +214,7 @@ export class TypedClient<TContract extends ContractDefinition> {
       signals,
       updates,
       result: () => {
-        return boxedHandle.result().resultToPromise() as Promise<ClientInferOutput<TWorkflow>>;
+        return boxedHandle.result().resultToPromise();
       },
       terminate: (reason?: string) => {
         return boxedHandle.terminate(reason).resultToPromise();
