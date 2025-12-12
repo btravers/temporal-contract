@@ -1,5 +1,5 @@
 import { Connection } from "@temporalio/client";
-import { TypedClientBoxed, Result } from "@temporal-contract/client-boxed";
+import { TypedClientBoxed } from "@temporal-contract/client-boxed";
 import {
   orderProcessingContract,
   OrderSchema,
