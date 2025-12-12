@@ -34,6 +34,9 @@ import {
   ActivityError,
 } from "./errors.js";
 
+// Re-export ActivityError for convenience
+export { ActivityError };
+
 /**
  * Workflow context with typed activities (workflow + global) and workflow info
  * Note: activities is typed as 'any' to work around TypeScript generic type inference limitations with Zod tuples

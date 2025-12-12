@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { z } from "zod";
 import { defineContract } from "@temporal-contract/contract";
-import { TypedClientBoxed } from "./client.js";
+import { TypedClient } from "./client.js";
 import { WorkflowNotFoundError, WorkflowValidationError } from "./errors.js";
 
 // Create mock workflow object
@@ -21,7 +21,7 @@ vi.mock("@temporalio/client", () => ({
   WorkflowHandle: vi.fn(),
 }));
 
-describe("TypedClientBoxed", () => {
+describe("TypedClient", () => {
   const testContract = defineContract({
     taskQueue: "test-queue",
     workflows: {
@@ -53,16 +53,16 @@ describe("TypedClientBoxed", () => {
     },
   });
 
-  let typedClient: TypedClientBoxed<typeof testContract>;
+  let typedClient: TypedClient<typeof testContract>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    typedClient = TypedClientBoxed.create(testContract, { namespace: "default" });
+    typedClient = TypedClient.create(testContract, { namespace: "default" });
   });
 
-  describe("TypedClientBoxed.create", () => {
+  describe("TypedClient.create", () => {
     it("should create a typed client instance", () => {
-      expect(typedClient).toBeInstanceOf(TypedClientBoxed);
+      expect(typedClient).toBeInstanceOf(TypedClient);
     });
   });
 
