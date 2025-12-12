@@ -66,10 +66,13 @@ View the complete source code:
 cd samples/order-processing-contract
 pnpm build
 
-# Run the worker and client
+# Run the worker
 cd ../order-processing-worker-boxed
 pnpm dev:worker  # Terminal 1 - Start worker
-pnpm dev:client  # Terminal 2 - Run client
+
+# In another terminal, run the client
+cd ../order-processing-client
+pnpm dev  # Terminal 2 - Run client
 ```
 
 ## Benefits of This Architecture
