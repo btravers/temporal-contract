@@ -70,13 +70,14 @@ Each example has its own directory with a README:
 
 ```bash
 # Navigate to an example
-cd samples/order-processing
+cd samples/order-processing-worker
 
 # Start the worker
 pnpm dev:worker
 
 # In another terminal, run the client
-pnpm dev:client
+cd samples/order-processing-client
+pnpm dev
 ```
 
 ## Example Structure

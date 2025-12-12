@@ -25,7 +25,7 @@ samples/
 │   │   └── index.ts                    # Package exports
 │   └── package.json
 │
-└── order-processing/             # Worker/Client implementation
+└── order-processing-worker/             # Worker/Client implementation
     ├── src/
     │   ├── application/
     │   │   ├── activities.ts           # Activity implementations
