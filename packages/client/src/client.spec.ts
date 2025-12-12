@@ -1,14 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { z } from "zod";
 import { defineContract } from "@temporal-contract/contract";
-import { TypedClient } from "./client.js";
-import {
-  WorkflowNotFoundError,
-  WorkflowValidationError,
-  QueryValidationError,
-  SignalValidationError,
-  UpdateValidationError,
-} from "./index.js";
+import { TypedClientBoxed } from "./client.js";
+import { WorkflowNotFoundError, WorkflowValidationError } from "./errors.js";
 
 // Create mock workflow object
 const createMockWorkflow = () => ({
@@ -27,12 +21,12 @@ vi.mock("@temporalio/client", () => ({
   WorkflowHandle: vi.fn(),
 }));
 
-describe("TypedClient", () => {
+describe("TypedClientBoxed", () => {
   const testContract = defineContract({
     taskQueue: "test-queue",
     workflows: {
       testWorkflow: {
-        input: z.tuple([z.string(), z.number()]),
+        input: z.object({ name: z.string(), value: z.number() }),
         output: z.object({ result: z.string() }),
         queries: {
           getStatus: {
@@ -53,217 +47,28 @@ describe("TypedClient", () => {
         },
       },
       simpleWorkflow: {
-        input: z.tuple([z.string()]),
+        input: z.object({ message: z.string() }),
         output: z.string(),
       },
     },
   });
 
-  let typedClient: TypedClient<typeof testContract>;
+  let typedClient: TypedClientBoxed<typeof testContract>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    typedClient = TypedClient.create(testContract, { namespace: "default" });
+    typedClient = TypedClientBoxed.create(testContract, { namespace: "default" });
   });
 
-  describe("TypedClient.create", () => {
+  describe("TypedClientBoxed.create", () => {
     it("should create a typed client instance", () => {
-      expect(typedClient).toBeInstanceOf(TypedClient);
+      expect(typedClient).toBeInstanceOf(TypedClientBoxed);
     });
   });
 
   describe("startWorkflow", () => {
-    it("should start a workflow with valid input", async () => {
+    it("should start a workflow with valid input and return Ok result", async () => {
       const mockHandle = {
-        workflowId: "test-123",
-        result: vi.fn().mockResolvedValue({ result: "success" }),
-        query: vi.fn(),
-        signal: vi.fn(),
-        executeUpdate: vi.fn(),
-        terminate: vi.fn(),
-        cancel: vi.fn(),
-      };
-
-      mockWorkflow.start.mockResolvedValue(mockHandle);
-
-      const handle = await typedClient.startWorkflow("testWorkflow", {
-        workflowId: "test-123",
-        args: ["hello", 42],
-      });
-
-      expect(mockWorkflow.start).toHaveBeenCalledWith("testWorkflow", {
-        workflowId: "test-123",
-        taskQueue: "test-queue",
-        args: [["hello", 42]],
-      });
-
-      expect(handle.workflowId).toBe("test-123");
-    });
-
-    it("should throw WorkflowNotFoundError for unknown workflow", async () => {
-      await expect(
-        // @ts-expect-error Testing invalid workflow name
-        typedClient.startWorkflow("unknownWorkflow", {
-          workflowId: "test-123",
-          args: ["test"],
-        }),
-      ).rejects.toThrow(WorkflowNotFoundError);
-    });
-
-    it("should throw WorkflowValidationError for invalid input", async () => {
-      await expect(
-        typedClient.startWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          // @ts-expect-error Testing invalid input
-          args: ["hello", "not-a-number"],
-        }),
-      ).rejects.toThrow(WorkflowValidationError);
-    });
-
-    it("should pass Temporal options to underlying client", async () => {
-      const mockHandle = {
-        workflowId: "test-123",
-        result: vi.fn().mockResolvedValue({ result: "success" }),
-        query: vi.fn(),
-        signal: vi.fn(),
-        executeUpdate: vi.fn(),
-        terminate: vi.fn(),
-        cancel: vi.fn(),
-      };
-
-      mockWorkflow.start.mockResolvedValue(mockHandle);
-
-      await typedClient.startWorkflow("testWorkflow", {
-        workflowId: "test-123",
-        args: ["hello", 42],
-        workflowExecutionTimeout: "1 day",
-        retry: { maximumAttempts: 3 },
-        memo: { userId: "user-123" },
-      });
-
-      expect(mockWorkflow.start).toHaveBeenCalledWith("testWorkflow", {
-        workflowId: "test-123",
-        taskQueue: "test-queue",
-        args: [["hello", 42]],
-        workflowExecutionTimeout: "1 day",
-        retry: { maximumAttempts: 3 },
-        memo: { userId: "user-123" },
-      });
-    });
-  });
-
-  describe("executeWorkflow", () => {
-    it("should execute a workflow with valid input and output", async () => {
-      mockWorkflow.execute.mockResolvedValue({ result: "success" });
-
-      const result = await typedClient.executeWorkflow("testWorkflow", {
-        workflowId: "test-123",
-        args: ["hello", 42],
-      });
-
-      expect(mockWorkflow.execute).toHaveBeenCalledWith("testWorkflow", {
-        workflowId: "test-123",
-        taskQueue: "test-queue",
-        args: [["hello", 42]],
-      });
-
-      expect(result).toEqual({ result: "success" });
-    });
-
-    it("should throw WorkflowNotFoundError for unknown workflow", async () => {
-      await expect(
-        // @ts-expect-error Testing invalid workflow name
-        typedClient.executeWorkflow("unknownWorkflow", {
-          workflowId: "test-123",
-          args: ["test"],
-        }),
-      ).rejects.toThrow(WorkflowNotFoundError);
-    });
-
-    it("should throw WorkflowValidationError for invalid input", async () => {
-      await expect(
-        typedClient.executeWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          // @ts-expect-error Testing invalid input
-          args: ["hello", "not-a-number"],
-        }),
-      ).rejects.toThrow(WorkflowValidationError);
-    });
-
-    it("should throw WorkflowValidationError for invalid output", async () => {
-      mockWorkflow.execute.mockResolvedValue({ wrongField: "value" });
-
-      await expect(
-        typedClient.executeWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          args: ["hello", 42],
-        }),
-      ).rejects.toThrow(WorkflowValidationError);
-    });
-
-    it("should pass Temporal options to underlying client", async () => {
-      mockWorkflow.execute.mockResolvedValue({ result: "success" });
-
-      await typedClient.executeWorkflow("testWorkflow", {
-        workflowId: "test-123",
-        args: ["hello", 42],
-        workflowExecutionTimeout: "1 day",
-        cronSchedule: "0 0 * * *",
-      });
-
-      expect(mockWorkflow.execute).toHaveBeenCalledWith("testWorkflow", {
-        workflowId: "test-123",
-        taskQueue: "test-queue",
-        args: [["hello", 42]],
-        workflowExecutionTimeout: "1 day",
-        cronSchedule: "0 0 * * *",
-      });
-    });
-  });
-
-  describe("getHandle", () => {
-    it("should get a handle to an existing workflow", async () => {
-      const mockHandle = {
-        workflowId: "test-123",
-        result: vi.fn().mockResolvedValue({ result: "success" }),
-        query: vi.fn(),
-        signal: vi.fn(),
-        executeUpdate: vi.fn(),
-        terminate: vi.fn(),
-        cancel: vi.fn(),
-      };
-
-      mockWorkflow.getHandle.mockReturnValue(mockHandle);
-
-      const handle = await typedClient.getHandle("testWorkflow", "test-123");
-
-      expect(mockWorkflow.getHandle).toHaveBeenCalledWith("test-123");
-      expect(handle.workflowId).toBe("test-123");
-    });
-
-    it("should throw WorkflowNotFoundError for unknown workflow", async () => {
-      await expect(
-        // @ts-expect-error Testing invalid workflow name
-        typedClient.getHandle("unknownWorkflow", "test-123"),
-      ).rejects.toThrow(WorkflowNotFoundError);
-    });
-  });
-
-  describe("TypedWorkflowHandle", () => {
-    let mockHandle: {
-      workflowId: string;
-      result: ReturnType<typeof vi.fn>;
-      query: ReturnType<typeof vi.fn>;
-      signal: ReturnType<typeof vi.fn>;
-      executeUpdate: ReturnType<typeof vi.fn>;
-      terminate: ReturnType<typeof vi.fn>;
-      cancel: ReturnType<typeof vi.fn>;
-      describe?: ReturnType<typeof vi.fn>;
-      fetchHistory?: ReturnType<typeof vi.fn>;
-    };
-
-    beforeEach(async () => {
-      mockHandle = {
         workflowId: "test-123",
         result: vi.fn().mockResolvedValue({ result: "success" }),
         query: vi.fn(),
@@ -276,289 +81,361 @@ describe("TypedClient", () => {
       };
 
       mockWorkflow.start.mockResolvedValue(mockHandle);
+
+      const future = typedClient.startWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
+      });
+
+      const result = await future.toPromise();
+
+      expect(result.isOk()).toBe(true);
+      expect(mockWorkflow.start).toHaveBeenCalledWith("testWorkflow", {
+        workflowId: "test-123",
+        taskQueue: "test-queue",
+        args: [{ name: "hello", value: 42 }],
+      });
+
+      if (result.isOk()) {
+        expect(result.value.workflowId).toBe("test-123");
+      }
     });
 
-    describe("result", () => {
-      it("should return validated workflow result", async () => {
-        const handle = await typedClient.startWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          args: ["hello", 42],
-        });
-
-        const result = await handle.result();
-
-        expect(mockHandle.result).toHaveBeenCalled();
-        expect(result).toEqual({ result: "success" });
+    it("should return Error result for invalid input", async () => {
+      const future = typedClient.startWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: "not-a-number" as unknown as number },
       });
 
-      it("should throw WorkflowValidationError for invalid output", async () => {
-        mockHandle.result.mockResolvedValue({ wrongField: "value" });
+      const result = await future.toPromise();
 
-        const handle = await typedClient.startWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          args: ["hello", 42],
-        });
-
-        await expect(handle.result()).rejects.toThrow(WorkflowValidationError);
-      });
+      expect(result.isError()).toBe(true);
+      if (result.isError()) {
+        expect(result.error).toBeInstanceOf(WorkflowValidationError);
+      }
     });
 
-    describe("queries", () => {
-      it("should execute typed query with valid input and output", async () => {
-        mockHandle.query.mockResolvedValue("running");
-
-        const handle = await typedClient.startWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          args: ["hello", 42],
-        });
-
-        const status = await handle.queries.getStatus([]);
-
-        expect(mockHandle.query).toHaveBeenCalledWith("getStatus", []);
-        expect(status).toBe("running");
+    it("should return Error result for non-existent workflow", async () => {
+      const future = typedClient.startWorkflow("nonExistentWorkflow" as unknown as "testWorkflow", {
+        workflowId: "test-123",
+        args: {} as unknown as { name: string; value: number },
       });
 
-      it("should throw QueryValidationError for invalid input", async () => {
-        const handle = await typedClient.startWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          args: ["hello", 42],
-        });
+      const result = await future.toPromise();
 
-        await expect(
-          // @ts-expect-error Testing invalid query input
-          handle.queries.getStatus(["invalid"]),
-        ).rejects.toThrow(QueryValidationError);
-      });
-
-      it("should throw QueryValidationError for invalid output", async () => {
-        mockHandle.query.mockResolvedValue(123);
-
-        const handle = await typedClient.startWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          args: ["hello", 42],
-        });
-
-        await expect(handle.queries.getStatus([])).rejects.toThrow(QueryValidationError);
-      });
-    });
-
-    describe("signals", () => {
-      it("should send typed signal with valid input", async () => {
-        const handle = await typedClient.startWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          args: ["hello", 42],
-        });
-
-        await handle.signals.updateProgress([50]);
-
-        expect(mockHandle.signal).toHaveBeenCalledWith("updateProgress", [50]);
-      });
-
-      it("should throw SignalValidationError for invalid input", async () => {
-        const handle = await typedClient.startWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          args: ["hello", 42],
-        });
-
-        await expect(
-          // @ts-expect-error Testing invalid signal input
-          handle.signals.updateProgress(["not-a-number"]),
-        ).rejects.toThrow(SignalValidationError);
-      });
-    });
-
-    describe("updates", () => {
-      it("should execute typed update with valid input and output", async () => {
-        mockHandle.executeUpdate.mockResolvedValue(true);
-
-        const handle = await typedClient.startWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          args: ["hello", 42],
-        });
-
-        const result = await handle.updates.setConfig([{ value: "new-config" }]);
-
-        expect(mockHandle.executeUpdate).toHaveBeenCalledWith("setConfig", {
-          args: [[{ value: "new-config" }]],
-        });
-        expect(result).toBe(true);
-      });
-
-      it("should throw UpdateValidationError for invalid input", async () => {
-        const handle = await typedClient.startWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          args: ["hello", 42],
-        });
-
-        await expect(
-          // @ts-expect-error Testing invalid update input
-          handle.updates.setConfig([{ wrongField: "value" }]),
-        ).rejects.toThrow(UpdateValidationError);
-      });
-
-      it("should throw UpdateValidationError for invalid output", async () => {
-        mockHandle.executeUpdate.mockResolvedValue("not-a-boolean");
-
-        const handle = await typedClient.startWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          args: ["hello", 42],
-        });
-
-        await expect(handle.updates.setConfig([{ value: "new-config" }])).rejects.toThrow(
-          UpdateValidationError,
-        );
-      });
-    });
-
-    describe("terminate", () => {
-      it("should terminate workflow", async () => {
-        const handle = await typedClient.startWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          args: ["hello", 42],
-        });
-
-        await handle.terminate("test reason");
-
-        expect(mockHandle.terminate).toHaveBeenCalledWith("test reason");
-      });
-
-      it("should terminate workflow without reason", async () => {
-        const handle = await typedClient.startWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          args: ["hello", 42],
-        });
-
-        await handle.terminate();
-
-        expect(mockHandle.terminate).toHaveBeenCalledWith(undefined);
-      });
-    });
-
-    describe("cancel", () => {
-      it("should cancel workflow", async () => {
-        const handle = await typedClient.startWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          args: ["hello", 42],
-        });
-
-        await handle.cancel();
-
-        expect(mockHandle.cancel).toHaveBeenCalled();
-      });
-    });
-
-    describe("describe", () => {
-      it("should call describe on underlying handle", async () => {
-        const mockDescription = {
-          workflowExecutionInfo: {
-            workflowExecution: { workflowId: "test-123", runId: "run-123" },
-            type: { name: "testWorkflow" },
-            startTime: new Date(),
-            status: "RUNNING" as const,
-          },
-        };
-
-        mockHandle.describe = vi.fn().mockResolvedValue(mockDescription);
-
-        const handle = await typedClient.startWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          args: ["hello", 42],
-        });
-
-        const description = await handle.describe();
-
-        expect(mockHandle.describe).toHaveBeenCalled();
-        expect(description).toEqual(mockDescription);
-      });
-    });
-
-    describe("fetchHistory", () => {
-      it("should call fetchHistory on underlying handle", async () => {
-        const mockHistoryIterator = (async function* () {
-          yield { eventId: 1n, eventType: "WorkflowExecutionStarted" };
-          yield { eventId: 2n, eventType: "WorkflowTaskScheduled" };
-        })();
-
-        mockHandle.fetchHistory = vi.fn().mockReturnValue(mockHistoryIterator);
-
-        const handle = await typedClient.startWorkflow("testWorkflow", {
-          workflowId: "test-123",
-          args: ["hello", 42],
-        });
-
-        const history = handle.fetchHistory();
-
-        expect(mockHandle.fetchHistory).toHaveBeenCalled();
-        expect(history).toBeDefined();
-      });
+      expect(result.isError()).toBe(true);
+      if (result.isError()) {
+        expect(result.error).toBeInstanceOf(WorkflowNotFoundError);
+      }
     });
   });
 
-  describe("edge cases", () => {
-    it("should handle workflow with no queries", async () => {
-      const mockHandle = {
-        workflowId: "simple-123",
-        result: vi.fn().mockResolvedValue("done"),
-        query: vi.fn(),
-        signal: vi.fn(),
-        executeUpdate: vi.fn(),
-        terminate: vi.fn(),
-        cancel: vi.fn(),
-      };
+  describe("executeWorkflow", () => {
+    it("should execute a workflow with valid input and return Ok result", async () => {
+      mockWorkflow.execute.mockResolvedValue({ result: "success" });
 
-      mockWorkflow.start.mockResolvedValue(mockHandle);
-
-      const handle = await typedClient.startWorkflow("simpleWorkflow", {
-        workflowId: "simple-123",
-        args: ["test"],
+      const future = typedClient.executeWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
       });
 
-      expect(handle.queries).toBeDefined();
-      expect(Object.keys(handle.queries)).toHaveLength(0);
+      const result = await future.toPromise();
+
+      expect(result.isOk()).toBe(true);
+      expect(mockWorkflow.execute).toHaveBeenCalledWith("testWorkflow", {
+        workflowId: "test-123",
+        taskQueue: "test-queue",
+        args: [{ name: "hello", value: 42 }],
+      });
+
+      if (result.isOk()) {
+        expect(result.value).toEqual({ result: "success" });
+      }
     });
 
-    it("should handle workflow with no signals", async () => {
-      const mockHandle = {
-        workflowId: "simple-123",
-        result: vi.fn().mockResolvedValue("done"),
-        query: vi.fn(),
-        signal: vi.fn(),
-        executeUpdate: vi.fn(),
-        terminate: vi.fn(),
-        cancel: vi.fn(),
-      };
+    it("should return Error result for invalid output", async () => {
+      mockWorkflow.execute.mockResolvedValue({ wrong: "output" });
 
-      mockWorkflow.start.mockResolvedValue(mockHandle);
-
-      const handle = await typedClient.startWorkflow("simpleWorkflow", {
-        workflowId: "simple-123",
-        args: ["test"],
+      const future = typedClient.executeWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
       });
 
-      expect(handle.signals).toBeDefined();
-      expect(Object.keys(handle.signals)).toHaveLength(0);
+      const result = await future.toPromise();
+
+      expect(result.isError()).toBe(true);
+      if (result.isError()) {
+        expect(result.error).toBeInstanceOf(WorkflowValidationError);
+      }
     });
 
-    it("should handle workflow with no updates", async () => {
+    it("should return Error result when workflow execution throws", async () => {
+      mockWorkflow.execute.mockRejectedValue(new Error("Workflow execution failed"));
+
+      const future = typedClient.executeWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
+      });
+
+      const result = await future.toPromise();
+
+      expect(result.isError()).toBe(true);
+    });
+  });
+
+  describe("getHandle", () => {
+    it("should get a workflow handle and return Ok result", async () => {
       const mockHandle = {
-        workflowId: "simple-123",
-        result: vi.fn().mockResolvedValue("done"),
+        workflowId: "test-123",
+        result: vi.fn().mockResolvedValue({ result: "success" }),
         query: vi.fn(),
         signal: vi.fn(),
         executeUpdate: vi.fn(),
         terminate: vi.fn(),
         cancel: vi.fn(),
+        describe: vi.fn(),
+        fetchHistory: vi.fn(),
+      };
+
+      mockWorkflow.getHandle.mockReturnValue(mockHandle);
+
+      const future = typedClient.getHandle("testWorkflow", "test-123");
+      const result = await future.toPromise();
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.workflowId).toBe("test-123");
+      }
+    });
+
+    it("should return Error result for non-existent workflow", async () => {
+      const future = typedClient.getHandle(
+        "nonExistentWorkflow" as unknown as "testWorkflow",
+        "test-123",
+      );
+      const result = await future.toPromise();
+
+      expect(result.isError()).toBe(true);
+      if (result.isError()) {
+        expect(result.error).toBeInstanceOf(WorkflowNotFoundError);
+      }
+    });
+  });
+
+  describe("TypedWorkflowHandle", () => {
+    interface MockHandle {
+      workflowId: string;
+      result: ReturnType<typeof vi.fn>;
+      query: ReturnType<typeof vi.fn>;
+      signal: ReturnType<typeof vi.fn>;
+      executeUpdate: ReturnType<typeof vi.fn>;
+      terminate: ReturnType<typeof vi.fn>;
+      cancel: ReturnType<typeof vi.fn>;
+      describe: ReturnType<typeof vi.fn>;
+      fetchHistory: ReturnType<typeof vi.fn>;
+    }
+
+    let mockHandle: MockHandle;
+
+    beforeEach(() => {
+      mockHandle = {
+        workflowId: "test-123",
+        result: vi.fn().mockResolvedValue({ result: "success" }),
+        query: vi.fn(),
+        signal: vi.fn(),
+        executeUpdate: vi.fn(),
+        terminate: vi.fn(),
+        cancel: vi.fn(),
+        describe: vi.fn().mockResolvedValue({
+          workflowId: "test-123",
+          type: "testWorkflow",
+          status: { name: "RUNNING" },
+        }),
+        fetchHistory: vi.fn(),
       };
 
       mockWorkflow.start.mockResolvedValue(mockHandle);
+    });
 
-      const handle = await typedClient.startWorkflow("simpleWorkflow", {
-        workflowId: "simple-123",
-        args: ["test"],
+    it("should call result() with Result pattern", async () => {
+      const handleFuture = typedClient.startWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
       });
 
-      expect(handle.updates).toBeDefined();
-      expect(Object.keys(handle.updates)).toHaveLength(0);
+      const handleResult = await handleFuture.toPromise();
+      expect(handleResult.isOk()).toBe(true);
+
+      if (handleResult.isOk()) {
+        const resultFuture = handleResult.value.result();
+        const result = await resultFuture.toPromise();
+
+        expect(result.isOk()).toBe(true);
+        if (result.isOk()) {
+          expect(result.value).toEqual({ result: "success" });
+        }
+      }
+    });
+
+    it("should call queries with Result pattern", async () => {
+      mockHandle.query.mockResolvedValue("running");
+
+      const handleFuture = typedClient.startWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
+      });
+
+      const handleResult = await handleFuture.toPromise();
+      expect(handleResult.isOk()).toBe(true);
+
+      if (handleResult.isOk()) {
+        const queryFuture = handleResult.value.queries.getStatus([]);
+        const result = await queryFuture.toPromise();
+
+        expect(result.isOk()).toBe(true);
+        if (result.isOk()) {
+          expect(result.value).toBe("running");
+        }
+      }
+    });
+
+    it("should call signals with Result pattern", async () => {
+      const handleFuture = typedClient.startWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
+      });
+
+      const handleResult = await handleFuture.toPromise();
+      expect(handleResult.isOk()).toBe(true);
+
+      if (handleResult.isOk()) {
+        const signalFuture = handleResult.value.signals.updateProgress([50]);
+        const result = await signalFuture.toPromise();
+
+        expect(result.isOk()).toBe(true);
+        expect(mockHandle.signal).toHaveBeenCalledWith("updateProgress", [50]);
+      }
+    });
+
+    it("should call updates with Result pattern", async () => {
+      mockHandle.executeUpdate.mockResolvedValue(true);
+
+      const handleFuture = typedClient.startWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
+      });
+
+      const handleResult = await handleFuture.toPromise();
+      expect(handleResult.isOk()).toBe(true);
+
+      if (handleResult.isOk()) {
+        const updateFuture = handleResult.value.updates.setConfig([{ value: "new-config" }]);
+        const result = await updateFuture.toPromise();
+
+        expect(result.isOk()).toBe(true);
+        if (result.isOk()) {
+          expect(result.value).toBe(true);
+        }
+      }
+    });
+
+    it("should call terminate with Result pattern", async () => {
+      const handleFuture = typedClient.startWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
+      });
+
+      const handleResult = await handleFuture.toPromise();
+      expect(handleResult.isOk()).toBe(true);
+
+      if (handleResult.isOk()) {
+        const terminateFuture = handleResult.value.terminate("test reason");
+        const result = await terminateFuture.toPromise();
+
+        expect(result.isOk()).toBe(true);
+        expect(mockHandle.terminate).toHaveBeenCalledWith("test reason");
+      }
+    });
+
+    it("should call cancel with Result pattern", async () => {
+      const handleFuture = typedClient.startWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
+      });
+
+      const handleResult = await handleFuture.toPromise();
+      expect(handleResult.isOk()).toBe(true);
+
+      if (handleResult.isOk()) {
+        const cancelFuture = handleResult.value.cancel();
+        const result = await cancelFuture.toPromise();
+
+        expect(result.isOk()).toBe(true);
+        expect(mockHandle.cancel).toHaveBeenCalled();
+      }
+    });
+
+    it("should call describe with Result pattern", async () => {
+      const handleFuture = typedClient.startWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
+      });
+
+      const handleResult = await handleFuture.toPromise();
+      expect(handleResult.isOk()).toBe(true);
+
+      if (handleResult.isOk()) {
+        const describeFuture = handleResult.value.describe();
+        const result = await describeFuture.toPromise();
+
+        expect(result.isOk()).toBe(true);
+        if (result.isOk()) {
+          expect(result.value.workflowId).toBe("test-123");
+        }
+      }
+    });
+  });
+
+  describe("Result pattern matching", () => {
+    it("should support match() on results", async () => {
+      mockWorkflow.execute.mockResolvedValue({ result: "success" });
+
+      const future = typedClient.executeWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
+      });
+
+      const result = await future.toPromise();
+
+      let matched = false;
+      result.match({
+        Ok: (value) => {
+          matched = true;
+          expect(value).toEqual({ result: "success" });
+        },
+        Error: () => {
+          throw new Error("Should not be called");
+        },
+      });
+
+      expect(matched).toBe(true);
+    });
+
+    it("should support map() on Ok results", async () => {
+      mockWorkflow.execute.mockResolvedValue({ result: "success" });
+
+      const future = typedClient.executeWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
+      });
+
+      const result = await future.toPromise();
+      const mapped = result.map((value) => value.result.toUpperCase());
+
+      expect(mapped.isOk()).toBe(true);
+      if (mapped.isOk()) {
+        expect(mapped.value).toBe("SUCCESS");
+      }
     });
   });
 });

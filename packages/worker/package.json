@@ -1,12 +1,14 @@
 {
   "name": "@temporal-contract/worker",
   "version": "0.0.3",
-  "description": "Worker utilities for implementing temporal-contract workflows and activities",
+  "description": "Worker utilities with Result/Future pattern for implementing temporal-contract workflows and activities",
   "keywords": [
     "temporal",
     "typescript",
     "contract",
-    "worker"
+    "worker",
+    "result",
+    "future"
   ],
   "homepage": "https://github.com/btravers/temporal-contract#readme",
   "bugs": {
@@ -58,6 +60,7 @@
   },
   "dependencies": {
     "@standard-schema/spec": "catalog:",
+    "@swan-io/boxed": "catalog:",
     "@temporal-contract/contract": "workspace:*"
   },
   "devDependencies": {
