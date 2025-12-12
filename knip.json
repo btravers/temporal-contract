@@ -18,34 +18,23 @@
     },
     "packages/testing": {
       "entry": ["src/extension.ts", "src/global-setup.ts"],
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
     },
     "samples/order-processing-contract": {
       "entry": ["src/index.ts"],
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
     },
     "samples/order-processing-worker": {
-      "entry": [
-        "src/application/worker.ts",
-        "src/application/workflows.ts",
-        "src/integration.spec.ts"
-      ],
-      "project": ["src/**/*.ts"],
-      "ignoreDependencies": ["pino-pretty"]
+      "entry": ["src/application/worker.ts", "src/application/workflows.ts"],
+      "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
     },
     "samples/order-processing-worker-boxed": {
-      "entry": [
-        "src/application/worker.ts",
-        "src/application/workflows.ts",
-        "src/integration.spec.ts"
-      ],
-      "project": ["src/**/*.ts"],
-      "ignoreDependencies": ["pino-pretty"]
+      "entry": ["src/application/worker.ts", "src/application/workflows.ts"],
+      "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
     },
     "samples/order-processing-client": {
       "entry": ["src/client.ts"],
-      "project": ["src/**/*.ts"],
-      "ignoreDependencies": ["pino-pretty"]
+      "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
     },
     "tools/*": {
       "entry": ["*.json"]
@@ -54,5 +43,6 @@
       "entry": ["docs/.vitepress/config.ts"]
     }
   },
-  "ignore": ["coverage/**", "**/dist/**"]
+  "ignore": ["coverage/**", "**/dist/**"],
+  "ignoreDependencies": ["pino-pretty"]
 }
