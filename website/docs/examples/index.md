@@ -70,7 +70,7 @@ Each example has its own directory with a README:
 
 ```bash
 # Navigate to an example
-cd samples/basic-order-processing
+cd samples/order-processing
 
 # Start the worker
 pnpm dev:worker

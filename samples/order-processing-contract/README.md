@@ -34,7 +34,7 @@ This package is designed to be shared between:
 ### In Worker Application
 
 ```typescript
-import { orderProcessingContract } from '@temporal-contract/sample-basic-order-processing-contract';
+import { orderProcessingContract } from '@temporal-contract/sample-order-processing-contract';
 import { declareWorkflow } from '@temporal-contract/worker/workflow';
 
 // Implement the workflow
@@ -50,7 +50,7 @@ export const processOrder = declareWorkflow({
 ### In Client Application
 
 ```typescript
-import { orderProcessingContract, Order } from '@temporal-contract/sample-basic-order-processing-contract';
+import { orderProcessingContract, Order } from '@temporal-contract/sample-order-processing-contract';
 import { TypedClient } from '@temporal-contract/client';
 
 // Create type-safe client

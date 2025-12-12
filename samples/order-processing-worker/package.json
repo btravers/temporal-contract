@@ -1,7 +1,7 @@
 {
-  "name": "@temporal-contract/sample-boxed-order-processing-worker",
+  "name": "@temporal-contract/sample-order-processing-worker",
   "private": true,
-  "description": "Order processing worker using temporal-contract with Result/Future pattern",
+  "description": "Basic order processing worker using temporal-contract",
   "type": "module",
   "scripts": {
     "dev:worker": "tsx watch src/application/worker.ts",
@@ -10,9 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@swan-io/boxed": "catalog:",
-    "@temporal-contract/sample-basic-order-processing-contract": "workspace:*",
-    "@temporal-contract/worker-boxed": "workspace:*",
+    "@temporal-contract/sample-order-processing-contract": "workspace:*",
+    "@temporal-contract/worker": "workspace:*",
     "@temporalio/worker": "catalog:",
     "@temporalio/workflow": "catalog:",
     "pino": "catalog:",

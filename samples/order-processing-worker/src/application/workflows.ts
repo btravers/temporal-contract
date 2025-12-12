@@ -2,7 +2,7 @@ import { declareWorkflow } from "@temporal-contract/worker/workflow";
 import {
   orderProcessingContract,
   OrderResultSchema,
-} from "@temporal-contract/sample-basic-order-processing-contract";
+} from "@temporal-contract/sample-order-processing-contract";
 import type { z } from "zod";
 
 type OrderResult = z.infer<typeof OrderResultSchema>;

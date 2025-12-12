@@ -3,7 +3,7 @@ import { TypedClient } from "@temporal-contract/client";
 import {
   orderProcessingContract,
   OrderSchema,
-} from "@temporal-contract/sample-basic-order-processing-contract";
+} from "@temporal-contract/sample-order-processing-contract";
 import type { z } from "zod";
 import { logger } from "./logger.js";
 
@@ -19,8 +19,8 @@ type Order = z.infer<typeof OrderSchema>;
  * Usage:
  *   1. Start Temporal server: temporal server start-dev
  *   2. Start a worker:
- *      - Basic: cd samples/basic-order-processing-worker && pnpm dev:worker
- *      - Boxed: cd samples/boxed-order-processing-worker && pnpm dev:worker
+ *      - Basic: cd samples/order-processing-worker && pnpm dev:worker
+ *      - Boxed: cd samples/order-processing-worker-boxed && pnpm dev:worker
  *   3. Run this client: cd samples/order-processing-client && pnpm dev
  */
 async function run() {

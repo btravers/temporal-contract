@@ -20,11 +20,11 @@
       "entry": ["src/extension.ts", "src/global-setup.ts"],
       "project": ["src/**/*.ts"]
     },
-    "samples/basic-order-processing-contract": {
+    "samples/order-processing-contract": {
       "entry": ["src/index.ts"],
       "project": ["src/**/*.ts"]
     },
-    "samples/basic-order-processing-worker": {
+    "samples/order-processing-worker": {
       "entry": [
         "src/application/worker.ts",
         "src/application/workflows.ts",
@@ -33,7 +33,7 @@
       "project": ["src/**/*.ts"],
       "ignoreDependencies": ["pino-pretty"]
     },
-    "samples/boxed-order-processing-worker": {
+    "samples/order-processing-worker-boxed": {
       "entry": [
         "src/application/worker.ts",
         "src/application/workflows.ts",
