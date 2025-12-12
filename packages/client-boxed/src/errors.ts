@@ -34,7 +34,7 @@ export class WorkflowValidationError extends TypedClientBoxedError {
   constructor(
     public readonly workflowName: string,
     public readonly direction: "input" | "output",
-    public readonly issues: StandardSchemaV1.IssueResult["issues"],
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
     super(
       `Validation failed for workflow "${workflowName}" ${direction}: ${JSON.stringify(issues)}`,
@@ -49,7 +49,7 @@ export class QueryValidationError extends TypedClientBoxedError {
   constructor(
     public readonly queryName: string,
     public readonly direction: "input" | "output",
-    public readonly issues: StandardSchemaV1.IssueResult["issues"],
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
     super(`Validation failed for query "${queryName}" ${direction}: ${JSON.stringify(issues)}`);
   }
@@ -61,7 +61,7 @@ export class QueryValidationError extends TypedClientBoxedError {
 export class SignalValidationError extends TypedClientBoxedError {
   constructor(
     public readonly signalName: string,
-    public readonly issues: StandardSchemaV1.IssueResult["issues"],
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
     super(`Validation failed for signal "${signalName}": ${JSON.stringify(issues)}`);
   }
@@ -74,7 +74,7 @@ export class UpdateValidationError extends TypedClientBoxedError {
   constructor(
     public readonly updateName: string,
     public readonly direction: "input" | "output",
-    public readonly issues: StandardSchemaV1.IssueResult["issues"],
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
     super(`Validation failed for update "${updateName}" ${direction}: ${JSON.stringify(issues)}`);
   }

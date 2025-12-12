@@ -12,6 +12,9 @@ import {
   TypedClientBoxed,
   type TypedWorkflowStartOptions,
   type TypedWorkflowHandleBoxed,
+  type TypedClientBoxedError,
+  type Future,
+  type Result,
 } from "@temporal-contract/client-boxed";
 
 // Re-export TypedWorkflowStartOptions for convenience
@@ -79,10 +82,7 @@ export interface TypedWorkflowHandle<TWorkflow extends WorkflowDefinition> {
 export class TypedClient<TContract extends ContractDefinition> {
   private readonly boxedClient: TypedClientBoxed<TContract>;
 
-  private constructor(
-    private readonly contract: TContract,
-    boxedClient: TypedClientBoxed<TContract>,
-  ) {
+  private constructor(boxedClient: TypedClientBoxed<TContract>) {
     this.boxedClient = boxedClient;
   }
 
@@ -108,7 +108,7 @@ export class TypedClient<TContract extends ContractDefinition> {
     options: ClientOptions,
   ): TypedClient<TContract> {
     const boxedClient = TypedClientBoxed.create(contract, options);
-    return new TypedClient(contract, boxedClient);
+    return new TypedClient(boxedClient);
   }
 
   /**
@@ -188,7 +188,9 @@ export class TypedClient<TContract extends ContractDefinition> {
     const queries = {} as ClientInferWorkflowQueries<TWorkflow>;
     for (const [queryName, queryFn] of Object.entries(boxedHandle.queries)) {
       (queries as Record<string, unknown>)[queryName] = (args: unknown) => {
-        return (queryFn as (args: unknown) => ReturnType<typeof queryFn>)(args).resultToPromise();
+        return (queryFn as (...args: unknown[]) => Future<Result<unknown, TypedClientBoxedError>>)(
+          args,
+        ).resultToPromise();
       };
     }
 
@@ -196,7 +198,9 @@ export class TypedClient<TContract extends ContractDefinition> {
     const signals = {} as ClientInferWorkflowSignals<TWorkflow>;
     for (const [signalName, signalFn] of Object.entries(boxedHandle.signals)) {
       (signals as Record<string, unknown>)[signalName] = (args: unknown) => {
-        return (signalFn as (args: unknown) => ReturnType<typeof signalFn>)(args).resultToPromise();
+        return (signalFn as (...args: unknown[]) => Future<Result<void, TypedClientBoxedError>>)(
+          args,
+        ).resultToPromise();
       };
     }
 
@@ -204,7 +208,9 @@ export class TypedClient<TContract extends ContractDefinition> {
     const updates = {} as ClientInferWorkflowUpdates<TWorkflow>;
     for (const [updateName, updateFn] of Object.entries(boxedHandle.updates)) {
       (updates as Record<string, unknown>)[updateName] = (args: unknown) => {
-        return (updateFn as (args: unknown) => ReturnType<typeof updateFn>)(args).resultToPromise();
+        return (updateFn as (...args: unknown[]) => Future<Result<unknown, TypedClientBoxedError>>)(
+          args,
+        ).resultToPromise();
       };
     }
 
