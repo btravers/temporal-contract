@@ -1,0 +1,8 @@
+{
+  "extends": "@temporal-contract/tsconfig/package.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+  },
+  "include": ["src"],
+}
