@@ -1,5 +1,4 @@
-import { Client, WorkflowHandle } from "@temporalio/client";
-import type { ClientOptions, WorkflowStartOptions, WorkflowOptions } from "@temporalio/client";
+import type { ClientOptions, WorkflowHandle } from "@temporalio/client";
 import type {
   ClientInferInput,
   ClientInferOutput,
@@ -8,35 +7,15 @@ import type {
   ClientInferWorkflowUpdates,
   ContractDefinition,
   WorkflowDefinition,
-  QueryDefinition,
-  SignalDefinition,
-  UpdateDefinition,
 } from "@temporal-contract/contract";
 import {
-  WorkflowNotFoundError,
-  WorkflowValidationError,
-  QueryValidationError,
-  SignalValidationError,
-  UpdateValidationError,
-} from "./errors.js";
+  TypedClientBoxed,
+  type TypedWorkflowStartOptions,
+  type TypedWorkflowHandleBoxed,
+} from "@temporal-contract/client-boxed";
 
-/**
- * Extended options for starting workflows with Temporal-specific features
- * Combines required workflowId with optional Temporal workflow options
- */
-export type TypedWorkflowStartOptions = Pick<
-  WorkflowStartOptions,
-  | "workflowId"
-  | "workflowIdReusePolicy"
-  | "workflowExecutionTimeout"
-  | "workflowRunTimeout"
-  | "workflowTaskTimeout"
-  | "retry"
-  | "memo"
-  | "searchAttributes"
-  | "cronSchedule"
-> &
-  Pick<WorkflowOptions, "workflowId">;
+// Re-export TypedWorkflowStartOptions for convenience
+export type { TypedWorkflowStartOptions };
 
 /**
  * Typed workflow handle with validated results, queries, signals and updates
@@ -94,13 +73,18 @@ export interface TypedWorkflowHandle<TWorkflow extends WorkflowDefinition> {
  * Typed Temporal client based on a contract
  *
  * Provides type-safe methods to start and execute workflows
- * defined in the contract.
+ * defined in the contract. This client wraps TypedClientBoxed
+ * and provides a Promise-based API for easier use.
  */
 export class TypedClient<TContract extends ContractDefinition> {
+  private readonly boxedClient: TypedClientBoxed<TContract>;
+
   private constructor(
     private readonly contract: TContract,
-    private readonly client: Client,
-  ) {}
+    boxedClient: TypedClientBoxed<TContract>,
+  ) {
+    this.boxedClient = boxedClient;
+  }
 
   /**
    * Create a typed Temporal client from a contract
@@ -123,8 +107,8 @@ export class TypedClient<TContract extends ContractDefinition> {
     contract: TContract,
     options: ClientOptions,
   ): TypedClient<TContract> {
-    const client = new Client(options);
-    return new TypedClient(contract, client);
+    const boxedClient = TypedClientBoxed.create(contract, options);
+    return new TypedClient(contract, boxedClient);
   }
 
   /**
@@ -144,41 +128,18 @@ export class TypedClient<TContract extends ContractDefinition> {
    */
   async startWorkflow<TWorkflowName extends keyof TContract["workflows"]>(
     workflowName: TWorkflowName,
-    {
-      args,
-      ...temporalOptions
-    }: TypedWorkflowStartOptions & {
+    options: TypedWorkflowStartOptions & {
       args: ClientInferInput<TContract["workflows"][TWorkflowName]>;
     },
   ): Promise<TypedWorkflowHandle<TContract["workflows"][TWorkflowName]>> {
-    const definition = this.contract.workflows[workflowName as string];
+    const resultFuture = this.boxedClient.startWorkflow(workflowName, options);
+    const result = await resultFuture.toPromise();
 
-    if (!definition) {
-      throw new WorkflowNotFoundError(
-        String(workflowName),
-        Object.keys(this.contract.workflows) as string[],
-      );
+    if (result.isError()) {
+      throw result.error;
     }
 
-    // Validate input with Standard Schema
-    const inputResult = await definition.input["~standard"].validate(args);
-    if (inputResult.issues) {
-      throw new WorkflowValidationError(String(workflowName), "input", inputResult.issues);
-    }
-    const validatedInput = inputResult.value as ClientInferInput<
-      TContract["workflows"][TWorkflowName]
-    >;
-
-    // Start workflow (Temporal expects args as array, so wrap single parameter)
-    const handle = await this.client.workflow.start(workflowName as string, {
-      ...temporalOptions,
-      taskQueue: this.contract.taskQueue,
-      args: [validatedInput],
-    });
-
-    return this.createTypedHandle(handle, definition) as TypedWorkflowHandle<
-      TContract["workflows"][TWorkflowName]
-    >;
+    return this.wrapBoxedHandle(result.value);
   }
 
   /**
@@ -198,45 +159,18 @@ export class TypedClient<TContract extends ContractDefinition> {
    */
   async executeWorkflow<TWorkflowName extends keyof TContract["workflows"]>(
     workflowName: TWorkflowName,
-    {
-      args,
-      ...temporalOptions
-    }: TypedWorkflowStartOptions & {
+    options: TypedWorkflowStartOptions & {
       args: ClientInferInput<TContract["workflows"][TWorkflowName]>;
     },
   ): Promise<ClientInferOutput<TContract["workflows"][TWorkflowName]>> {
-    const definition = this.contract.workflows[workflowName as string];
+    const resultFuture = this.boxedClient.executeWorkflow(workflowName, options);
+    const result = await resultFuture.toPromise();
 
-    if (!definition) {
-      throw new WorkflowNotFoundError(
-        String(workflowName),
-        Object.keys(this.contract.workflows) as string[],
-      );
+    if (result.isError()) {
+      throw result.error;
     }
 
-    // Validate input with Standard Schema
-    const inputResult = await definition.input["~standard"].validate(args);
-    if (inputResult.issues) {
-      throw new WorkflowValidationError(String(workflowName), "input", inputResult.issues);
-    }
-    const validatedInput = inputResult.value as ClientInferInput<
-      TContract["workflows"][TWorkflowName]
-    >;
-
-    // Execute workflow (Temporal expects args as array, so wrap single parameter)
-    const result = await this.client.workflow.execute(workflowName as string, {
-      ...temporalOptions,
-      taskQueue: this.contract.taskQueue,
-      args: [validatedInput],
-    });
-
-    // Validate output with Standard Schema
-    const outputResult = await definition.output["~standard"].validate(result);
-    if (outputResult.issues) {
-      throw new WorkflowValidationError(String(workflowName), "output", outputResult.issues);
-    }
-
-    return outputResult.value as ClientInferOutput<TContract["workflows"][TWorkflowName]>;
+    return result.value;
   }
 
   /**
@@ -252,113 +186,94 @@ export class TypedClient<TContract extends ContractDefinition> {
     workflowName: TWorkflowName,
     workflowId: string,
   ): Promise<TypedWorkflowHandle<TContract["workflows"][TWorkflowName]>> {
-    const definition = this.contract.workflows[workflowName as string];
+    const resultFuture = this.boxedClient.getHandle(workflowName, workflowId);
+    const result = await resultFuture.toPromise();
 
-    if (!definition) {
-      throw new WorkflowNotFoundError(
-        String(workflowName),
-        Object.keys(this.contract.workflows) as string[],
-      );
+    if (result.isError()) {
+      throw result.error;
     }
 
-    const handle = this.client.workflow.getHandle(workflowId);
-    return this.createTypedHandle(handle, definition) as TypedWorkflowHandle<
-      TContract["workflows"][TWorkflowName]
-    >;
+    return this.wrapBoxedHandle(result.value);
   }
 
-  private createTypedHandle<TWorkflow extends WorkflowDefinition>(
-    handle: WorkflowHandle,
-    definition: TWorkflow,
+  private wrapBoxedHandle<TWorkflow extends WorkflowDefinition>(
+    boxedHandle: TypedWorkflowHandleBoxed<TWorkflow>,
   ): TypedWorkflowHandle<TWorkflow> {
     // Create typed queries proxy
     const queries = {} as ClientInferWorkflowQueries<TWorkflow>;
-    for (const [queryName, queryDef] of Object.entries(definition.queries ?? {}) as Array<
-      [string, QueryDefinition]
-    >) {
-      (queries as Record<string, unknown>)[queryName] = async (
-        args: ClientInferInput<typeof queryDef>,
-      ) => {
-        const inputResult = await queryDef.input["~standard"].validate(args);
-        if (inputResult.issues) {
-          throw new QueryValidationError(queryName, "input", inputResult.issues);
+    for (const [queryName, queryFn] of Object.entries(boxedHandle.queries)) {
+      (queries as Record<string, unknown>)[queryName] = async (args: unknown) => {
+        const resultFuture = (queryFn as (args: unknown) => ReturnType<typeof queryFn>)(args);
+        const result = await resultFuture.toPromise();
+        if (result.isError()) {
+          throw result.error;
         }
-
-        const result = await handle.query(queryName as string, inputResult.value);
-
-        const outputResult = await queryDef.output["~standard"].validate(result);
-        if (outputResult.issues) {
-          throw new QueryValidationError(queryName, "output", outputResult.issues);
-        }
-
-        return outputResult.value;
+        return result.value;
       };
     }
 
     // Create typed signals proxy
     const signals = {} as ClientInferWorkflowSignals<TWorkflow>;
-    for (const [signalName, signalDef] of Object.entries(definition.signals ?? {}) as Array<
-      [string, SignalDefinition]
-    >) {
-      (signals as Record<string, unknown>)[signalName] = async (
-        args: ClientInferInput<typeof signalDef>,
-      ) => {
-        const inputResult = await signalDef.input["~standard"].validate(args);
-        if (inputResult.issues) {
-          throw new SignalValidationError(signalName, inputResult.issues);
+    for (const [signalName, signalFn] of Object.entries(boxedHandle.signals)) {
+      (signals as Record<string, unknown>)[signalName] = async (args: unknown) => {
+        const resultFuture = (signalFn as (args: unknown) => ReturnType<typeof signalFn>)(args);
+        const result = await resultFuture.toPromise();
+        if (result.isError()) {
+          throw result.error;
         }
-        await handle.signal(signalName as string, inputResult.value);
+        return result.value;
       };
     }
 
     // Create typed updates proxy
     const updates = {} as ClientInferWorkflowUpdates<TWorkflow>;
-    for (const [updateName, updateDef] of Object.entries(definition.updates ?? {}) as Array<
-      [string, UpdateDefinition]
-    >) {
-      (updates as Record<string, unknown>)[updateName] = async (
-        args: ClientInferInput<typeof updateDef>,
-      ) => {
-        const inputResult = await updateDef.input["~standard"].validate(args);
-        if (inputResult.issues) {
-          throw new UpdateValidationError(updateName, "input", inputResult.issues);
+    for (const [updateName, updateFn] of Object.entries(boxedHandle.updates)) {
+      (updates as Record<string, unknown>)[updateName] = async (args: unknown) => {
+        const resultFuture = (updateFn as (args: unknown) => ReturnType<typeof updateFn>)(args);
+        const result = await resultFuture.toPromise();
+        if (result.isError()) {
+          throw result.error;
         }
-
-        const result = await handle.executeUpdate(updateName as string, {
-          args: [inputResult.value],
-        });
-
-        const outputResult = await updateDef.output["~standard"].validate(result);
-        if (outputResult.issues) {
-          throw new UpdateValidationError(updateName, "output", outputResult.issues);
-        }
-
-        return outputResult.value;
+        return result.value;
       };
     }
 
     const typedHandle: TypedWorkflowHandle<TWorkflow> = {
-      workflowId: handle.workflowId,
+      workflowId: boxedHandle.workflowId,
       queries,
       signals,
       updates,
       result: async () => {
-        const result = await handle.result();
-        // Validate output with Standard Schema
-        const outputResult = await definition.output["~standard"].validate(result);
-        if (outputResult.issues) {
-          throw new WorkflowValidationError(handle.workflowId, "output", outputResult.issues);
+        const resultFuture = boxedHandle.result();
+        const result = await resultFuture.toPromise();
+        if (result.isError()) {
+          throw result.error;
         }
-        return outputResult.value as ClientInferOutput<TWorkflow>;
+        return result.value as ClientInferOutput<TWorkflow>;
       },
       terminate: async (reason?: string) => {
-        await handle.terminate(reason);
+        const resultFuture = boxedHandle.terminate(reason);
+        const result = await resultFuture.toPromise();
+        if (result.isError()) {
+          throw result.error;
+        }
       },
       cancel: async () => {
-        await handle.cancel();
+        const resultFuture = boxedHandle.cancel();
+        const result = await resultFuture.toPromise();
+        if (result.isError()) {
+          throw result.error;
+        }
       },
-      describe: () => handle.describe(),
-      fetchHistory: () => handle.fetchHistory(),
+      describe: async () => {
+        const resultFuture = boxedHandle.describe();
+        const result = await resultFuture.toPromise();
+        if (result.isError()) {
+          throw result.error;
+        }
+        return result.value;
+      },
+      fetchHistory: () => boxedHandle.fetchHistory(),
     };
 
     return typedHandle;

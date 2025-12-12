@@ -121,6 +121,9 @@ importers:
       "@standard-schema/spec":
         specifier: "catalog:"
         version: 1.0.0
+      "@temporal-contract/client-boxed":
+        specifier: workspace:*
+        version: link:../client-boxed
       "@temporal-contract/contract":
         specifier: workspace:*
         version: link:../contract

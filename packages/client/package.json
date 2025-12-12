@@ -48,6 +48,7 @@
   },
   "dependencies": {
     "@standard-schema/spec": "catalog:",
+    "@temporal-contract/client-boxed": "workspace:*",
     "@temporal-contract/contract": "workspace:*"
   },
   "devDependencies": {
