@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@temporal-contract/client": "workspace:*",
-    "@temporal-contract/sample-basic-order-processing-contract": "workspace:*",
+    "@temporal-contract/sample-order-processing-contract": "workspace:*",
     "@temporalio/client": "catalog:",
     "pino": "catalog:",
     "pino-pretty": "catalog:",

@@ -1,5 +1,5 @@
 import { declareWorkflow } from "@temporal-contract/worker-boxed/workflow";
-import { orderProcessingContract } from "@temporal-contract/sample-basic-order-processing-contract";
+import { orderProcessingContract } from "@temporal-contract/sample-order-processing-contract";
 
 /**
  * Process Order Workflow Implementation

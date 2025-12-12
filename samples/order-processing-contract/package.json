@@ -1,5 +1,5 @@
 {
-  "name": "@temporal-contract/sample-basic-order-processing-contract",
+  "name": "@temporal-contract/sample-order-processing-contract",
   "version": "0.1.0",
   "private": true,
   "description": "Contract package for basic order processing sample",

@@ -7,7 +7,7 @@ This sample demonstrates that a single client can interact with any worker imple
 ## Overview
 
 This client package demonstrates that:
-- Both `basic-order-processing-worker` and `boxed-order-processing-worker` workers implement the **same unified contract**
+- Both `order-processing-worker` and `order-processing-worker-boxed` workers implement the **same unified contract**
 - A single client works with any worker implementation
 - From the client's perspective, all workers are identical
 - The only difference is in how workers handle errors internally (Promise-based vs. Result/Future pattern)
@@ -33,13 +33,13 @@ pnpm install && pnpm build
 
 **Option A: Basic Worker**
 ```bash
-cd ../basic-order-processing-worker
+cd ../order-processing-worker
 pnpm dev:worker
 ```
 
 **Option B: Boxed Worker**
 ```bash
-cd ../boxed-order-processing-worker
+cd ../order-processing-worker-boxed
 pnpm dev:worker
 ```
 
@@ -64,7 +64,7 @@ pnpm test
 
 ## What to Notice
 
-- **Same Contract**: The client uses `orderProcessingContract` from `@temporal-contract/sample-basic-order-processing-contract`
+- **Same Contract**: The client uses `orderProcessingContract` from `@temporal-contract/sample-order-processing-contract`
 - **Same Task Queue**: All workers listen on the same task queue: `"order-processing"`
 - **Worker Agnostic**: The client doesn't know or care which worker implementation is running
 - **Type Safety**: All inputs and outputs are validated against the contract schemas
@@ -82,13 +82,13 @@ The unified contract (`orderProcessingContract`) defines:
 
 Both workers implement the exact same contract but with different patterns:
 
-1. **Basic Worker** (`samples/basic-order-processing-worker`)
+1. **Basic Worker** (`samples/order-processing-worker`)
    - Uses `@temporal-contract/worker`
    - Promise-based activities
    - Traditional error handling with try/catch
    - Simpler to understand and implement
 
-2. **Boxed Worker** (`samples/boxed-order-processing-worker`)
+2. **Boxed Worker** (`samples/order-processing-worker-boxed`)
    - Uses `@temporal-contract/worker-boxed`
    - Result/Future pattern with `@swan-io/boxed`
    - Explicit error types in function signatures

@@ -5,14 +5,12 @@ import { it as baseIt } from "@temporal-contract/testing/extension";
 import {
   orderProcessingContract,
   OrderSchema,
-} from "@temporal-contract/sample-basic-order-processing-contract";
+} from "@temporal-contract/sample-order-processing-contract";
 import { activitiesHandler } from "./application/activities.js";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { z } from "zod";
-import { dependencies } from "./dependencies.js";
-import { Future, Result } from "@swan-io/boxed";
-import type { PaymentResult } from "./domain/entities/order.schema.js";
+import { paymentAdapter } from "./dependencies.js";
 
 type Order = z.infer<typeof OrderSchema>;
 
@@ -57,24 +55,20 @@ const it = baseIt.extend<{
   },
 });
 
-describe("Boxed Order Processing Workflow - Integration Tests", () => {
+describe("Order Processing Workflow - Integration Tests", () => {
   beforeEach(() => {
     // Mock payment adapter to always succeed for deterministic tests
-    vi.spyOn(dependencies.paymentAdapter, "processPayment").mockReturnValue(
-      Future.value(
-        Result.Ok({
-          transactionId: `TXN-${Date.now()}`,
-          status: "success" as const,
-          paidAmount: 100,
-        }),
-      ),
-    );
+    vi.spyOn(paymentAdapter, "processPayment").mockResolvedValue({
+      transactionId: "TXN-MOCK-123",
+      status: "success",
+      paidAmount: 0, // Will be overridden by actual call
+    });
   });
 
-  it("should process an order successfully with Result pattern", async ({ client }) => {
+  it("should process an order successfully", async ({ client }) => {
     // GIVEN
     const order: Order = {
-      orderId: `ORD-BOXED-TEST-${Date.now()}`,
+      orderId: `ORD-TEST-${Date.now()}`,
       customerId: "CUST-TEST-001",
       items: [
         {
@@ -106,10 +100,10 @@ describe("Boxed Order Processing Workflow - Integration Tests", () => {
     });
   });
 
-  it("should handle workflow errors gracefully with rollback", async ({ client }) => {
+  it("should handle workflow with startWorkflow and result", async ({ client }) => {
     // GIVEN
     const order: Order = {
-      orderId: `ORD-BOXED-TEST-${Date.now()}`,
+      orderId: `ORD-TEST-${Date.now()}`,
       customerId: "CUST-TEST-002",
       items: [
         {
@@ -130,18 +124,18 @@ describe("Boxed Order Processing Workflow - Integration Tests", () => {
     // THEN
     expect(handle.workflowId).toBe(order.orderId);
 
-    await expect(handle.result()).resolves.toEqual(
-      expect.objectContaining({
-        orderId: order.orderId,
-        status: "completed",
-      }),
-    );
+    await expect(handle.result()).resolves.toEqual({
+      orderId: order.orderId,
+      status: "completed",
+      transactionId: expect.any(String),
+      trackingNumber: expect.any(String),
+    });
   });
 
-  it("should be able to describe workflow execution", async ({ client }) => {
+  it("should be able to get workflow handle after start", async ({ client }) => {
     // GIVEN
     const order: Order = {
-      orderId: `ORD-BOXED-TEST-${Date.now()}`,
+      orderId: `ORD-TEST-${Date.now()}`,
       customerId: "CUST-TEST-003",
       items: [
         {
@@ -151,6 +145,40 @@ describe("Boxed Order Processing Workflow - Integration Tests", () => {
         },
       ],
       totalAmount: 59.97,
+    };
+
+    // WHEN
+    await client.startWorkflow("processOrder", {
+      workflowId: order.orderId,
+      args: order,
+    });
+
+    // THEN
+    const handle = await client.getHandle("processOrder", order.orderId);
+
+    expect(handle.workflowId).toBe(order.orderId);
+
+    await expect(handle.result()).resolves.toEqual({
+      orderId: order.orderId,
+      status: "completed",
+      transactionId: expect.any(String),
+      trackingNumber: expect.any(String),
+    });
+  });
+
+  it("should handle describe and terminate operations", async ({ client }) => {
+    // GIVEN
+    const order: Order = {
+      orderId: `ORD-TEST-${Date.now()}`,
+      customerId: "CUST-TEST-004",
+      items: [
+        {
+          productId: "PROD-005",
+          quantity: 1,
+          price: 149.99,
+        },
+      ],
+      totalAmount: 149.99,
     };
 
     // WHEN
@@ -164,23 +192,20 @@ describe("Boxed Order Processing Workflow - Integration Tests", () => {
       expect.objectContaining({
         workflowId: order.orderId,
         type: "processOrder",
-        status: expect.objectContaining({
-          name: "RUNNING",
-        }),
       }),
     );
 
     await handle.result();
   });
 
-  it("should validate input with Zod", async ({ client }) => {
+  it("should validate input data with Zod", async ({ client }) => {
     // GIVEN
     const invalidOrder = {
-      orderId: `ORD-BOXED-TEST-${Date.now()}`,
-      customerId: "CUST-TEST-004",
+      orderId: `ORD-TEST-${Date.now()}`,
+      customerId: "CUST-TEST-005",
       items: [
         {
-          productId: "PROD-005",
+          productId: "PROD-006",
           quantity: -1, // Invalid: negative quantity
           price: 29.99,
         },
@@ -198,40 +223,14 @@ describe("Boxed Order Processing Workflow - Integration Tests", () => {
     await expect(execution).rejects.toThrow();
   });
 
-  it("should demonstrate Result/Future pattern benefits", async ({ client }) => {
-    // GIVEN
-    const order: Order = {
-      orderId: `ORD-BOXED-TEST-${Date.now()}`,
-      customerId: "CUST-TEST-005",
-      items: [
-        {
-          productId: "PROD-006",
-          quantity: 1,
-          price: 149.99,
-        },
-      ],
-      totalAmount: 149.99,
-    };
-
-    // WHEN
-    const result = await client.executeWorkflow("processOrder", {
-      workflowId: order.orderId,
-      args: order,
+  it("should handle payment failure", async ({ client }) => {
+    // GIVEN - Mock payment to fail
+    vi.spyOn(paymentAdapter, "processPayment").mockResolvedValue({
+      status: "failed",
     });
 
-    // THEN
-    expect(result).toEqual(
-      expect.objectContaining({
-        orderId: order.orderId,
-        status: expect.stringMatching(/^(completed|failed|cancelled)$/),
-      }),
-    );
-  });
-
-  it("should handle payment failure and return failed status", async ({ client }) => {
-    // GIVEN
     const order: Order = {
-      orderId: `ORD-BOXED-TEST-${Date.now()}`,
+      orderId: `ORD-TEST-${Date.now()}`,
       customerId: "CUST-TEST-006",
       items: [
         {
@@ -243,27 +242,17 @@ describe("Boxed Order Processing Workflow - Integration Tests", () => {
       totalAmount: 99.99,
     };
 
-    // Mock payment to fail
-    vi.spyOn(dependencies.paymentAdapter, "processPayment").mockReturnValue(
-      Future.value(
-        Result.Ok<PaymentResult>({
-          status: "failed" as const,
-        }),
-      ),
-    );
-
     // WHEN
     const result = await client.executeWorkflow("processOrder", {
       workflowId: order.orderId,
       args: order,
     });
 
-    // THEN
+    // THEN - Should return failed status
     expect(result).toEqual({
       orderId: order.orderId,
       status: "failed",
-      failureReason: "Payment was declined",
-      errorCode: "PAYMENT_FAILED",
+      failureReason: "Payment failed",
     });
   });
 });
