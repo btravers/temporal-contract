@@ -125,7 +125,7 @@ implementation: async (context, input) => {
   // TypeScript knows all available activities
   context.activities.processPayment  // ✅ Available
   context.activities.unknownActivity // ❌ TypeScript error
-  
+
   // Full autocomplete for parameters
   await context.activities.processPayment({
     // IDE shows: customerId: string, amount: number
@@ -203,7 +203,7 @@ export const activities = declareActivitiesHandler({
       } catch (error) {
         // Log error
         logger.error('Payment failed', error);
-        
+
         // Return typed error response
         return { transactionId: '', success: false };
       }

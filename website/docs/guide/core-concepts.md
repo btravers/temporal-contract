@@ -20,6 +20,7 @@ const contract = defineContract({
 ```
 
 This single definition provides:
+
 - ✅ Type inference for implementations
 - ✅ Automatic validation at runtime
 - ✅ Compile-time type checking
@@ -106,7 +107,7 @@ Activities available to **all workflows** in the contract:
 ```typescript
 const contract = defineContract({
   taskQueue: 'orders',
-  
+
   // Global activities
   activities: {
     sendEmail: {
@@ -118,7 +119,7 @@ const contract = defineContract({
       output: z.object({ logged: z.boolean() })
     }
   },
-  
+
   workflows: { /* ... */ }
 });
 ```
@@ -134,7 +135,7 @@ const contract = defineContract({
     processOrder: {
       input: z.object({ orderId: z.string() }),
       output: z.object({ success: z.boolean() }),
-      
+
       // Only available in processOrder workflow
       activities: {
         validateInventory: {
@@ -164,6 +165,7 @@ const result = await client.executeWorkflow('processOrder', {
 ```
 
 Validation happens at:
+
 - **Workflow entry** — Input validation
 - **Workflow exit** — Output validation
 - **Activity calls** — Input/output validation

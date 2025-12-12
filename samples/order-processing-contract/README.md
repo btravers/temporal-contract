@@ -5,6 +5,7 @@ This package contains the contract definition for the order processing workflow.
 ## Purpose
 
 This package is designed to be shared between:
+
 - **Worker application**: Imports this package to implement workflows and activities
 - **Client application**: Imports this package to consume the workflow from another application
 

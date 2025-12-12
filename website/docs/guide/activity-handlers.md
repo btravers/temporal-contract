@@ -329,7 +329,7 @@ export const createActivities = (services: Services) => {
     await services.email.send({ to, body });
     return { sent: true };
   };
-  
+
   return { sendEmail };
 };
 ```

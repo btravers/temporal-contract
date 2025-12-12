@@ -68,10 +68,10 @@ export const orderContract = defineContract({
   // Global activities available to all workflows
   activities: {
     sendEmail: {
-      input: z.object({ 
-        to: z.string().email(), 
-        subject: z.string(), 
-        body: z.string() 
+      input: z.object({
+        to: z.string().email(),
+        subject: z.string(),
+        body: z.string()
       }),
       output: z.object({ sent: z.boolean() }),
     },
@@ -79,25 +79,25 @@ export const orderContract = defineContract({
 
   workflows: {
     processOrder: {
-      input: z.object({ 
-        orderId: z.string(), 
-        customerId: z.string() 
+      input: z.object({
+        orderId: z.string(),
+        customerId: z.string()
       }),
-      output: z.object({ 
-        status: z.enum(['success', 'failed']), 
-        transactionId: z.string() 
+      output: z.object({
+        status: z.enum(['success', 'failed']),
+        transactionId: z.string()
       }),
 
       // Workflow-specific activities
       activities: {
         processPayment: {
-          input: z.object({ 
-            customerId: z.string(), 
-            amount: z.number().positive() 
+          input: z.object({
+            customerId: z.string(),
+            amount: z.number().positive()
           }),
-          output: z.object({ 
-            transactionId: z.string(), 
-            success: z.boolean() 
+          output: z.object({
+            transactionId: z.string(),
+            success: z.boolean()
           }),
         },
       },
@@ -185,8 +185,8 @@ import { TypedClient } from '@temporal-contract/client';
 import { Connection } from '@temporalio/client';
 import { orderContract } from './contract';
 
-const connection = await Connection.connect({ 
-  address: 'localhost:7233' 
+const connection = await Connection.connect({
+  address: 'localhost:7233'
 });
 
 const client = TypedClient.create(orderContract, { connection });

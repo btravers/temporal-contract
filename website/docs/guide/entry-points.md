@@ -69,14 +69,14 @@ import { z } from 'zod';
 
 export const orderContract = defineContract({
   taskQueue: 'orders',
-  
+
   activities: {
     sendEmail: {
       input: z.object({ to: z.string(), body: z.string() }),
       output: z.object({ sent: z.boolean() })
     }
   },
-  
+
   workflows: {
     processOrder: {
       input: z.object({ orderId: z.string() }),
@@ -135,15 +135,15 @@ export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: orderContract,
   implementation: async (context, { orderId }) => {
-    const payment = await context.activities.processPayment({ 
-      amount: 100 
+    const payment = await context.activities.processPayment({
+      amount: 100
     });
-    
+
     await context.activities.sendEmail({
       to: 'customer@example.com',
       body: `Order ${orderId} processed`
     });
-    
+
     return { success: true };
   }
 });
@@ -161,10 +161,10 @@ import { activities } from './activities';
 const worker = await Worker.create({
   // Workflows loaded from path (Temporal requirement)
   workflowsPath: require.resolve('./workflows/order.workflow'),
-  
+
   // Activities loaded directly
   activities: activities.activities,
-  
+
   // Task queue from contract
   taskQueue: activities.contract.taskQueue,
 });
@@ -266,7 +266,7 @@ declareWorkflow({
     const result = await context.activities.processPayment({
       amount: 100  // ✅ Type checked
     });
-    
+
     // ✅ result.transactionId is string
     console.log(result.transactionId);
   }
@@ -278,6 +278,7 @@ declareWorkflow({
 ### 1. Contract Reusability
 
 The contract package can be imported by multiple applications:
+
 - Worker application (to implement)
 - Client applications (to consume)
 - Even other services that need the type definitions
@@ -289,6 +290,7 @@ Full TypeScript inference across all boundaries and applications.
 ### 3. Validation
 
 Automatic validation at:
+
 - Workflow entry/exit
 - Activity calls
 - Client requests
@@ -309,8 +311,8 @@ Activities and workflows can be tested independently:
 
 ```typescript
 // Test activities directly
-const result = await activities.activities.processPayment({ 
-  amount: 100 
+const result = await activities.activities.processPayment({
+  amount: 100
 });
 
 // Test workflows with mock context
@@ -322,6 +324,7 @@ await workflow(mockContext, { orderId: 'ORD-123' });
 ### 7. Organization
 
 Clear separation of concerns:
+
 - Contract package: API definition
 - Worker application: Implementation
 - Client application: Consumption

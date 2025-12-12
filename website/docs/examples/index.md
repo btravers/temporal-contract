@@ -9,6 +9,7 @@ Learn by example! Explore complete working examples that demonstrate temporal-co
 A complete e-commerce order processing workflow using standard Promise-based approach.
 
 **Features:**
+
 - Order validation
 - Payment processing
 - Inventory management
@@ -22,6 +23,7 @@ A complete e-commerce order processing workflow using standard Promise-based app
 The same order processing workflow using the Result/Future pattern for explicit error handling.
 
 **Features:**
+
 - Type-safe error handling with `Result<T, E>`
 - Non-throwing async operations with `Future<T, E>`
 - Explicit error propagation
@@ -31,12 +33,13 @@ The same order processing workflow using the Result/Future pattern for explicit 
 
 ## Quick Comparison
 
-| Feature | Basic | Boxed |
-|---------|-------|-------|
-| Error Handling | Exceptions | Result pattern |
-| Learning Curve | ✅ Easy | ⚠️ Moderate |
-| Type Safety | ✅ Yes | ✅ Yes + Errors |
-| Use Case | Standard workflows | Complex error flows |
+| Feature        | Basic              | Boxed               |
+| -------------- | ------------------ | ------------------- |
+| Error Handling | Exceptions         | Result pattern      |
+| Learning Curve | ✅ Easy            | ⚠️ Moderate         |
+| Type Safety    | ✅ Yes             | ✅ Yes + Errors     |
+| Use Case       | Standard workflows | Complex error flows |
+
 ## Running the Examples
 
 All examples are located in the [`samples/`](https://github.com/btravers/temporal-contract/tree/main/samples) directory of the repository.
@@ -44,17 +47,20 @@ All examples are located in the [`samples/`](https://github.com/btravers/tempora
 ### Prerequisites
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/btravers/temporal-contract.git
    cd temporal-contract
    ```
 
 2. Install dependencies:
+
    ```bash
    pnpm install
    ```
 
 3. Build the packages:
+
    ```bash
    pnpm build
    ```
@@ -116,21 +122,21 @@ import { z } from 'zod';
 
 export const orderContract = defineContract({
   taskQueue: 'orders',
-  
+
   activities: {
     sendEmail: {
-      input: z.object({ 
-        to: z.string().email(), 
-        subject: z.string(), 
-        body: z.string() 
+      input: z.object({
+        to: z.string().email(),
+        subject: z.string(),
+        body: z.string()
       }),
       output: z.object({ sent: z.boolean() })
     }
   },
-  
+
   workflows: {
     processOrder: {
-      input: z.object({ 
+      input: z.object({
         orderId: z.string(),
         customerId: z.string(),
         items: z.array(z.object({
@@ -138,24 +144,24 @@ export const orderContract = defineContract({
           quantity: z.number().positive()
         }))
       }),
-      output: z.object({ 
+      output: z.object({
         success: z.boolean(),
         transactionId: z.string().optional()
       }),
-      
+
       activities: {
         validateInventory: {
           input: z.object({ items: z.array(z.any()) }),
           output: z.object({ available: z.boolean() })
         },
         processPayment: {
-          input: z.object({ 
+          input: z.object({
             customerId: z.string(),
-            amount: z.number() 
+            amount: z.number()
           }),
-          output: z.object({ 
+          output: z.object({
             transactionId: z.string(),
-            success: z.boolean() 
+            success: z.boolean()
           })
         }
       }
@@ -181,12 +187,12 @@ export const activities = declareActivitiesHandler({
       await emailService.send({ to, subject, body });
       return { sent: true };
     },
-    
+
     validateInventory: async ({ items }) => {
       const available = await inventoryService.checkAvailability(items);
       return { available };
     },
-    
+
     processPayment: async ({ customerId, amount }) => {
       const result = await paymentService.charge(customerId, amount);
       return {
@@ -212,7 +218,7 @@ export const processOrder = declareWorkflow({
   implementation: async (context, { orderId, customerId, items }) => {
     // Validate inventory
     const inventory = await context.activities.validateInventory({ items });
-    
+
     if (!inventory.available) {
       await context.activities.sendEmail({
         to: customerId,
@@ -221,16 +227,16 @@ export const processOrder = declareWorkflow({
       });
       return { success: false };
     }
-    
+
     // Calculate total
     const total = items.reduce((sum, item) => sum + item.quantity * 100, 0);
-    
+
     // Process payment
     const payment = await context.activities.processPayment({
       customerId,
       amount: total
     });
-    
+
     if (!payment.success) {
       await context.activities.sendEmail({
         to: customerId,
@@ -239,14 +245,14 @@ export const processOrder = declareWorkflow({
       });
       return { success: false };
     }
-    
+
     // Send confirmation
     await context.activities.sendEmail({
       to: customerId,
       subject: 'Order Confirmed',
       body: `Order ${orderId} confirmed. Transaction: ${payment.transactionId}`
     });
-    
+
     return {
       success: true,
       transactionId: payment.transactionId

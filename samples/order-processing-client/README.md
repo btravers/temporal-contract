@@ -7,6 +7,7 @@ This sample demonstrates that a single client can interact with any worker imple
 ## Overview
 
 This client package demonstrates that:
+
 - Both `order-processing-worker` and `order-processing-worker-boxed` workers implement the **same unified contract**
 - A single client works with any worker implementation
 - From the client's perspective, all workers are identical
@@ -17,11 +18,13 @@ This client package demonstrates that:
 ### Prerequisites
 
 1. Start Temporal server:
+
 ```bash
 temporal server start-dev
 ```
 
 2. Build the workspace from the repository root:
+
 ```bash
 cd ../..
 pnpm install && pnpm build
@@ -32,18 +35,21 @@ pnpm install && pnpm build
 1. Start a worker (choose one):
 
 **Option A: Basic Worker**
+
 ```bash
 cd ../order-processing-worker
 pnpm dev:worker
 ```
 
 **Option B: Boxed Worker**
+
 ```bash
 cd ../order-processing-worker-boxed
 pnpm dev:worker
 ```
 
 2. Run the client:
+
 ```bash
 cd ../order-processing-client
 pnpm dev
@@ -52,12 +58,14 @@ pnpm dev
 ## Testing
 
 The client includes integration tests that verify:
+
 - Workflow execution through the contract
 - Proper input validation via contract schema
 - Correct output types matching contract schema
 - Workflow history and metadata access
 
 Run tests:
+
 ```bash
 pnpm test
 ```
@@ -74,6 +82,7 @@ pnpm test
 ### Unified Contract
 
 The unified contract (`orderProcessingContract`) defines:
+
 - Global activities: `log`, `sendNotification`
 - Workflow: `processOrder`
   - Activities: `processPayment`, `reserveInventory`, `releaseInventory`, `createShipment`, `refundPayment`
@@ -97,6 +106,7 @@ Both workers implement the exact same contract but with different patterns:
 ### Client Perspective
 
 From the client's perspective, there's **no difference** between the workers:
+
 - Same contract import
 - Same workflow names
 - Same activity signatures

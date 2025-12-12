@@ -5,12 +5,15 @@
 ## Available Samples
 
 ### 📦 [order-processing-worker](./order-processing-worker)
+
 Standard Promise-based worker with Clean Architecture
 
 ### 📦 [order-processing-worker-boxed](./order-processing-worker-boxed)
+
 Result/Future pattern worker with explicit error handling
 
 ### 📦 [order-processing-client](./order-processing-client)
+
 Standalone client demonstrating interaction with the unified contract
 
 **Note**: The `order-processing-worker` and `order-processing-worker-boxed` samples share a unified contract. Both workers implement the same contract (`orderProcessingContract`) but with different internal implementations. The client sample works with either worker implementation seamlessly.

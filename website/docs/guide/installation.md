@@ -202,6 +202,7 @@ npx tsx test-installation.ts
 ```
 
 You should see:
+
 ```
 ✅ temporal-contract installed successfully!
 Contract task queue: test
