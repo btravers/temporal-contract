@@ -5,6 +5,7 @@ Order processing with Result/Future pattern for explicit error handling, demonst
 ## Overview
 
 This example demonstrates:
+
 - **Separated contract package**: Contract is in its own package that can be shared
 - Type-safe error handling with Result<T, E>
 - Non-throwing async operations with Future<T, E>
@@ -41,6 +42,7 @@ samples/
 ### Contract Package
 
 The contract is separated into its own package (`order-processing-contract`) which:
+
 - Can be imported by the worker to implement workflows/activities
 - Can be imported by clients (even in other applications) to consume the workflow
 - Provides full TypeScript type safety with Result/Future pattern
@@ -49,6 +51,7 @@ The contract is separated into its own package (`order-processing-contract`) whi
 ### Result/Future Pattern
 
 This example uses `@swan-io/boxed` for explicit error handling:
+
 - Activities return `Result<T, E>` instead of throwing
 - Workflows use `Future<T, E>` for composable async operations
 - Errors are part of the type signature
@@ -56,6 +59,7 @@ This example uses `@swan-io/boxed` for explicit error handling:
 ## Source Code
 
 View the complete source code:
+
 - [Contract package](https://github.com/btravers/temporal-contract/tree/main/samples/order-processing-contract)
 - [Worker/Client application](https://github.com/btravers/temporal-contract/tree/main/samples/order-processing-worker-boxed)
 

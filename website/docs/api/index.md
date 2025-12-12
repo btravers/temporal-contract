@@ -75,7 +75,7 @@ import { z } from 'zod';
 
 const contract = defineContract({
   taskQueue: 'my-queue',
-  
+
   // Global activities
   activities: {
     sendEmail: {
@@ -83,13 +83,13 @@ const contract = defineContract({
       output: z.object({ sent: z.boolean() })
     }
   },
-  
+
   // Workflows
   workflows: {
     processOrder: {
       input: z.object({ orderId: z.string() }),
       output: z.object({ success: z.boolean() }),
-      
+
       // Workflow-specific activities
       activities: {
         validateOrder: {
@@ -126,9 +126,9 @@ export const processOrder = declareWorkflow({
   contract,
   implementation: async (context, { orderId }) => {
     const { valid } = await context.activities.validateOrder({ orderId });
-    await context.activities.sendEmail({ 
-      to: 'admin@example.com', 
-      body: 'Order processed' 
+    await context.activities.sendEmail({
+      to: 'admin@example.com',
+      body: 'Order processed'
     });
     return { success: valid };
   }
@@ -156,8 +156,8 @@ await worker.run();
 import { TypedClient } from '@temporal-contract/client';
 import { Connection } from '@temporalio/client';
 
-const connection = await Connection.connect({ 
-  address: 'localhost:7233' 
+const connection = await Connection.connect({
+  address: 'localhost:7233'
 });
 
 const client = TypedClient.create(contract, { connection });
@@ -220,7 +220,7 @@ export const processOrder = declareWorkflow({
   contract,
   implementation: async (context, { orderId }) => {
     const result = await context.activities.validateOrder({ orderId });
-    
+
     return result.match({
       Ok: ({ valid }) => Result.Ok({ success: valid }),
       Error: (error) => Result.Error(error)

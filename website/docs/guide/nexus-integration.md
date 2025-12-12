@@ -21,19 +21,24 @@ Nexus is a Temporal feature that provides:
 ## Use Cases
 
 ### Microservice Orchestration
+
 Coordinate workflows across team boundaries while maintaining isolation:
+
 ```
 Orders Service ──> [Nexus] ──> Payment Service
                             └──> Inventory Service
 ```
 
 ### Multi-tenant Systems
+
 Isolate tenant data while enabling cross-tenant operations when needed.
 
 ### Cross-region Workflows
+
 Orchestrate workflows that span multiple regions or cloud providers.
 
 ### API Abstraction
+
 Hide implementation details behind stable, versioned service contracts.
 
 ## Current Status
@@ -54,9 +59,9 @@ export const paymentService = {
   operations: {
     processPayment: async (ctx, input: { amount: number; customerId: string }) => {
       // Implementation
-      return { 
+      return {
         transactionId: crypto.randomUUID(),
-        status: 'success' as const 
+        status: 'success' as const
       };
     },
   },
@@ -94,7 +99,7 @@ export async function processOrderWorkflow(order: Order) {
       customerId: order.customerId,
     }
   );
-  
+
   if (payment.status === 'success') {
     // Continue order processing
   }
@@ -117,11 +122,11 @@ import { z } from 'zod';
 
 export const paymentContract = defineContract({
   taskQueue: 'payments',
-  
+
   workflows: {
     // ... existing workflows
   },
-  
+
   // New: Nexus service definitions
   nexusServices: {
     PaymentService: {
@@ -152,9 +157,9 @@ export const nexusHandlers = createNexusHandlers(paymentContract, {
     processPayment: async ({ amount, customerId }) => {
       // ✅ Input automatically validated
       // ✅ Fully typed parameters
-      
+
       const payment = await processPayment(customerId, amount);
-      
+
       // ✅ Return value validated against schema
       return {
         transactionId: payment.id,
@@ -189,13 +194,13 @@ await nexusClient.invoke('PaymentService', 'processPayment', {
 
 ## Benefits of Integration
 
-| Feature | Without temporal-contract | With temporal-contract |
-|---------|--------------------------|------------------------|
-| Type Safety | ❌ Manual types | ✅ Automatic from schemas |
-| Validation | ❌ Manual checks | ✅ Automatic Zod validation |
-| Autocomplete | ⚠️ Limited | ✅ Full IDE support |
-| Refactoring | ❌ Manual updates | ✅ Compile-time checks |
-| Documentation | ❌ Separate | ✅ Types as docs |
+| Feature       | Without temporal-contract | With temporal-contract      |
+| ------------- | ------------------------- | --------------------------- |
+| Type Safety   | ❌ Manual types           | ✅ Automatic from schemas   |
+| Validation    | ❌ Manual checks          | ✅ Automatic Zod validation |
+| Autocomplete  | ⚠️ Limited                | ✅ Full IDE support         |
+| Refactoring   | ❌ Manual updates         | ✅ Compile-time checks      |
+| Documentation | ❌ Separate               | ✅ Types as docs            |
 
 ## Architecture
 
@@ -232,21 +237,24 @@ Planned for v0.5.0:
 ## Resources
 
 ### Official Documentation
+
 - [Temporal Nexus Overview](https://docs.temporal.io/nexus)
 - [TypeScript Nexus Guide](https://docs.temporal.io/develop/typescript/nexus)
 - [Nexus API Reference](https://typescript.temporal.io/api/namespaces/nexus)
 
 ### Examples
+
 - [nexus-hello sample](https://github.com/temporalio/samples-typescript/tree/main/nexus-hello)
 - [nexus-cancellation sample](https://github.com/temporalio/samples-typescript/tree/main/nexus-cancellation)
 
 ### Articles
+
 - [Announcing Nexus](https://temporal.io/blog/announcing-nexus-connect-temporal-applications-across-isolated-namespaces)
 - [Is Temporal Nexus Right for Your Project?](https://www.bitovi.com/blog/is-temporal-nexus-the-right-choice-for-your-project)
 
 ## Contributing
 
-Want to help implement Nexus support? 
+Want to help implement Nexus support?
 
 1. Review [CONTRIBUTING.md](https://github.com/btravers/temporal-contract/blob/main/CONTRIBUTING.md)
 2. Join the discussion in [GitHub Issues](https://github.com/btravers/temporal-contract/issues)
@@ -256,7 +264,8 @@ Want to help implement Nexus support?
 Have suggestions for the Nexus integration design? Please open an issue or discussion!
 
 ::: info Next Steps
+
 - Learn about [Core Concepts](/guide/core-concepts)
 - Explore [Worker Implementation](/guide/worker-implementation)
 - See [Activity Handlers](/guide/activity-handlers)
-:::
+  :::

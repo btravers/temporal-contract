@@ -88,7 +88,7 @@ export const processOrder = declareWorkflow({
   implementation: async (context, { orderId, amount }) => {
     // Process payment
     const paymentResult = await context.activities.processPayment({ amount });
-    
+
     if (paymentResult.isError()) {
       return Result.Error({
         type: 'OrderFailed',
@@ -96,15 +96,15 @@ export const processOrder = declareWorkflow({
         error: paymentResult.getError()
       });
     }
-    
+
     const payment = paymentResult.get();
-    
+
     // Send confirmation email
     const emailResult = await context.activities.sendEmail({
       to: 'customer@example.com',
       body: `Order ${orderId} confirmed`
     });
-    
+
     if (emailResult.isError()) {
       // Payment succeeded but email failed
       return Result.Error({
@@ -114,7 +114,7 @@ export const processOrder = declareWorkflow({
         partialSuccess: { payment }
       });
     }
-    
+
     return Result.Ok({
       success: true,
       transactionId: payment.transactionId
@@ -173,12 +173,12 @@ return result.match({
 Define typed errors:
 
 ```typescript
-type PaymentError = 
+type PaymentError =
   | { type: 'InsufficientFunds' }
   | { type: 'CardDeclined' }
   | { type: 'NetworkError', message: string };
 
-type EmailError = 
+type EmailError =
   | { type: 'InvalidEmail' }
   | { type: 'ServiceUnavailable' };
 
@@ -201,7 +201,7 @@ Errors are part of the type system:
 
 ```typescript
 // TypeScript knows this can fail
-const result: Future<Payment, PaymentError> = 
+const result: Future<Payment, PaymentError> =
   context.activities.processPayment({ amount: 100 });
 
 // Must handle error case
