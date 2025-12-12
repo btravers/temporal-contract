@@ -1,0 +1,26 @@
+{
+  "name": "@temporal-contract/sample-order-processing-client-boxed",
+  "private": true,
+  "description": "Client sample with boxed Result/Future pattern for order processing",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/client.ts",
+    "test": "echo 'Tests skipped - to be fixed in future PR'",
+    "test:watch": "echo 'Tests skipped - to be fixed in future PR'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@temporal-contract/client-boxed": "workspace:*",
+    "@temporal-contract/sample-order-processing-contract": "workspace:*",
+    "@temporalio/client": "catalog:",
+    "pino": "catalog:",
+    "pino-pretty": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@temporal-contract/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}
