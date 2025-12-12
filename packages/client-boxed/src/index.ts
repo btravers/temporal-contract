@@ -4,7 +4,7 @@ export {
   type TypedWorkflowStartOptions,
 } from "./client.js";
 export {
-  TypedClientBoxedError,
+  TypedClientError,
   WorkflowNotFoundError,
   WorkflowValidationError,
   QueryValidationError,

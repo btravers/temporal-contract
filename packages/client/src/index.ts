@@ -2,7 +2,7 @@ export { TypedClient, type TypedWorkflowHandle, type TypedWorkflowStartOptions }
 
 // Re-export errors from client-boxed for convenience
 export {
-  TypedClientBoxedError as TypedClientError,
+  TypedClientError,
   WorkflowNotFoundError,
   WorkflowValidationError,
   QueryValidationError,

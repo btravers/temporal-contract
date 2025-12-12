@@ -19,7 +19,7 @@ import {
   QueryValidationError,
   SignalValidationError,
   UpdateValidationError,
-  TypedClientBoxedError,
+  TypedClientError,
 } from "./errors.js";
 
 /**
@@ -54,7 +54,7 @@ export interface TypedWorkflowHandleBoxed<TWorkflow extends WorkflowDefinition> 
     [K in keyof ClientInferWorkflowQueries<TWorkflow>]: ClientInferWorkflowQueries<TWorkflow>[K] extends (
       ...args: infer Args
     ) => Promise<infer R>
-      ? (...args: Args) => Future<Result<R, TypedClientBoxedError>>
+      ? (...args: Args) => Future<Result<R, TypedClientError>>
       : never;
   };
 
@@ -66,7 +66,7 @@ export interface TypedWorkflowHandleBoxed<TWorkflow extends WorkflowDefinition> 
     [K in keyof ClientInferWorkflowSignals<TWorkflow>]: ClientInferWorkflowSignals<TWorkflow>[K] extends (
       ...args: infer Args
     ) => Promise<void>
-      ? (...args: Args) => Future<Result<void, TypedClientBoxedError>>
+      ? (...args: Args) => Future<Result<void, TypedClientError>>
       : never;
   };
 
@@ -78,31 +78,29 @@ export interface TypedWorkflowHandleBoxed<TWorkflow extends WorkflowDefinition> 
     [K in keyof ClientInferWorkflowUpdates<TWorkflow>]: ClientInferWorkflowUpdates<TWorkflow>[K] extends (
       ...args: infer Args
     ) => Promise<infer R>
-      ? (...args: Args) => Future<Result<R, TypedClientBoxedError>>
+      ? (...args: Args) => Future<Result<R, TypedClientError>>
       : never;
   };
 
   /**
    * Get workflow result with Result pattern
    */
-  result: () => Future<Result<ClientInferOutput<TWorkflow>, TypedClientBoxedError>>;
+  result: () => Future<Result<ClientInferOutput<TWorkflow>, TypedClientError>>;
 
   /**
    * Terminate workflow with Result pattern
    */
-  terminate: (reason?: string) => Future<Result<void, TypedClientBoxedError>>;
+  terminate: (reason?: string) => Future<Result<void, TypedClientError>>;
 
   /**
    * Cancel workflow with Result pattern
    */
-  cancel: () => Future<Result<void, TypedClientBoxedError>>;
+  cancel: () => Future<Result<void, TypedClientError>>;
 
   /**
    * Get workflow execution description including status and metadata
    */
-  describe: () => Future<
-    Result<Awaited<ReturnType<WorkflowHandle["describe"]>>, TypedClientBoxedError>
-  >;
+  describe: () => Future<Result<Awaited<ReturnType<WorkflowHandle["describe"]>>, TypedClientError>>;
 
   /**
    * Fetch the workflow execution history
@@ -182,7 +180,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
       args: ClientInferInput<TContract["workflows"][TWorkflowName]>;
     },
   ): Future<
-    Result<TypedWorkflowHandleBoxed<TContract["workflows"][TWorkflowName]>, TypedClientBoxedError>
+    Result<TypedWorkflowHandleBoxed<TContract["workflows"][TWorkflowName]>, TypedClientError>
   > {
     return Future.make((resolve) => {
       const definition = this.contract.workflows[workflowName as string];
@@ -230,7 +228,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
         } catch (error) {
           resolve(
             Result.Error(
-              new TypedClientBoxedError(
+              new TypedClientError(
                 `Failed to start workflow: ${error instanceof Error ? error.message : String(error)}`,
               ),
             ),
@@ -266,9 +264,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
     }: TypedWorkflowStartOptions & {
       args: ClientInferInput<TContract["workflows"][TWorkflowName]>;
     },
-  ): Future<
-    Result<ClientInferOutput<TContract["workflows"][TWorkflowName]>, TypedClientBoxedError>
-  > {
+  ): Future<Result<ClientInferOutput<TContract["workflows"][TWorkflowName]>, TypedClientError>> {
     return Future.make((resolve) => {
       const definition = this.contract.workflows[workflowName as string];
 
@@ -326,7 +322,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
         } catch (error) {
           resolve(
             Result.Error(
-              new TypedClientBoxedError(
+              new TypedClientError(
                 `Failed to execute workflow: ${error instanceof Error ? error.message : String(error)}`,
               ),
             ),
@@ -355,7 +351,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
     workflowName: TWorkflowName,
     workflowId: string,
   ): Future<
-    Result<TypedWorkflowHandleBoxed<TContract["workflows"][TWorkflowName]>, TypedClientBoxedError>
+    Result<TypedWorkflowHandleBoxed<TContract["workflows"][TWorkflowName]>, TypedClientError>
   > {
     return Future.make((resolve) => {
       const definition = this.contract.workflows[workflowName as string];
@@ -381,7 +377,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
       } catch (error) {
         resolve(
           Result.Error(
-            new TypedClientBoxedError(
+            new TypedClientError(
               `Failed to get workflow handle: ${error instanceof Error ? error.message : String(error)}`,
             ),
           ),
@@ -401,7 +397,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
     >) {
       (queries as Record<string, unknown>)[queryName] = (
         args: ClientInferInput<typeof queryDef>,
-      ): Future<Result<unknown, TypedClientBoxedError>> => {
+      ): Future<Result<unknown, TypedClientError>> => {
         return Future.make((resolve) => {
           (async () => {
             const inputResult = await queryDef.input["~standard"].validate(args);
@@ -427,7 +423,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
             } catch (error) {
               resolve(
                 Result.Error(
-                  new TypedClientBoxedError(
+                  new TypedClientError(
                     `Query failed: ${error instanceof Error ? error.message : String(error)}`,
                   ),
                 ),
@@ -445,7 +441,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
     >) {
       (signals as Record<string, unknown>)[signalName] = (
         args: ClientInferInput<typeof signalDef>,
-      ): Future<Result<void, TypedClientBoxedError>> => {
+      ): Future<Result<void, TypedClientError>> => {
         return Future.make((resolve) => {
           (async () => {
             const inputResult = await signalDef.input["~standard"].validate(args);
@@ -460,7 +456,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
             } catch (error) {
               resolve(
                 Result.Error(
-                  new TypedClientBoxedError(
+                  new TypedClientError(
                     `Signal failed: ${error instanceof Error ? error.message : String(error)}`,
                   ),
                 ),
@@ -478,7 +474,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
     >) {
       (updates as Record<string, unknown>)[updateName] = (
         args: ClientInferInput<typeof updateDef>,
-      ): Future<Result<unknown, TypedClientBoxedError>> => {
+      ): Future<Result<unknown, TypedClientError>> => {
         return Future.make((resolve) => {
           (async () => {
             const inputResult = await updateDef.input["~standard"].validate(args);
@@ -508,7 +504,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
             } catch (error) {
               resolve(
                 Result.Error(
-                  new TypedClientBoxedError(
+                  new TypedClientError(
                     `Update failed: ${error instanceof Error ? error.message : String(error)}`,
                   ),
                 ),
@@ -524,7 +520,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
       queries,
       signals,
       updates,
-      result: (): Future<Result<ClientInferOutput<TWorkflow>, TypedClientBoxedError>> => {
+      result: (): Future<Result<ClientInferOutput<TWorkflow>, TypedClientError>> => {
         return Future.make((resolve) => {
           (async () => {
             try {
@@ -543,7 +539,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
             } catch (error) {
               resolve(
                 Result.Error(
-                  new TypedClientBoxedError(
+                  new TypedClientError(
                     `Workflow execution failed: ${error instanceof Error ? error.message : String(error)}`,
                   ),
                 ),
@@ -552,7 +548,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
           })();
         });
       },
-      terminate: (reason?: string): Future<Result<void, TypedClientBoxedError>> => {
+      terminate: (reason?: string): Future<Result<void, TypedClientError>> => {
         return Future.make((resolve) => {
           (async () => {
             try {
@@ -561,7 +557,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
             } catch (error) {
               resolve(
                 Result.Error(
-                  new TypedClientBoxedError(
+                  new TypedClientError(
                     `Terminate failed: ${error instanceof Error ? error.message : String(error)}`,
                   ),
                 ),
@@ -570,7 +566,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
           })();
         });
       },
-      cancel: (): Future<Result<void, TypedClientBoxedError>> => {
+      cancel: (): Future<Result<void, TypedClientError>> => {
         return Future.make((resolve) => {
           (async () => {
             try {
@@ -579,7 +575,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
             } catch (error) {
               resolve(
                 Result.Error(
-                  new TypedClientBoxedError(
+                  new TypedClientError(
                     `Cancel failed: ${error instanceof Error ? error.message : String(error)}`,
                   ),
                 ),
@@ -589,7 +585,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
         });
       },
       describe: (): Future<
-        Result<Awaited<ReturnType<WorkflowHandle["describe"]>>, TypedClientBoxedError>
+        Result<Awaited<ReturnType<WorkflowHandle["describe"]>>, TypedClientError>
       > => {
         return Future.make((resolve) => {
           (async () => {
@@ -599,7 +595,7 @@ export class TypedClientBoxed<TContract extends ContractDefinition> {
             } catch (error) {
               resolve(
                 Result.Error(
-                  new TypedClientBoxedError(
+                  new TypedClientError(
                     `Describe failed: ${error instanceof Error ? error.message : String(error)}`,
                   ),
                 ),
