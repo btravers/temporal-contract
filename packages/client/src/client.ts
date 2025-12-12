@@ -132,14 +132,10 @@ export class TypedClient<TContract extends ContractDefinition> {
       args: ClientInferInput<TContract["workflows"][TWorkflowName]>;
     },
   ): Promise<TypedWorkflowHandle<TContract["workflows"][TWorkflowName]>> {
-    const resultFuture = this.boxedClient.startWorkflow(workflowName, options);
-    const result = await resultFuture.toPromise();
-
-    if (result.isError()) {
-      throw result.error;
-    }
-
-    return this.wrapBoxedHandle(result.value);
+    const boxedHandle = await this.boxedClient
+      .startWorkflow(workflowName, options)
+      .resultToPromise();
+    return this.wrapBoxedHandle(boxedHandle);
   }
 
   /**
@@ -163,14 +159,7 @@ export class TypedClient<TContract extends ContractDefinition> {
       args: ClientInferInput<TContract["workflows"][TWorkflowName]>;
     },
   ): Promise<ClientInferOutput<TContract["workflows"][TWorkflowName]>> {
-    const resultFuture = this.boxedClient.executeWorkflow(workflowName, options);
-    const result = await resultFuture.toPromise();
-
-    if (result.isError()) {
-      throw result.error;
-    }
-
-    return result.value;
+    return this.boxedClient.executeWorkflow(workflowName, options).resultToPromise();
   }
 
   /**
@@ -186,14 +175,10 @@ export class TypedClient<TContract extends ContractDefinition> {
     workflowName: TWorkflowName,
     workflowId: string,
   ): Promise<TypedWorkflowHandle<TContract["workflows"][TWorkflowName]>> {
-    const resultFuture = this.boxedClient.getHandle(workflowName, workflowId);
-    const result = await resultFuture.toPromise();
-
-    if (result.isError()) {
-      throw result.error;
-    }
-
-    return this.wrapBoxedHandle(result.value);
+    const boxedHandle = await this.boxedClient
+      .getHandle(workflowName, workflowId)
+      .resultToPromise();
+    return this.wrapBoxedHandle(boxedHandle);
   }
 
   private wrapBoxedHandle<TWorkflow extends WorkflowDefinition>(
@@ -202,39 +187,24 @@ export class TypedClient<TContract extends ContractDefinition> {
     // Create typed queries proxy
     const queries = {} as ClientInferWorkflowQueries<TWorkflow>;
     for (const [queryName, queryFn] of Object.entries(boxedHandle.queries)) {
-      (queries as Record<string, unknown>)[queryName] = async (args: unknown) => {
-        const resultFuture = (queryFn as (args: unknown) => ReturnType<typeof queryFn>)(args);
-        const result = await resultFuture.toPromise();
-        if (result.isError()) {
-          throw result.error;
-        }
-        return result.value;
+      (queries as Record<string, unknown>)[queryName] = (args: unknown) => {
+        return (queryFn as (args: unknown) => ReturnType<typeof queryFn>)(args).resultToPromise();
       };
     }
 
     // Create typed signals proxy
     const signals = {} as ClientInferWorkflowSignals<TWorkflow>;
     for (const [signalName, signalFn] of Object.entries(boxedHandle.signals)) {
-      (signals as Record<string, unknown>)[signalName] = async (args: unknown) => {
-        const resultFuture = (signalFn as (args: unknown) => ReturnType<typeof signalFn>)(args);
-        const result = await resultFuture.toPromise();
-        if (result.isError()) {
-          throw result.error;
-        }
-        return result.value;
+      (signals as Record<string, unknown>)[signalName] = (args: unknown) => {
+        return (signalFn as (args: unknown) => ReturnType<typeof signalFn>)(args).resultToPromise();
       };
     }
 
     // Create typed updates proxy
     const updates = {} as ClientInferWorkflowUpdates<TWorkflow>;
     for (const [updateName, updateFn] of Object.entries(boxedHandle.updates)) {
-      (updates as Record<string, unknown>)[updateName] = async (args: unknown) => {
-        const resultFuture = (updateFn as (args: unknown) => ReturnType<typeof updateFn>)(args);
-        const result = await resultFuture.toPromise();
-        if (result.isError()) {
-          throw result.error;
-        }
-        return result.value;
+      (updates as Record<string, unknown>)[updateName] = (args: unknown) => {
+        return (updateFn as (args: unknown) => ReturnType<typeof updateFn>)(args).resultToPromise();
       };
     }
 
@@ -243,35 +213,17 @@ export class TypedClient<TContract extends ContractDefinition> {
       queries,
       signals,
       updates,
-      result: async () => {
-        const resultFuture = boxedHandle.result();
-        const result = await resultFuture.toPromise();
-        if (result.isError()) {
-          throw result.error;
-        }
-        return result.value as ClientInferOutput<TWorkflow>;
+      result: () => {
+        return boxedHandle.result().resultToPromise() as Promise<ClientInferOutput<TWorkflow>>;
       },
-      terminate: async (reason?: string) => {
-        const resultFuture = boxedHandle.terminate(reason);
-        const result = await resultFuture.toPromise();
-        if (result.isError()) {
-          throw result.error;
-        }
+      terminate: (reason?: string) => {
+        return boxedHandle.terminate(reason).resultToPromise();
       },
-      cancel: async () => {
-        const resultFuture = boxedHandle.cancel();
-        const result = await resultFuture.toPromise();
-        if (result.isError()) {
-          throw result.error;
-        }
+      cancel: () => {
+        return boxedHandle.cancel().resultToPromise();
       },
-      describe: async () => {
-        const resultFuture = boxedHandle.describe();
-        const result = await resultFuture.toPromise();
-        if (result.isError()) {
-          throw result.error;
-        }
-        return result.value;
+      describe: () => {
+        return boxedHandle.describe().resultToPromise();
       },
       fetchHistory: () => boxedHandle.fetchHistory(),
     };
