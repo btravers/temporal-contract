@@ -8,7 +8,7 @@ import {
   QueryValidationError,
   SignalValidationError,
   UpdateValidationError,
-} from "./errors.js";
+} from "./index.js";
 
 // Create mock workflow object
 const createMockWorkflow = () => ({

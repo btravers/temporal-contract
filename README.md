@@ -70,6 +70,7 @@ pnpm add @temporal-contract/contract @temporal-contract/worker @temporal-contrac
 | [@temporal-contract/worker](./packages/worker)             | Type-safe worker with automatic validation |
 | [@temporal-contract/worker-boxed](./packages/worker-boxed) | Worker with Result/Future pattern          |
 | [@temporal-contract/client](./packages/client)             | Type-safe client for consuming workflows   |
+| [@temporal-contract/client-boxed](./packages/client-boxed) | Client with Result/Future pattern          |
 | [@temporal-contract/testing](./packages/testing)           | Testing utilities for integration tests    |
 
 ## Contributing

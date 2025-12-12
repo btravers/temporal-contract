@@ -1,12 +1,15 @@
 {
-  "name": "@temporal-contract/client",
+  "name": "@temporal-contract/client-boxed",
   "version": "0.0.3",
-  "description": "Client utilities for consuming temporal-contract workflows",
+  "description": "Client utilities with boxed Result/Future pattern for consuming temporal-contract workflows",
   "keywords": [
     "temporal",
     "typescript",
     "contract",
-    "client"
+    "client",
+    "boxed",
+    "result",
+    "future"
   ],
   "homepage": "https://github.com/btravers/temporal-contract#readme",
   "bugs": {
@@ -15,10 +18,10 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/btravers/temporal-contract.git",
-    "directory": "packages/client"
+    "directory": "packages/client-boxed"
   },
   "license": "MIT",
-  "author": "Benoit TRAVERS <benoit.travers.frgmail.com>",
+  "author": "Benoit TRAVERS <benoit.travers.fr@gmail.com>",
   "type": "module",
   "exports": {
     ".": {
@@ -47,7 +50,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@temporal-contract/client-boxed": "workspace:*",
+    "@standard-schema/spec": "catalog:",
+    "@swan-io/boxed": "catalog:",
     "@temporal-contract/contract": "workspace:*"
   },
   "devDependencies": {
