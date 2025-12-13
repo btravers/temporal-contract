@@ -73,81 +73,89 @@ async function run() {
   for (const order of orders) {
     logger.info({ order }, `📦 Creating order: ${order.orderId}`);
 
-    // Use flatMapOk to chain operations and handle errors with tapError
-    await contractClient
+    // Start workflow and get handle
+    const handleResult = await contractClient
       .startWorkflow("processOrder", {
         workflowId: order.orderId,
         args: order,
       })
-      .tapError((error) => {
-        // Log error but continue the chain
-        match(error)
-          .with({ name: "WorkflowNotFoundError" }, (err) => {
-            logger.error({ error: err, orderId: order.orderId }, "❌ Workflow not found");
-          })
-          .with({ name: "WorkflowValidationError" }, (err) => {
-            logger.error({ error: err, orderId: order.orderId }, "❌ Workflow validation failed");
-          })
-          .with({ name: "TypedClientError" }, (err) => {
-            logger.error({ error: err, orderId: order.orderId }, "❌ Failed to start workflow");
-          })
-          .otherwise((err) => {
-            logger.error(
-              { error: err, orderId: order.orderId },
-              "❌ Unknown error starting workflow",
-            );
-          });
-      })
-      .flatMapOk((handle) => {
-        logger.info({ workflowId: handle.workflowId }, `✅ Workflow started: ${handle.workflowId}`);
-        logger.info("⌛ Waiting for workflow result...");
-        return handle.result();
-      })
-      .tapOk((output) => {
-        // Handle successful result
-        if (output.status === "completed") {
-          logger.info(
-            {
-              orderId: output.orderId,
-              transactionId: output.transactionId,
-              trackingNumber: output.trackingNumber,
-            },
-            `🎉 Order ${output.orderId} completed successfully!`,
-          );
-        } else {
-          logger.error(
-            {
-              orderId: output.orderId,
-              failureReason: output.failureReason,
-              errorCode: output.errorCode,
-            },
-            `❌ Order ${output.orderId} failed`,
-          );
-        }
-      })
-      .tapError((error) => {
-        // Handle workflow execution errors
-        match(error)
-          .with({ name: "WorkflowValidationError" }, (err) => {
-            logger.error(
-              { error: err, orderId: order.orderId },
-              "❌ Workflow result validation failed",
-            );
-          })
-          .with({ name: "TypedClientError" }, (err) => {
-            logger.error({ error: err, orderId: order.orderId }, "❌ Workflow execution failed");
-          })
-          .otherwise((err) => {
-            logger.error(
-              { error: err, orderId: order.orderId },
-              "❌ Unknown error during workflow execution",
-            );
-          });
-      })
       .toPromise();
+
+    // Handle workflow start errors
+    if (handleResult.isError()) {
+      const error = handleResult.error;
+      match(error)
+        .with({ name: "WorkflowNotFoundError" }, (err) => {
+          logger.error({ error: err, orderId: order.orderId }, "❌ Workflow not found");
+        })
+        .with({ name: "WorkflowValidationError" }, (err) => {
+          logger.error({ error: err, orderId: order.orderId }, "❌ Workflow validation failed");
+        })
+        .with({ name: "TypedClientError" }, (err) => {
+          logger.error({ error: err, orderId: order.orderId }, "❌ Failed to start workflow");
+        })
+        .otherwise((err) => {
+          logger.error(
+            { error: err, orderId: order.orderId },
+            "❌ Unknown error starting workflow",
+          );
+        });
+      continue;
+    }
+
+    const handle = handleResult.value;
+    logger.info({ workflowId: handle.workflowId }, `✅ Workflow started: ${handle.workflowId}`);
+    logger.info("⌛ Waiting for workflow result...");
+
+    // Get workflow result
+    const resultFuture = await handle.result().toPromise();
+
+    // Handle workflow execution result
+    if (resultFuture.isError()) {
+      const error = resultFuture.error;
+      match(error)
+        .with({ name: "WorkflowValidationError" }, (err) => {
+          logger.error(
+            { error: err, orderId: order.orderId },
+            "❌ Workflow result validation failed",
+          );
+        })
+        .with({ name: "TypedClientError" }, (err) => {
+          logger.error({ error: err, orderId: order.orderId }, "❌ Workflow execution failed");
+        })
+        .otherwise((err) => {
+          logger.error(
+            { error: err, orderId: order.orderId },
+            "❌ Unknown error during workflow execution",
+          );
+        });
+      continue;
+    }
+
+    const output = resultFuture.value;
+    // Handle successful result
+    if (output.status === "completed") {
+      logger.info(
+        {
+          orderId: output.orderId,
+          transactionId: output.transactionId,
+          trackingNumber: output.trackingNumber,
+        },
+        `🎉 Order ${output.orderId} completed successfully!`,
+      );
+    } else {
+      logger.error(
+        {
+          orderId: output.orderId,
+          failureReason: output.failureReason,
+          errorCode: output.errorCode,
+        },
+        `❌ Order ${output.orderId} failed`,
+      );
+    }
   }
 
-  // Example using executeWorkflow with functional composition
+  // Example using executeWorkflow with Result pattern
   logger.info("\n📦 Example: Using executeWorkflow with Result pattern...");
 
   const exampleOrder: Order = {
@@ -163,45 +171,42 @@ async function run() {
     totalAmount: 99.99,
   };
 
-  // Execute workflow - use flatMapOk to transform the result
-  await contractClient
+  // Execute workflow and handle result
+  const result = await contractClient
     .executeWorkflow("processOrder", {
       workflowId: exampleOrder.orderId,
       args: exampleOrder,
     })
-    .flatMapOk((output) => {
-      // Transform the result
-      const summary = {
-        id: output.orderId,
-        success: output.status === "completed",
-        message:
-          output.status === "completed"
-            ? `Order completed with tracking: ${output.trackingNumber}`
-            : `Order failed: ${output.failureReason}`,
-      };
-      logger.info({ data: summary }, `📊 Order summary: ${summary.message}`);
-      return contractClient.executeWorkflow("processOrder", {
-        workflowId: `${exampleOrder.orderId}-NEXT`,
-        args: exampleOrder,
-      });
-    })
-    .tapError((error) => {
-      // Handle all errors with pattern matching
-      match(error)
-        .with({ name: "WorkflowNotFoundError" }, (err) => {
-          logger.error({ error: err }, "❌ Workflow not found");
-        })
-        .with({ name: "WorkflowValidationError" }, (err) => {
-          logger.error({ error: err }, "❌ Validation failed");
-        })
-        .with({ name: "TypedClientError" }, (err) => {
-          logger.error({ error: err }, "❌ Workflow execution failed");
-        })
-        .otherwise((err) => {
-          logger.error({ error: err }, "❌ Unknown error");
-        });
-    })
     .toPromise();
+
+  // Handle result with pattern matching
+  if (result.isOk()) {
+    const output = result.value;
+    const summary = {
+      id: output.orderId,
+      success: output.status === "completed",
+      message:
+        output.status === "completed"
+          ? `Order completed with tracking: ${output.trackingNumber}`
+          : `Order failed: ${output.failureReason}`,
+    };
+    logger.info({ data: summary }, `📊 Order summary: ${summary.message}`);
+  } else {
+    // Handle errors
+    match(result.error)
+      .with({ name: "WorkflowNotFoundError" }, (err) => {
+        logger.error({ error: err }, "❌ Workflow not found");
+      })
+      .with({ name: "WorkflowValidationError" }, (err) => {
+        logger.error({ error: err }, "❌ Validation failed");
+      })
+      .with({ name: "TypedClientError" }, (err) => {
+        logger.error({ error: err }, "❌ Workflow execution failed");
+      })
+      .otherwise((err) => {
+        logger.error({ error: err }, "❌ Unknown error");
+      });
+  }
 
   logger.info("\n✨ Done!");
   logger.info("");

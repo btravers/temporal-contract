@@ -50,66 +50,118 @@ export const activitiesHandler = declareActivitiesHandler({
     },
 
     sendNotification: ({ customerId, subject, message }) => {
-      return sendNotificationUseCase.execute(customerId, subject, message).mapError(
-        (domainError) =>
-          // Convert domain error to ActivityError for retry handling
-          new ActivityError(domainError.code, domainError.message, domainError.details),
-      );
+      return Future.make((resolve) => {
+        sendNotificationUseCase
+          .execute(customerId, subject, message)
+          .then(() => resolve(Result.Ok(undefined)))
+          .catch((error) =>
+            resolve(
+              Result.Error(
+                new ActivityError(
+                  "NOTIFICATION_FAILED",
+                  error instanceof Error ? error.message : "Failed to send notification",
+                  error,
+                ),
+              ),
+            ),
+          );
+      });
     },
 
     // processOrder workflow activities
     processPayment: ({ customerId, amount }) => {
-      return processPaymentUseCase.execute(customerId, amount).mapError(
-        (domainError) =>
-          // ⚠️ CRITICAL: Requalify all domain errors as ActivityError
-          //
-          // This is REQUIRED for Temporal's retry mechanism to work properly:
-          // 1. Domain layer returns Result.Error({ code, message, details })
-          // 2. Activity layer MUST wrap it in ActivityError (extends Error)
-          // 3. Temporal can then:
-          //    - Apply retry policies based on error type
-          //    - Track failures properly in workflow history
-          //    - Enable proper error handling in workflows
-          //
-          // Without this, errors would not trigger retries correctly!
-          new ActivityError(domainError.code, domainError.message, domainError.details),
-      );
+      return Future.make((resolve) => {
+        processPaymentUseCase
+          .execute(customerId, amount)
+          .then((result) => resolve(Result.Ok(result)))
+          .catch((error) =>
+            resolve(
+              Result.Error(
+                new ActivityError(
+                  "PAYMENT_FAILED",
+                  error instanceof Error ? error.message : "Payment processing failed",
+                  error,
+                ),
+              ),
+            ),
+          );
+      });
     },
 
     reserveInventory: (items) => {
-      return reserveInventoryUseCase
-        .execute(items)
-        .mapError(
-          (domainError) =>
-            new ActivityError(domainError.code, domainError.message, domainError.details),
-        );
+      return Future.make((resolve) => {
+        reserveInventoryUseCase
+          .execute(items)
+          .then((result) => resolve(Result.Ok(result)))
+          .catch((error) =>
+            resolve(
+              Result.Error(
+                new ActivityError(
+                  "INVENTORY_RESERVATION_FAILED",
+                  error instanceof Error ? error.message : "Inventory reservation failed",
+                  error,
+                ),
+              ),
+            ),
+          );
+      });
     },
 
     releaseInventory: (reservationId) => {
-      return releaseInventoryUseCase
-        .execute(reservationId)
-        .mapError(
-          (domainError) =>
-            new ActivityError(domainError.code, domainError.message, domainError.details),
-        );
+      return Future.make((resolve) => {
+        releaseInventoryUseCase
+          .execute(reservationId)
+          .then(() => resolve(Result.Ok(undefined)))
+          .catch((error) =>
+            resolve(
+              Result.Error(
+                new ActivityError(
+                  "INVENTORY_RELEASE_FAILED",
+                  error instanceof Error ? error.message : "Inventory release failed",
+                  error,
+                ),
+              ),
+            ),
+          );
+      });
     },
 
     createShipment: ({ orderId, customerId }) => {
-      return createShipmentUseCase
-        .execute(orderId, customerId)
-        .mapError(
-          (domainError) =>
-            new ActivityError(domainError.code, domainError.message, domainError.details),
-        );
+      return Future.make((resolve) => {
+        createShipmentUseCase
+          .execute(orderId, customerId)
+          .then((result) => resolve(Result.Ok(result)))
+          .catch((error) =>
+            resolve(
+              Result.Error(
+                new ActivityError(
+                  "SHIPMENT_CREATION_FAILED",
+                  error instanceof Error ? error.message : "Shipment creation failed",
+                  error,
+                ),
+              ),
+            ),
+          );
+      });
     },
 
     refundPayment: (transactionId) => {
-      return refundPaymentUseCase
-        .execute(transactionId)
-        .mapError(
-          (domainError) =>
-            new ActivityError(domainError.code, domainError.message, domainError.details),
-        );
+      return Future.make((resolve) => {
+        refundPaymentUseCase
+          .execute(transactionId)
+          .then(() => resolve(Result.Ok(undefined)))
+          .catch((error) =>
+            resolve(
+              Result.Error(
+                new ActivityError(
+                  "REFUND_FAILED",
+                  error instanceof Error ? error.message : "Refund failed",
+                  error,
+                ),
+              ),
+            ),
+          );
+      });
     },
   },
 });

@@ -235,7 +235,10 @@ function createValidatedActivities<
     const rawActivity = rawActivities[activityName];
 
     if (!rawActivity) {
-      throw new ActivityImplementationNotFoundError(activityName, Object.keys(rawActivities));
+      throw new Error(
+        `Activity implementation not found for: "${activityName}". ` +
+          `Available activities: ${Object.keys(rawActivities).length > 0 ? Object.keys(rawActivities).join(", ") : "none"}`,
+      );
     }
 
     // Create the wrapped activity with validation

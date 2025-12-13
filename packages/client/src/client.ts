@@ -179,9 +179,7 @@ export class TypedClient<TContract extends ContractDefinition> {
     }: TypedWorkflowStartOptions & {
       args: ClientInferInput<TContract["workflows"][TWorkflowName]>;
     },
-  ): Future<
-    Result<TypedWorkflowHandleBoxed<TContract["workflows"][TWorkflowName]>, TypedClientError>
-  > {
+  ): Future<Result<TypedWorkflowHandle<TContract["workflows"][TWorkflowName]>, TypedClientError>> {
     return Future.make((resolve) => {
       const definition = this.contract.workflows[workflowName as string];
 
@@ -220,10 +218,9 @@ export class TypedClient<TContract extends ContractDefinition> {
             args: [validatedInput],
           });
 
-          const typedHandle = this.createTypedHandle(
-            handle,
-            definition,
-          ) as TypedWorkflowHandleBoxed<TContract["workflows"][TWorkflowName]>;
+          const typedHandle = this.createTypedHandle(handle, definition) as TypedWorkflowHandle<
+            TContract["workflows"][TWorkflowName]
+          >;
           resolve(Result.Ok(typedHandle));
         } catch (error) {
           resolve(
@@ -350,9 +347,7 @@ export class TypedClient<TContract extends ContractDefinition> {
   getHandle<TWorkflowName extends keyof TContract["workflows"]>(
     workflowName: TWorkflowName,
     workflowId: string,
-  ): Future<
-    Result<TypedWorkflowHandleBoxed<TContract["workflows"][TWorkflowName]>, TypedClientError>
-  > {
+  ): Future<Result<TypedWorkflowHandle<TContract["workflows"][TWorkflowName]>, TypedClientError>> {
     return Future.make((resolve) => {
       const definition = this.contract.workflows[workflowName as string];
 
@@ -370,7 +365,7 @@ export class TypedClient<TContract extends ContractDefinition> {
 
       try {
         const handle = this.client.workflow.getHandle(workflowId);
-        const typedHandle = this.createTypedHandle(handle, definition) as TypedWorkflowHandleBoxed<
+        const typedHandle = this.createTypedHandle(handle, definition) as TypedWorkflowHandle<
           TContract["workflows"][TWorkflowName]
         >;
         resolve(Result.Ok(typedHandle));
@@ -389,9 +384,9 @@ export class TypedClient<TContract extends ContractDefinition> {
   private createTypedHandle<TWorkflow extends WorkflowDefinition>(
     handle: WorkflowHandle,
     definition: TWorkflow,
-  ): TypedWorkflowHandleBoxed<TWorkflow> {
+  ): TypedWorkflowHandle<TWorkflow> {
     // Create typed queries proxy with Future/Result
-    const queries = {} as TypedWorkflowHandleBoxed<TWorkflow>["queries"];
+    const queries = {} as TypedWorkflowHandle<TWorkflow>["queries"];
     for (const [queryName, queryDef] of Object.entries(definition.queries ?? {}) as Array<
       [string, QueryDefinition]
     >) {
@@ -435,7 +430,7 @@ export class TypedClient<TContract extends ContractDefinition> {
     }
 
     // Create typed signals proxy with Future/Result
-    const signals = {} as TypedWorkflowHandleBoxed<TWorkflow>["signals"];
+    const signals = {} as TypedWorkflowHandle<TWorkflow>["signals"];
     for (const [signalName, signalDef] of Object.entries(definition.signals ?? {}) as Array<
       [string, SignalDefinition]
     >) {
@@ -468,7 +463,7 @@ export class TypedClient<TContract extends ContractDefinition> {
     }
 
     // Create typed updates proxy with Future/Result
-    const updates = {} as TypedWorkflowHandleBoxed<TWorkflow>["updates"];
+    const updates = {} as TypedWorkflowHandle<TWorkflow>["updates"];
     for (const [updateName, updateDef] of Object.entries(definition.updates ?? {}) as Array<
       [string, UpdateDefinition]
     >) {
@@ -515,7 +510,7 @@ export class TypedClient<TContract extends ContractDefinition> {
       };
     }
 
-    const typedHandle: TypedWorkflowHandleBoxed<TWorkflow> = {
+    const typedHandle: TypedWorkflowHandle<TWorkflow> = {
       workflowId: handle.workflowId,
       queries,
       signals,
