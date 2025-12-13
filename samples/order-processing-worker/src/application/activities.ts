@@ -50,118 +50,72 @@ export const activitiesHandler = declareActivitiesHandler({
     },
 
     sendNotification: ({ customerId, subject, message }) => {
-      return Future.make((resolve) => {
-        sendNotificationUseCase
-          .execute(customerId, subject, message)
-          .then(() => resolve(Result.Ok(undefined)))
-          .catch((error) =>
-            resolve(
-              Result.Error(
-                new ActivityError(
-                  "NOTIFICATION_FAILED",
-                  error instanceof Error ? error.message : "Failed to send notification",
-                  error,
-                ),
-              ),
-            ),
-          );
-      });
+      return Future.fromPromise(
+        sendNotificationUseCase.execute(customerId, subject, message),
+      ).mapError(
+        (error) =>
+          new ActivityError(
+            "NOTIFICATION_FAILED",
+            error instanceof Error ? error.message : "Failed to send notification",
+            error,
+          ),
+      );
     },
 
     // processOrder workflow activities
     processPayment: ({ customerId, amount }) => {
-      return Future.make((resolve) => {
-        processPaymentUseCase
-          .execute(customerId, amount)
-          .then((result) => resolve(Result.Ok(result)))
-          .catch((error) =>
-            resolve(
-              Result.Error(
-                new ActivityError(
-                  "PAYMENT_FAILED",
-                  error instanceof Error ? error.message : "Payment processing failed",
-                  error,
-                ),
-              ),
-            ),
-          );
-      });
+      return Future.fromPromise(processPaymentUseCase.execute(customerId, amount)).mapError(
+        (error) =>
+          new ActivityError(
+            "PAYMENT_FAILED",
+            error instanceof Error ? error.message : "Payment processing failed",
+            error,
+          ),
+      );
     },
 
     reserveInventory: (items) => {
-      return Future.make((resolve) => {
-        reserveInventoryUseCase
-          .execute(items)
-          .then((result) => resolve(Result.Ok(result)))
-          .catch((error) =>
-            resolve(
-              Result.Error(
-                new ActivityError(
-                  "INVENTORY_RESERVATION_FAILED",
-                  error instanceof Error ? error.message : "Inventory reservation failed",
-                  error,
-                ),
-              ),
-            ),
-          );
-      });
+      return Future.fromPromise(reserveInventoryUseCase.execute(items)).mapError(
+        (error) =>
+          new ActivityError(
+            "INVENTORY_RESERVATION_FAILED",
+            error instanceof Error ? error.message : "Inventory reservation failed",
+            error,
+          ),
+      );
     },
 
     releaseInventory: (reservationId) => {
-      return Future.make((resolve) => {
-        releaseInventoryUseCase
-          .execute(reservationId)
-          .then(() => resolve(Result.Ok(undefined)))
-          .catch((error) =>
-            resolve(
-              Result.Error(
-                new ActivityError(
-                  "INVENTORY_RELEASE_FAILED",
-                  error instanceof Error ? error.message : "Inventory release failed",
-                  error,
-                ),
-              ),
-            ),
-          );
-      });
+      return Future.fromPromise(releaseInventoryUseCase.execute(reservationId)).mapError(
+        (error) =>
+          new ActivityError(
+            "INVENTORY_RELEASE_FAILED",
+            error instanceof Error ? error.message : "Inventory release failed",
+            error,
+          ),
+      );
     },
 
     createShipment: ({ orderId, customerId }) => {
-      return Future.make((resolve) => {
-        createShipmentUseCase
-          .execute(orderId, customerId)
-          .then((result) => resolve(Result.Ok(result)))
-          .catch((error) =>
-            resolve(
-              Result.Error(
-                new ActivityError(
-                  "SHIPMENT_CREATION_FAILED",
-                  error instanceof Error ? error.message : "Shipment creation failed",
-                  error,
-                ),
-              ),
-            ),
-          );
-      });
+      return Future.fromPromise(createShipmentUseCase.execute(orderId, customerId)).mapError(
+        (error) =>
+          new ActivityError(
+            "SHIPMENT_CREATION_FAILED",
+            error instanceof Error ? error.message : "Shipment creation failed",
+            error,
+          ),
+      );
     },
 
     refundPayment: (transactionId) => {
-      return Future.make((resolve) => {
-        refundPaymentUseCase
-          .execute(transactionId)
-          .then(() => resolve(Result.Ok(undefined)))
-          .catch((error) =>
-            resolve(
-              Result.Error(
-                new ActivityError(
-                  "REFUND_FAILED",
-                  error instanceof Error ? error.message : "Refund failed",
-                  error,
-                ),
-              ),
-            ),
-          );
-      });
+      return Future.fromPromise(refundPaymentUseCase.execute(transactionId)).mapError(
+        (error) =>
+          new ActivityError(
+            "REFUND_FAILED",
+            error instanceof Error ? error.message : "Refund failed",
+            error,
+          ),
+      );
     },
   },
 });
