@@ -6,7 +6,6 @@
     [
       "@temporal-contract/contract",
       "@temporal-contract/worker",
-      "@temporal-contract/worker-boxed",
       "@temporal-contract/client",
       "@temporal-contract/testing",
       "@temporal-contract/tsconfig"

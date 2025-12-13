@@ -1,12 +1,13 @@
-# Basic Order Processing
+# Order Processing Example
 
-A complete e-commerce order processing workflow example demonstrating contract separation.
+A complete e-commerce order processing workflow example with Result/Future pattern.
 
 ## Overview
 
 This example demonstrates:
 
 - **Separated contract package**: Contract is in its own package that can be shared
+- **Result/Future pattern**: Explicit error handling with type-safe errors
 - Order validation
 - Payment processing
 - Inventory management
@@ -29,7 +30,7 @@ samples/
 └── order-processing-worker/             # Worker/Client implementation
     ├── src/
     │   ├── application/
-    │   │   ├── activities.ts           # Activity implementations
+    │   │   ├── activities.ts           # Activity implementations (Result/Future)
     │   │   ├── workflows.ts            # Workflow implementations
     │   │   ├── worker.ts               # Worker setup
     │   │   └── client.ts               # Client example
@@ -49,11 +50,20 @@ The contract is separated into its own package (`order-processing-contract`) whi
 - Provides full TypeScript type safety across all boundaries
 - Can be versioned and published independently
 
+### Result/Future Pattern
+
+This example uses `@swan-io/boxed` for explicit error handling:
+
+- Activities return `Future<Result<T, ActivityError>>` instead of throwing
+- Client methods return `Future<Result<T, TypedClientError>>`
+- Errors are part of the type signature
+- Enables railway-oriented programming
+
 ### Worker Application
 
 The worker application imports the contract package and implements:
 
-- Activities that match the contract signatures
+- Activities that match the contract signatures with Result/Future pattern
 - Workflows that use the contract's type definitions
 - Worker setup that registers the implementations
 
@@ -83,8 +93,9 @@ pnpm dev  # Terminal 2 - Run client
 ## Benefits of This Architecture
 
 1. **Contract Reusability**: The contract can be imported by multiple applications
-2. **Type Safety**: Full TypeScript support across all boundaries
-3. **Independent Deployment**: Client and worker can be in different repositories
-4. **Clear Separation**: Contract definition is separate from implementation
+2. **Type Safety**: Full TypeScript support with Result/Future types
+3. **Explicit Error Handling**: Errors are part of the type system
+4. **Independent Deployment**: Client and worker can be in different repositories
+5. **Clear Separation**: Contract definition is separate from implementation
 
-See [Examples Overview](/examples/) for more details.
+See [Examples Overview](/examples/) and [Result Pattern Guide](/guide/result-pattern) for more details.

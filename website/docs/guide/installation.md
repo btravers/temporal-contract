@@ -20,11 +20,11 @@ temporal-contract consists of multiple packages. Install the ones you need:
 # Contract definitions
 pnpm add @temporal-contract/contract
 
-# Worker implementation
-pnpm add @temporal-contract/worker
+# Worker implementation (includes Result/Future pattern)
+pnpm add @temporal-contract/worker @swan-io/boxed
 
-# Client for executing workflows
-pnpm add @temporal-contract/client
+# Client for executing workflows (includes Result/Future pattern)
+pnpm add @temporal-contract/client @swan-io/boxed
 
 # Required peer dependencies
 pnpm add zod @temporalio/client @temporalio/worker @temporalio/workflow
@@ -32,43 +32,21 @@ pnpm add zod @temporalio/client @temporalio/worker @temporalio/workflow
 
 ```bash [npm]
 npm install @temporal-contract/contract
-npm install @temporal-contract/worker
-npm install @temporal-contract/client
+npm install @temporal-contract/worker @swan-io/boxed
+npm install @temporal-contract/client @swan-io/boxed
 npm install zod @temporalio/client @temporalio/worker @temporalio/workflow
 ```
 
 ```bash [yarn]
 yarn add @temporal-contract/contract
-yarn add @temporal-contract/worker
-yarn add @temporal-contract/client
+yarn add @temporal-contract/worker @swan-io/boxed
+yarn add @temporal-contract/client @swan-io/boxed
 yarn add zod @temporalio/client @temporalio/worker @temporalio/workflow
 ```
 
 :::
 
 ### Optional Packages
-
-#### Result Pattern (Advanced)
-
-For explicit error handling using the Result/Future pattern:
-
-::: code-group
-
-```bash [pnpm]
-pnpm add @temporal-contract/worker-boxed @swan-io/boxed
-```
-
-```bash [npm]
-npm install @temporal-contract/worker-boxed @swan-io/boxed
-```
-
-```bash [yarn]
-yarn add @temporal-contract/worker-boxed @swan-io/boxed
-```
-
-:::
-
-#### Testing Utilities
 
 For testing your workflows and activities:
 
