@@ -4,41 +4,20 @@ Learn by example! Explore complete working examples that demonstrate temporal-co
 
 ## Available Examples
 
-### [Basic Order Processing](/examples/basic-order-processing)
+### [Order Processing Example](/examples/basic-order-processing)
 
-A complete e-commerce order processing workflow using standard Promise-based approach.
+A complete e-commerce order processing workflow using Result/Future pattern for explicit error handling.
 
 **Features:**
 
+- Type-safe error handling with `Result<T, E>`
 - Order validation
 - Payment processing
 - Inventory management
 - Email notifications
 - Clean Architecture structure
 
-**Best for:** Understanding the fundamentals and standard workflow patterns.
-
-### [Boxed Order Processing](/examples/boxed-order-processing)
-
-The same order processing workflow using the Result/Future pattern for explicit error handling.
-
-**Features:**
-
-- Type-safe error handling with `Result<T, E>`
-- Non-throwing async operations with `Future<T, E>`
-- Explicit error propagation
-- Railway-oriented programming
-
-**Best for:** Projects requiring explicit error handling without exceptions.
-
-## Quick Comparison
-
-| Feature        | Basic              | Boxed               |
-| -------------- | ------------------ | ------------------- |
-| Error Handling | Exceptions         | Result pattern      |
-| Learning Curve | ✅ Easy            | ⚠️ Moderate         |
-| Type Safety    | ✅ Yes             | ✅ Yes + Errors     |
-| Use Case       | Standard workflows | Complex error flows |
+**Best for:** Understanding temporal-contract with modern, type-safe error handling.
 
 ## Running the Examples
 
@@ -172,10 +151,11 @@ export const orderContract = defineContract({
 
 ### Activity Implementation
 
-Clean, typed activity implementations:
+Clean, typed activity implementations with Result/Future pattern:
 
 ```typescript
-import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
+import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
+import { Future, Result } from '@swan-io/boxed';
 import { orderContract } from '../contracts/order.contract';
 import { emailService } from '../infrastructure/email.service';
 import { paymentService } from '../infrastructure/payment.service';
@@ -183,22 +163,46 @@ import { paymentService } from '../infrastructure/payment.service';
 export const activities = declareActivitiesHandler({
   contract: orderContract,
   activities: {
-    sendEmail: async ({ to, subject, body }) => {
-      await emailService.send({ to, subject, body });
-      return { sent: true };
+    sendEmail: ({ to, subject, body }) => {
+      return Future.make(async (resolve) => {
+        try {
+          await emailService.send({ to, subject, body });
+          resolve(Result.Ok({ sent: true }));
+        } catch (error) {
+          resolve(Result.Error(
+            new ActivityError('EMAIL_FAILED', 'Failed to send email', error)
+          ));
+        }
+      });
     },
 
-    validateInventory: async ({ items }) => {
-      const available = await inventoryService.checkAvailability(items);
-      return { available };
+    validateInventory: ({ items }) => {
+      return Future.make(async (resolve) => {
+        try {
+          const available = await inventoryService.checkAvailability(items);
+          resolve(Result.Ok({ available }));
+        } catch (error) {
+          resolve(Result.Error(
+            new ActivityError('INVENTORY_CHECK_FAILED', 'Failed to check inventory', error)
+          ));
+        }
+      });
     },
 
-    processPayment: async ({ customerId, amount }) => {
-      const result = await paymentService.charge(customerId, amount);
-      return {
-        transactionId: result.id,
-        success: result.status === 'success'
-      };
+    processPayment: ({ customerId, amount }) => {
+      return Future.make(async (resolve) => {
+        try {
+          const result = await paymentService.charge(customerId, amount);
+          resolve(Result.Ok({
+            transactionId: result.id,
+            success: result.status === 'success'
+          }));
+        } catch (error) {
+          resolve(Result.Error(
+            new ActivityError('PAYMENT_FAILED', 'Failed to process payment', error)
+          ));
+        }
+      });
     }
   }
 });

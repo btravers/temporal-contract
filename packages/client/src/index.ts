@@ -1,6 +1,4 @@
 export { TypedClient, type TypedWorkflowHandle, type TypedWorkflowStartOptions } from "./client.js";
-
-// Re-export errors from client-boxed for convenience
 export {
   TypedClientError,
   WorkflowNotFoundError,
@@ -8,4 +6,7 @@ export {
   QueryValidationError,
   SignalValidationError,
   UpdateValidationError,
-} from "@temporal-contract/client-boxed";
+} from "./errors.js";
+
+// Re-export boxed utilities for convenience
+export { Result, Future, Option, AsyncData } from "@swan-io/boxed";

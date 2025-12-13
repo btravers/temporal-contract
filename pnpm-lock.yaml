@@ -121,40 +121,6 @@ importers:
 
   packages/client:
     dependencies:
-      "@temporal-contract/client-boxed":
-        specifier: workspace:*
-        version: link:../client-boxed
-      "@temporal-contract/contract":
-        specifier: workspace:*
-        version: link:../contract
-    devDependencies:
-      "@temporal-contract/tsconfig":
-        specifier: workspace:*
-        version: link:../../tools/tsconfig
-      "@temporalio/client":
-        specifier: "catalog:"
-        version: 1.13.2
-      "@types/node":
-        specifier: "catalog:"
-        version: 25.0.1
-      "@vitest/coverage-v8":
-        specifier: "catalog:"
-        version: 4.0.15(vitest@4.0.15(@types/node@25.0.1)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2))
-      tsdown:
-        specifier: "catalog:"
-        version: 0.17.3(oxc-resolver@11.15.0)(typescript@5.9.3)
-      typescript:
-        specifier: "catalog:"
-        version: 5.9.3
-      vitest:
-        specifier: "catalog:"
-        version: 4.0.15(@types/node@25.0.1)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
-      zod:
-        specifier: "catalog:"
-        version: 4.1.13
-
-  packages/client-boxed:
-    dependencies:
       "@standard-schema/spec":
         specifier: "catalog:"
         version: 1.0.0
@@ -254,6 +220,9 @@ importers:
       "@standard-schema/spec":
         specifier: "catalog:"
         version: 1.0.0
+      "@swan-io/boxed":
+        specifier: "catalog:"
+        version: 3.2.1(typescript@5.9.3)
       "@temporal-contract/contract":
         specifier: workspace:*
         version: link:../contract
@@ -283,82 +252,11 @@ importers:
         specifier: "catalog:"
         version: 4.1.13
 
-  packages/worker-boxed:
-    dependencies:
-      "@standard-schema/spec":
-        specifier: "catalog:"
-        version: 1.0.0
-      "@swan-io/boxed":
-        specifier: "catalog:"
-        version: 3.2.1(typescript@5.9.3)
-      "@temporal-contract/contract":
-        specifier: workspace:*
-        version: link:../contract
-      "@temporal-contract/worker":
-        specifier: workspace:*
-        version: link:../worker
-    devDependencies:
-      "@temporal-contract/tsconfig":
-        specifier: workspace:*
-        version: link:../../tools/tsconfig
-      "@types/node":
-        specifier: "catalog:"
-        version: 25.0.1
-      "@vitest/coverage-v8":
-        specifier: "catalog:"
-        version: 4.0.15(vitest@4.0.15(@types/node@25.0.1)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2))
-      tsdown:
-        specifier: "catalog:"
-        version: 0.17.3(oxc-resolver@11.15.0)(typescript@5.9.3)
-      typescript:
-        specifier: "catalog:"
-        version: 5.9.3
-      vitest:
-        specifier: "catalog:"
-        version: 4.0.15(@types/node@25.0.1)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
-      zod:
-        specifier: "catalog:"
-        version: 4.1.13
-
   samples/order-processing-client:
     dependencies:
       "@temporal-contract/client":
         specifier: workspace:*
         version: link:../../packages/client
-      "@temporal-contract/sample-order-processing-contract":
-        specifier: workspace:*
-        version: link:../order-processing-contract
-      "@temporalio/client":
-        specifier: "catalog:"
-        version: 1.13.2
-      pino:
-        specifier: "catalog:"
-        version: 10.1.0
-      pino-pretty:
-        specifier: "catalog:"
-        version: 13.1.3
-      zod:
-        specifier: "catalog:"
-        version: 4.1.13
-    devDependencies:
-      "@temporal-contract/tsconfig":
-        specifier: workspace:*
-        version: link:../../tools/tsconfig
-      "@types/node":
-        specifier: "catalog:"
-        version: 25.0.1
-      tsx:
-        specifier: "catalog:"
-        version: 4.21.0
-      typescript:
-        specifier: "catalog:"
-        version: 5.9.3
-
-  samples/order-processing-client-boxed:
-    dependencies:
-      "@temporal-contract/client-boxed":
-        specifier: workspace:*
-        version: link:../../packages/client-boxed
       "@temporal-contract/sample-order-processing-contract":
         specifier: workspace:*
         version: link:../order-processing-contract
@@ -415,67 +313,15 @@ importers:
 
   samples/order-processing-worker:
     dependencies:
-      "@temporal-contract/sample-order-processing-contract":
-        specifier: workspace:*
-        version: link:../order-processing-contract
-      "@temporal-contract/worker":
-        specifier: workspace:*
-        version: link:../../packages/worker
-      "@temporalio/worker":
-        specifier: "catalog:"
-        version: 1.13.2
-      "@temporalio/workflow":
-        specifier: "catalog:"
-        version: 1.13.2
-      pino:
-        specifier: "catalog:"
-        version: 10.1.0
-      pino-pretty:
-        specifier: "catalog:"
-        version: 13.1.3
-      zod:
-        specifier: "catalog:"
-        version: 4.1.13
-    devDependencies:
-      "@temporal-contract/client":
-        specifier: workspace:*
-        version: link:../../packages/client
-      "@temporal-contract/testing":
-        specifier: workspace:*
-        version: link:../../packages/testing
-      "@temporal-contract/tsconfig":
-        specifier: workspace:*
-        version: link:../../tools/tsconfig
-      "@temporalio/client":
-        specifier: "catalog:"
-        version: 1.13.2
-      "@types/node":
-        specifier: "catalog:"
-        version: 25.0.1
-      "@vitest/coverage-v8":
-        specifier: "catalog:"
-        version: 4.0.15(vitest@4.0.15(@types/node@25.0.1)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2))
-      tsx:
-        specifier: "catalog:"
-        version: 4.21.0
-      typescript:
-        specifier: "catalog:"
-        version: 5.9.3
-      vitest:
-        specifier: "catalog:"
-        version: 4.0.15(@types/node@25.0.1)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
-
-  samples/order-processing-worker-boxed:
-    dependencies:
       "@swan-io/boxed":
         specifier: "catalog:"
         version: 3.2.1(typescript@5.9.3)
       "@temporal-contract/sample-order-processing-contract":
         specifier: workspace:*
         version: link:../order-processing-contract
-      "@temporal-contract/worker-boxed":
+      "@temporal-contract/worker":
         specifier: workspace:*
-        version: link:../../packages/worker-boxed
+        version: link:../../packages/worker
       "@temporalio/worker":
         specifier: "catalog:"
         version: 1.13.2

@@ -12,10 +12,6 @@
       "entry": ["src/activity.ts", "src/workflow.ts"],
       "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
     },
-    "packages/worker-boxed": {
-      "entry": ["src/activity.ts", "src/workflow.ts"],
-      "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
-    },
     "packages/testing": {
       "entry": ["src/extension.ts", "src/global-setup.ts"],
       "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
@@ -25,10 +21,6 @@
       "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
     },
     "samples/order-processing-worker": {
-      "entry": ["src/application/worker.ts", "src/application/workflows.ts"],
-      "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
-    },
-    "samples/order-processing-worker-boxed": {
       "entry": ["src/application/worker.ts", "src/application/workflows.ts"],
       "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
     },

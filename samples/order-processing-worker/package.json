@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@swan-io/boxed": "catalog:",
     "@temporal-contract/sample-order-processing-contract": "workspace:*",
     "@temporal-contract/worker": "workspace:*",
     "@temporalio/worker": "catalog:",

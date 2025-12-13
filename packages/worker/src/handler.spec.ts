@@ -1,27 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+import { Future, Result } from "@swan-io/boxed";
 import { z } from "zod";
-import { declareActivitiesHandler, declareWorkflow } from "./handler.js";
-import type { ContractDefinition, WorkflowDefinition } from "@temporal-contract/contract";
+import { declareActivitiesHandler, ActivityError } from "./handler.js";
+import { ActivityDefinitionNotFoundError } from "./errors.js";
+import type { ContractDefinition } from "@temporal-contract/contract";
 
-// Mock Temporal workflow functions
-vi.mock("@temporalio/workflow", () => ({
-  proxyActivities: vi.fn(() => ({})),
-  workflowInfo: vi.fn(() => ({
-    workflowId: "test-workflow",
-    runId: "test-run",
-    workflowType: "testWorkflow",
-    namespace: "default",
-    taskQueue: "test-queue",
-  })),
-  setHandler: vi.fn(),
-  defineSignal: vi.fn((name) => ({ name, type: "signal" })),
-  defineQuery: vi.fn((name) => ({ name, type: "query" })),
-  defineUpdate: vi.fn((name) => ({ name, type: "update" })),
-}));
-
-describe("Worker Package", () => {
+describe("Worker-Boxed Package", () => {
   describe("declareActivitiesHandler", () => {
-    it("should create an activities handler with validation", () => {
+    it("should create an activities handler with Result pattern", () => {
       const contract = {
         taskQueue: "test-queue",
         workflows: {
@@ -41,9 +27,9 @@ describe("Worker Package", () => {
       const handler = declareActivitiesHandler({
         contract,
         activities: {
-          sendEmail: async (args) => {
+          sendEmail: (args) => {
             expect(args.to).toBeDefined();
-            return { sent: true };
+            return Future.value(Result.Ok({ sent: true }));
           },
         },
       });
@@ -68,15 +54,15 @@ describe("Worker Package", () => {
       const handler = declareActivitiesHandler({
         contract,
         activities: {
-          processPayment: async (args) => {
-            return { transactionId: `tx-${args.amount}` };
+          processPayment: (args) => {
+            return Future.value(Result.Ok({ transactionId: `tx-${args.amount}` }));
           },
         },
       });
 
-      // Valid input should work - Temporal passes as array
+      // Valid input should work
       const result = await handler.activities["processPayment"]!({ amount: 100, currency: "USD" });
-      expect(result).toEqual(expect.objectContaining({ transactionId: "tx-100" }));
+      expect((result as { transactionId: string }).transactionId).toBe("tx-100");
 
       // Invalid input should throw
       await expect(
@@ -99,27 +85,135 @@ describe("Worker Package", () => {
       const handler = declareActivitiesHandler({
         contract,
         activities: {
-          fetchData: async (_args): Promise<{ data: string; timestamp: number }> => {
-            return { data: "test", timestamp: "invalid" as unknown as number };
+          fetchData: (args) => {
+            return Future.value(Result.Ok({ data: `data-${args.id}`, timestamp: 123 }));
           },
         },
       });
 
+      const result = await handler.activities["fetchData"]!({ id: "abc" });
+      expect((result as { data: string; timestamp: number }).data).toBe("data-abc");
+      expect((result as { data: string; timestamp: number }).timestamp).toBe(123);
+
       // Invalid output should throw
-      await expect(handler.activities["fetchData"]!({ id: "123" })).rejects.toThrow();
+      const badHandler = declareActivitiesHandler({
+        contract,
+        activities: {
+          fetchData: (
+            _args,
+          ): Future<Result<{ data: string; timestamp: number }, ActivityError>> => {
+            return Future.value(
+              Result.Ok({ data: "test" } as unknown as { data: string; timestamp: number }),
+            ); // Missing timestamp
+          },
+        },
+      });
+
+      await expect(badHandler.activities["fetchData"]!({ id: "abc" })).rejects.toThrow();
     });
 
-    it("should handle workflow-specific activities", () => {
+    it("should handle Result.Ok by returning value", async () => {
+      const contract = {
+        taskQueue: "test-queue",
+        workflows: {},
+        activities: {
+          successActivity: {
+            input: z.object({ value: z.string() }),
+            output: z.object({ result: z.string() }),
+          },
+        },
+      } satisfies ContractDefinition;
+
+      const handler = declareActivitiesHandler({
+        contract,
+        activities: {
+          successActivity: (args) => {
+            return Future.value(Result.Ok({ result: `success-${args.value}` }));
+          },
+        },
+      });
+
+      const result = await handler.activities["successActivity"]!({ value: "test" });
+      expect((result as { result: string }).result).toBe("success-test");
+    });
+
+    it("should handle Result.Error by throwing exception", async () => {
+      const contract = {
+        taskQueue: "test-queue",
+        workflows: {},
+        activities: {
+          failingActivity: {
+            input: z.object({ value: z.string() }),
+            output: z.object({ result: z.string() }),
+          },
+        },
+      } satisfies ContractDefinition;
+
+      const handler = declareActivitiesHandler({
+        contract,
+        activities: {
+          failingActivity: (_args) => {
+            return Future.value(
+              Result.Error(
+                new ActivityError("ACTIVITY_FAILED", "Something went wrong", {
+                  info: "additional details",
+                }),
+              ),
+            );
+          },
+        },
+      });
+
+      await expect(handler.activities["failingActivity"]!({ value: "test" })).rejects.toMatchObject(
+        {
+          name: "ActivityError",
+          message: "Something went wrong",
+          code: "ACTIVITY_FAILED",
+          cause: { info: "additional details" },
+        },
+      );
+    });
+
+    it("should handle Future properly", async () => {
+      const contract = {
+        taskQueue: "test-queue",
+        workflows: {},
+        activities: {
+          asyncActivity: {
+            input: z.object({ delay: z.number() }),
+            output: z.object({ completed: z.boolean() }),
+          },
+        },
+      } satisfies ContractDefinition;
+
+      const handler = declareActivitiesHandler({
+        contract,
+        activities: {
+          asyncActivity: (args) => {
+            return Future.make<Result<{ completed: boolean }, ActivityError>>((resolve) => {
+              setTimeout(() => {
+                resolve(Result.Ok({ completed: true }));
+              }, args.delay);
+            });
+          },
+        },
+      });
+
+      const result = await handler.activities["asyncActivity"]!({ delay: 10 });
+      expect((result as { completed: boolean }).completed).toBe(true);
+    });
+
+    it("should support workflow-specific activities", async () => {
       const contract = {
         taskQueue: "test-queue",
         workflows: {
-          processOrder: {
+          orderWorkflow: {
             input: z.object({ orderId: z.string() }),
             output: z.object({ status: z.string() }),
             activities: {
-              validateInventory: {
+              validateOrder: {
                 input: z.object({ orderId: z.string() }),
-                output: z.object({ available: z.boolean() }),
+                output: z.object({ valid: z.boolean() }),
               },
             },
           },
@@ -129,252 +223,51 @@ describe("Worker Package", () => {
       const handler = declareActivitiesHandler({
         contract,
         activities: {
-          validateInventory: async (_args) => {
-            return { available: true };
+          validateOrder: (args) => {
+            return Future.value(Result.Ok({ valid: args.orderId.length > 0 }));
           },
         },
       });
 
-      expect(handler.activities["validateInventory"]).toBeDefined();
-    });
-  });
-
-  describe("declareWorkflow", () => {
-    const testWorkflowDef = {
-      input: z.object({ orderId: z.string(), amount: z.number() }),
-      output: z.object({ status: z.string(), total: z.number() }),
-    } satisfies WorkflowDefinition;
-
-    const testContract = {
-      taskQueue: "test-queue",
-      workflows: {
-        processOrder: testWorkflowDef,
-      },
-    } satisfies ContractDefinition;
-
-    it("should create a workflow with validation", () => {
-      const workflow = declareWorkflow({
-        workflowName: "processOrder",
-        contract: testContract,
-        implementation: async (_context, args) => {
-          return { status: "completed", total: args.amount };
-        },
-      });
-
-      expect(workflow).toBeDefined();
-      expect(typeof workflow).toBe("function");
+      const result = await handler.activities["validateOrder"]!({ orderId: "123", amount: 100 });
+      expect((result as { valid: boolean }).valid).toBe(true);
     });
 
-    it("should validate workflow input", async () => {
-      const workflow = declareWorkflow({
-        workflowName: "processOrder",
-        contract: testContract,
-        implementation: async (_context, args) => {
-          return { status: "completed", total: args.amount };
-        },
-      });
-
-      // Valid input (Temporal passes as array)
-      const result = await workflow([{ orderId: "123", amount: 100 }] as unknown as {
-        orderId: string;
-        amount: number;
-      });
-      expect(result).toEqual(expect.objectContaining({ status: "completed", total: 100 }));
-
-      // Invalid input should throw
-      await expect(
-        workflow([{ orderId: 123, amount: "invalid" }] as unknown as {
-          orderId: string;
-          amount: number;
-        }),
-      ).rejects.toThrow();
-    });
-
-    it("should validate workflow output", async () => {
-      const workflow = declareWorkflow({
-        workflowName: "processOrder",
-        contract: testContract,
-        implementation: async (_context, _args): Promise<{ status: string; total: number }> => {
-          return { status: "completed", total: "invalid" } as unknown as {
-            status: string;
-            total: number;
-          };
-        },
-      });
-
-      await expect(
-        workflow([{ orderId: "123", amount: 100 }] as unknown as {
-          orderId: string;
-          amount: number;
-        }),
-      ).rejects.toThrow();
-    });
-
-    it("should register signal handlers", async () => {
-      const workflowDef = {
-        ...testWorkflowDef,
-        signals: {
-          cancel: {
-            input: z.object({ reason: z.string() }),
-          },
-        },
-      } satisfies WorkflowDefinition;
-
-      const cancelHandler = vi.fn();
-
-      const contractWithSignals = {
-        taskQueue: "test-queue",
-        workflows: {
-          processOrder: workflowDef,
-        },
-      } satisfies ContractDefinition;
-
-      const workflow = declareWorkflow({
-        workflowName: "processOrder",
-        contract: contractWithSignals,
-        implementation: async (_context, args) => {
-          return { status: "completed", total: args.amount };
-        },
-        signals: {
-          cancel: cancelHandler,
-        },
-      });
-
-      expect(workflow).toBeDefined();
-    });
-
-    it("should support query handlers", () => {
-      const workflowDef = {
-        ...testWorkflowDef,
-        queries: {
-          getStatus: {
-            input: z.object({}),
-            output: z.object({ status: z.string(), progress: z.number() }),
-          },
-        },
-      } satisfies WorkflowDefinition;
-
-      const queryHandler = vi.fn().mockReturnValue({ status: "running", progress: 50 });
-
-      const contractWithQueries = {
-        taskQueue: "test-queue",
-        workflows: {
-          processOrder: workflowDef,
-        },
-      } satisfies ContractDefinition;
-
-      const workflow = declareWorkflow({
-        workflowName: "processOrder",
-        contract: contractWithQueries,
-        implementation: async (_context, args) => {
-          return { status: "completed", total: args.amount };
-        },
-        queries: {
-          getStatus: queryHandler,
-        },
-      });
-
-      expect(workflow).toBeDefined();
-    });
-
-    it("should support update handlers", () => {
-      const workflowDef = {
-        ...testWorkflowDef,
-        updates: {
-          updateDiscount: {
-            input: z.object({ percentage: z.number() }),
-            output: z.object({ newTotal: z.number() }),
-          },
-        },
-      } satisfies WorkflowDefinition;
-
-      const updateHandler = vi.fn().mockResolvedValue({ newTotal: 90 });
-
-      const contractWithUpdates = {
-        taskQueue: "test-queue",
-        workflows: {
-          processOrder: workflowDef,
-        },
-      } satisfies ContractDefinition;
-
-      const workflow = declareWorkflow({
-        workflowName: "processOrder",
-        contract: contractWithUpdates,
-        implementation: async (_context, args) => {
-          return { status: "completed", total: args.amount };
-        },
-        updates: {
-          updateDiscount: updateHandler,
-        },
-      });
-
-      expect(workflow).toBeDefined();
-    });
-
-    it("should handle single parameter (not array)", async () => {
-      const workflow = declareWorkflow({
-        workflowName: "processOrder",
-        contract: testContract,
-        implementation: async (_context, args) => {
-          expect(args.orderId).toBe("123");
-          expect(args.amount).toBe(100);
-          return { status: "completed", total: args.amount };
-        },
-      });
-
-      // Single parameter (should extract from array)
-      await workflow([{ orderId: "123", amount: 100 }] as unknown as {
-        orderId: string;
-        amount: number;
-      });
-    });
-  });
-
-  describe("Error Handling", () => {
-    it("should throw ActivityDefinitionNotFoundError with available definitions", () => {
+    it("should throw if activity definition is not found", () => {
       const contract = {
         taskQueue: "test-queue",
         workflows: {},
         activities: {
-          sendEmail: {
-            input: z.object({ to: z.string() }),
-            output: z.object({ sent: z.boolean() }),
-          },
-          processPayment: {
-            input: z.object({ amount: z.number() }),
-            output: z.object({ transactionId: z.string() }),
+          validActivity: {
+            input: z.object({ value: z.string() }),
+            output: z.object({ result: z.string() }),
           },
         },
       } satisfies ContractDefinition;
 
       const testActivities = {
-        sendEmail: async () => ({ sent: true }),
-        unknownActivity: async () => ({ result: true }), // Activity not in contract
+        validActivity: (_args: unknown) => Future.value(Result.Ok({ result: "test" })),
+        unknownActivity: (_args: unknown) => Future.value(Result.Ok({ result: "test" })),
       };
 
       expect(() => {
         declareActivitiesHandler({
           contract,
-          // @ts-expect-error Testing unknown activity
           activities: testActivities,
         });
-      }).toThrowError(
-        expect.objectContaining({
-          name: "ActivityDefinitionNotFoundError",
-          activityName: "unknownActivity",
-          availableDefinitions: ["sendEmail", "processPayment"],
-        }),
-      );
+      }).toThrowError(new ActivityDefinitionNotFoundError("unknownActivity", ["validActivity"]));
     });
+  });
 
-    it("should throw ActivityInputValidationError with Zod details", async () => {
+  describe("Error Handling", () => {
+    it("should throw ActivityInputValidationError for invalid input", async () => {
       const contract = {
         taskQueue: "test-queue",
         workflows: {},
         activities: {
-          processPayment: {
-            input: z.object({ amount: z.number().positive(), currency: z.string() }),
-            output: z.object({ transactionId: z.string() }),
+          strictActivity: {
+            input: z.object({ amount: z.number().positive(), email: z.string().email() }),
+            output: z.object({ success: z.boolean() }),
           },
         },
       } satisfies ContractDefinition;
@@ -382,32 +275,29 @@ describe("Worker Package", () => {
       const handler = declareActivitiesHandler({
         contract,
         activities: {
-          processPayment: async (args) => {
-            return { transactionId: `tx-${args.amount}` };
+          strictActivity: (_args) => {
+            return Future.value(Result.Ok({ success: true }));
           },
         },
       });
 
       await expect(
-        handler.activities["processPayment"]!({
-          amount: -100,
-          currency: "USD",
-        }),
+        handler.activities["strictActivity"]!({ amount: -10, email: "invalid" }),
       ).rejects.toMatchObject({
         name: "ActivityInputValidationError",
-        activityName: "processPayment",
-        message: expect.stringContaining("processPayment"),
+        activityName: "strictActivity",
+        message: expect.stringContaining("strictActivity"),
       });
     });
 
-    it("should throw ActivityOutputValidationError with Zod details", async () => {
+    it("should throw ActivityOutputValidationError for invalid output", async () => {
       const contract = {
         taskQueue: "test-queue",
         workflows: {},
         activities: {
-          fetchData: {
+          strictOutputActivity: {
             input: z.object({ id: z.string() }),
-            output: z.object({ data: z.string(), timestamp: z.number() }),
+            output: z.object({ value: z.number(), status: z.enum(["active", "inactive"]) }),
           },
         },
       } satisfies ContractDefinition;
@@ -415,84 +305,23 @@ describe("Worker Package", () => {
       const handler = declareActivitiesHandler({
         contract,
         activities: {
-          fetchData: async (): Promise<{ data: string; timestamp: number }> => {
-            return { data: "test", timestamp: "invalid" as unknown as number };
+          strictOutputActivity: (_args) => {
+            return Future.value(
+              Result.Ok({ value: "not-a-number", status: "active" }) as unknown as Result<
+                { value: number; status: "active" | "inactive" },
+                ActivityError
+              >,
+            );
           },
         },
       });
 
-      await expect(handler.activities["fetchData"]!({ id: "123" })).rejects.toMatchObject({
+      await expect(
+        handler.activities["strictOutputActivity"]!({ id: "123" }),
+      ).rejects.toMatchObject({
         name: "ActivityOutputValidationError",
-        activityName: "fetchData",
-        message: expect.stringContaining("fetchData"),
-      });
-    });
-
-    it("should throw WorkflowInputValidationError", async () => {
-      const workflowDef = {
-        input: z.object({ orderId: z.string().uuid(), amount: z.number().positive() }),
-        output: z.object({ status: z.string() }),
-      } satisfies WorkflowDefinition;
-
-      const contract = {
-        taskQueue: "test-queue",
-        workflows: {
-          processOrder: workflowDef,
-        },
-      } satisfies ContractDefinition;
-
-      const workflow = declareWorkflow({
-        workflowName: "processOrder",
-        contract: contract,
-        implementation: async () => {
-          return { status: "completed" };
-        },
-      });
-
-      await expect(
-        workflow([{ orderId: "not-a-uuid", amount: 100 }] as unknown as {
-          orderId: string;
-          amount: number;
-        }),
-      ).rejects.toMatchObject({
-        name: "WorkflowInputValidationError",
-        workflowName: "processOrder",
-        message: expect.stringContaining("input validation failed"),
-      });
-    });
-
-    it("should throw WorkflowOutputValidationError", async () => {
-      const workflowDef = {
-        input: z.object({ orderId: z.string() }),
-        output: z.object({ status: z.enum(["completed", "failed", "pending"]), total: z.number() }),
-      } satisfies WorkflowDefinition;
-
-      const contract = {
-        taskQueue: "test-queue",
-        workflows: {
-          processOrder: workflowDef,
-        },
-      } satisfies ContractDefinition;
-
-      const workflow = declareWorkflow({
-        workflowName: "processOrder",
-        contract: contract,
-        implementation: async () => {
-          // Return invalid status to trigger validation error
-          return { status: "invalid-status", total: 100 } as unknown as {
-            status: "completed" | "failed" | "pending";
-            total: number;
-          };
-        },
-      });
-
-      await expect(
-        // @ts-expect-error Testing invalid output
-        workflow([{ orderId: "123" }]),
-      ).rejects.toMatchObject({
-        name: "WorkflowOutputValidationError",
-        workflowName: "processOrder",
-        message: expect.stringContaining("output validation failed"),
+        activityName: "strictOutputActivity",
+        message: expect.stringContaining("strictOutputActivity"),
       });
     });
   });

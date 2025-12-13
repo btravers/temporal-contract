@@ -4,8 +4,8 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
  * Base error class for worker errors
  */
 export class WorkerError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, cause?: unknown) {
+    super(message, { cause });
     this.name = "WorkerError";
     // Maintains proper stack trace for where our error was thrown (only available on V8)
     if (Error.captureStackTrace) {
@@ -15,18 +15,22 @@ export class WorkerError extends Error {
 }
 
 /**
- * Error thrown when an activity implementation is not found
+ * Activity error class that should be used to wrap all technical exceptions
+ * Forces proper error handling and enables retry policies
  */
-export class ActivityImplementationNotFoundError extends WorkerError {
-  constructor(
-    public readonly activityName: string,
-    public readonly availableActivities: readonly string[],
-  ) {
-    super(
-      `Activity implementation not found for: "${activityName}". ` +
-        `Available activities: ${availableActivities.length > 0 ? availableActivities.join(", ") : "none"}`,
-    );
-    this.name = "ActivityImplementationNotFoundError";
+export class ActivityError extends Error {
+  public readonly code: string;
+  public override readonly cause?: unknown;
+
+  constructor(code: string, message: string, cause?: unknown) {
+    super(message, { cause });
+    this.code = code;
+    this.cause = cause;
+    this.name = "ActivityError";
+    // Maintains proper stack trace for where our error was thrown (only available on V8)
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ActivityError);
+    }
   }
 }
 
@@ -36,11 +40,11 @@ export class ActivityImplementationNotFoundError extends WorkerError {
 export class ActivityDefinitionNotFoundError extends WorkerError {
   constructor(
     public readonly activityName: string,
-    public readonly availableDefinitions: readonly string[],
+    public readonly availableDefinitions: readonly string[] = [],
   ) {
+    const available = availableDefinitions.length > 0 ? availableDefinitions.join(", ") : "none";
     super(
-      `Activity definition not found in contract for: "${activityName}". ` +
-        `Available definitions: ${availableDefinitions.length > 0 ? availableDefinitions.join(", ") : "none"}`,
+      `Activity definition not found for: "${activityName}". Available activities: ${available}`,
     );
     this.name = "ActivityDefinitionNotFoundError";
   }

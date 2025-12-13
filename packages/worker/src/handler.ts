@@ -1,3 +1,4 @@
+import { Future, Result } from "@swan-io/boxed";
 import {
   ActivityOptions,
   WorkflowInfo,
@@ -20,7 +21,6 @@ import type {
   WorkflowDefinition,
 } from "@temporal-contract/contract";
 import {
-  ActivityImplementationNotFoundError,
   ActivityDefinitionNotFoundError,
   ActivityInputValidationError,
   ActivityOutputValidationError,
@@ -31,7 +31,11 @@ import {
   QueryOutputValidationError,
   UpdateInputValidationError,
   UpdateOutputValidationError,
+  ActivityError,
 } from "./errors.js";
+
+// Re-export ActivityError for convenience
+export { ActivityError };
 
 /**
  * Workflow context with typed activities (workflow + global) and workflow info
@@ -59,13 +63,12 @@ export type WorkflowImplementation<
 ) => Promise<WorkerInferOutput<TContract["workflows"][TWorkflowName]>>;
 
 /**
- * Raw activity implementation function (receives typed args as tuple)
- * Note: We use 'any' for args/return to work around TypeScript limitations with generic Zod tuple inference
- * The actual types will be enforced at runtime by Zod validation
+ * Activity implementation using Result pattern
+ * Returns Future<Result<Output, ActivityError>> instead of throwing exceptions
  */
-export type RawActivityImplementation<TActivity extends ActivityDefinition> = (
+export type BoxedActivityImplementation<TActivity extends ActivityDefinition> = (
   args: WorkerInferInput<TActivity>,
-) => Promise<WorkerInferOutput<TActivity>>;
+) => Future<Result<WorkerInferOutput<TActivity>, ActivityError>>;
 
 /**
  * Signal handler implementation
@@ -95,7 +98,7 @@ export type ActivityImplementations<T extends ContractDefinition> =
   // Global activities
   (T["activities"] extends Record<string, ActivityDefinition>
     ? {
-        [K in keyof T["activities"]]: RawActivityImplementation<T["activities"][K]>;
+        [K in keyof T["activities"]]: BoxedActivityImplementation<T["activities"][K]>;
       }
     : {}) &
     // All workflow-specific activities merged
@@ -106,7 +109,7 @@ export type ActivityImplementations<T extends ContractDefinition> =
           ActivityDefinition
         >
           ? {
-              [A in keyof T["workflows"][K]["activities"]]: RawActivityImplementation<
+              [A in keyof T["workflows"][K]["activities"]]: BoxedActivityImplementation<
                 T["workflows"][K]["activities"][A]
               >;
             }
@@ -232,7 +235,10 @@ function createValidatedActivities<
     const rawActivity = rawActivities[activityName];
 
     if (!rawActivity) {
-      throw new ActivityImplementationNotFoundError(activityName, Object.keys(rawActivities));
+      throw new Error(
+        `Activity implementation not found for: "${activityName}". ` +
+          `Available activities: ${Object.keys(rawActivities).length > 0 ? Object.keys(rawActivities).join(", ") : "none"}`,
+      );
     }
 
     // Create the wrapped activity with validation
@@ -264,30 +270,44 @@ function createValidatedActivities<
 }
 
 /**
- * Create a typed activities handler with automatic validation
+ * Create a typed activities handler with automatic validation and Result pattern
  *
- * This wraps all activity implementations with Zod validation at network boundaries.
+ * This wraps all activity implementations with:
+ * - Validation at network boundaries
+ * - Result<T, ActivityError> pattern for explicit error handling
+ * - Automatic conversion from Result to Promise (throwing on Error)
+ *
  * TypeScript ensures ALL activities (global + workflow-specific) are implemented.
  *
  * Use this to create the activities object for the Temporal Worker.
  *
  * @example
  * ```ts
- * import { declareActivitiesHandler } from '@temporal-contract/worker';
+ * import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
+ * import { Result, Future } from '@swan-io/boxed';
  * import myContract from './contract';
  *
  * export const activitiesHandler = declareActivitiesHandler({
  *   contract: myContract,
  *   activities: {
- *     // Global activities
- *     sendEmail: async (to, subject, body) => {
- *       await emailService.send({ to, subject, body });
- *       return { sent: true };
- *     },
- *     // Workflow-specific activities
- *     validateInventory: async (orderId) => {
- *       const available = await inventory.check(orderId);
- *       return { available };
+ *     // Activity returns Result instead of throwing
+ *     // All technical exceptions must be wrapped in ActivityError for retry policies
+ *     sendEmail: (args) => {
+ *       return Future.make(async resolve => {
+ *         try {
+ *           await emailService.send(args);
+ *           resolve(Result.Ok({ sent: true }));
+ *         } catch (error) {
+ *           // Wrap technical errors in ActivityError to enable retries
+ *           resolve(Result.Error(
+ *             new ActivityError(
+ *               'EMAIL_SEND_FAILED',
+ *               'Failed to send email',
+ *               error // Original error as cause for debugging
+ *             )
+ *           ));
+ *         }
+ *       });
  *     },
  *   },
  * });
@@ -307,7 +327,7 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
 ): ActivitiesHandler<T> {
   const { contract, activities } = options;
 
-  // Wrap activities with validation
+  // Wrap activities with validation and Result unwrapping
   const wrappedActivities: Record<string, (...args: unknown[]) => Promise<unknown>> = {};
 
   // Collect all available activity definitions
@@ -342,23 +362,36 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
       throw new ActivityDefinitionNotFoundError(activityName, allDefinitions);
     }
 
-    wrappedActivities[activityName] = async (input: unknown) => {
+    wrappedActivities[activityName] = async (...args: unknown[]) => {
+      // Extract single parameter (Temporal passes as args array)
+      const input = args.length === 1 ? args[0] : args;
+
       // Validate input
       const inputResult = await activityDef.input["~standard"].validate(input);
       if (inputResult.issues) {
         throw new ActivityInputValidationError(activityName, inputResult.issues);
       }
 
-      // Execute activity
-      const result = await activityImpl(inputResult.value);
+      // Execute boxed activity (pass single parameter, returns Future<Result<T, E>>)
+      const futureResult = (
+        activityImpl as (args: unknown) => Future<Result<unknown, ActivityError>>
+      )(inputResult.value);
 
-      // Validate output
-      const outputResult = await activityDef.output["~standard"].validate(result);
-      if (outputResult.issues) {
-        throw new ActivityOutputValidationError(activityName, outputResult.issues);
+      // Unwrap Future and Result
+      const result = await futureResult.toPromise();
+
+      // Handle the result - validation must be done before match to avoid async callbacks
+      if (result.isOk()) {
+        // Validate output on success
+        const outputResult = await activityDef.output["~standard"].validate(result.value);
+        if (outputResult.issues) {
+          throw new ActivityOutputValidationError(activityName, outputResult.issues);
+        }
+        return outputResult.value;
+      } else {
+        // Convert Result.Error to thrown ActivityError for Temporal
+        throw result.error;
       }
-
-      return outputResult.value;
     };
   }
 

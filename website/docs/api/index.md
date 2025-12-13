@@ -18,39 +18,28 @@ pnpm add @temporal-contract/contract
 
 ### [@temporal-contract/worker](/api/worker)
 
-**Type-safe worker implementation with automatic validation**
+**Type-safe worker implementation with Result/Future pattern**
 
-- `declareActivitiesHandler()` - Implement activities with validation
+- `declareActivitiesHandler()` - Implement activities with Result/Future pattern
 - `declareWorkflow()` - Implement workflows with typed context
 - Automatic input/output validation
-
-```bash
-pnpm add @temporal-contract/worker
-```
-
-### [@temporal-contract/worker-boxed](/api/worker-boxed)
-
-**Worker with Result/Future pattern for explicit error handling**
-
-- Same API as `@temporal-contract/worker`
-- Returns `Result<T, E>` instead of throwing exceptions
-- Uses `Future<T, E>` for async operations
 - Built on [@swan-io/boxed](https://swan-io.github.io/boxed/)
 
 ```bash
-pnpm add @temporal-contract/worker-boxed @swan-io/boxed
+pnpm add @temporal-contract/worker @swan-io/boxed
 ```
 
 ### [@temporal-contract/client](/api/client)
 
-**Type-safe client for executing workflows**
+**Type-safe client with Result/Future pattern for executing workflows**
 
 - `TypedClient.create()` - Create type-safe workflow client
 - Full type inference from contract
+- Returns `Future<Result<T, E>>` for explicit error handling
 - Type-safe workflow execution
 
 ```bash
-pnpm add @temporal-contract/client
+pnpm add @temporal-contract/client @swan-io/boxed
 ```
 
 ### [@temporal-contract/testing](/api/testing)
@@ -105,13 +94,16 @@ const contract = defineContract({
 ### Activity Implementation
 
 ```typescript
-import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
+import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
+import { Future, Result } from '@swan-io/boxed';
 
 const handler = declareActivitiesHandler({
   contract,
   activities: {
-    sendEmail: async ({ to, body }) => ({ sent: true }),
-    validateOrder: async ({ orderId }) => ({ valid: true })
+    sendEmail: ({ to, body }) =>
+      Future.value(Result.Ok({ sent: true })),
+    validateOrder: ({ orderId }) =>
+      Future.value(Result.Ok({ valid: true }))
   }
 });
 ```
@@ -162,9 +154,17 @@ const connection = await Connection.connect({
 
 const client = TypedClient.create(contract, { connection });
 
-const result = await client.executeWorkflow('processOrder', {
+// Returns Future<Result<T, E>>
+const resultFuture = client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
   args: { orderId: 'ORD-123' }
+});
+
+// Convert to Promise and handle result
+const result = await resultFuture.toPromise();
+result.match({
+  Ok: (output) => console.log('Success:', output),
+  Error: (error) => console.error('Failed:', error)
 });
 ```
 
@@ -196,37 +196,32 @@ type OrderOutput = InferOutput<typeof contract, 'processOrder'>;
 
 ## Error Handling
 
-### Standard (Exceptions)
+### Result Pattern
 
 ```typescript
-try {
-  const result = await client.executeWorkflow('processOrder', {
-    workflowId: 'order-123',
-    args: { orderId: 'ORD-123' }
-  });
-} catch (error) {
-  console.error('Workflow failed:', error);
-}
-```
+import { TypedClient } from '@temporal-contract/client';
+import { Future, Result } from '@swan-io/boxed';
 
-### Result Pattern (Boxed)
-
-```typescript
-import { declareWorkflow } from '@temporal-contract/worker-boxed/workflow';
-import { Result } from '@swan-io/boxed';
-
-export const processOrder = declareWorkflow({
-  workflowName: 'processOrder',
-  contract,
-  implementation: async (context, { orderId }) => {
-    const result = await context.activities.validateOrder({ orderId });
-
-    return result.match({
-      Ok: ({ valid }) => Result.Ok({ success: valid }),
-      Error: (error) => Result.Error(error)
-    });
-  }
+// Client returns Future<Result<T, E>>
+const resultFuture = client.executeWorkflow('processOrder', {
+  workflowId: 'order-123',
+  args: { orderId: 'ORD-123' }
 });
+
+// Handle with match
+await resultFuture.tapOk((output) => {
+  console.log('Success:', output);
+}).tapError((error) => {
+  console.error('Failed:', error);
+}).toPromise();
+
+// Or convert to Promise and throw on error
+try {
+  const output = await resultFuture.resultToPromise();
+  console.log('Success:', output);
+} catch (error) {
+  console.error('Failed:', error);
+}
 ```
 
 ## See Also

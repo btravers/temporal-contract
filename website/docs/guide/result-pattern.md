@@ -4,7 +4,7 @@ Learn how to use explicit error handling with the Result/Future pattern.
 
 ## Overview
 
-The `@temporal-contract/worker-boxed` package provides an alternative to exception-based error handling using the Result/Future pattern from [@swan-io/boxed](https://swan-io.github.io/boxed/).
+The `@temporal-contract/worker` and `@temporal-contract/client` packages use the Result/Future pattern from [@swan-io/boxed](https://swan-io.github.io/boxed/) for explicit error handling.
 
 ## Why Use Result Pattern?
 
@@ -41,7 +41,7 @@ return Result.Ok({ success: true });
 ## Installation
 
 ```bash
-pnpm add @temporal-contract/worker-boxed @swan-io/boxed
+pnpm add @temporal-contract/worker @temporal-contract/client @swan-io/boxed
 ```
 
 ## Basic Usage
@@ -51,7 +51,7 @@ pnpm add @temporal-contract/worker-boxed @swan-io/boxed
 Use `Future<T, E>` for async activities:
 
 ```typescript
-import { declareActivitiesHandler } from '@temporal-contract/worker-boxed/activity';
+import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
 import { Future } from '@swan-io/boxed';
 import { orderContract } from './contract';
 
@@ -274,5 +274,5 @@ if (shipmentResult.isError()) {
 ## See Also
 
 - [@swan-io/boxed Documentation](https://swan-io.github.io/boxed/)
-- [Boxed Order Processing Example](/examples/boxed-order-processing)
+- [Order Processing Example](/examples/basic-order-processing)
 - [Worker Implementation](/guide/worker-implementation)

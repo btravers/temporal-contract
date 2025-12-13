@@ -5,33 +5,31 @@ import {
   OrderSchema,
 } from "@temporal-contract/sample-order-processing-contract";
 import type { z } from "zod";
+import { match } from "ts-pattern";
 import { logger } from "./logger.js";
 
 type Order = z.infer<typeof OrderSchema>;
 
 /**
- * Order Processing Client
+ * Order Processing Client with Result/Future Pattern
  *
- * This client demonstrates how to interact with the unified order processing contract.
- * It works with any worker implementation (basic or boxed) since they all implement
- * the same contract.
+ * This client demonstrates how to interact with the unified order processing contract
+ * using the Result/Future pattern from @swan-io/boxed for explicit error handling.
  *
  * Usage:
  *   1. Start Temporal server: temporal server start-dev
- *   2. Start a worker:
- *      - Basic: cd samples/order-processing-worker && pnpm dev:worker
- *      - Boxed: cd samples/order-processing-worker-boxed && pnpm dev:worker
+ *   2. Start a worker: cd samples/order-processing-worker && pnpm dev:worker
  *   3. Run this client: cd samples/order-processing-client && pnpm dev
  */
 async function run() {
-  logger.info("🚀 Starting Order Processing Client...");
+  logger.info("🚀 Starting Order Processing Client (Result/Future Pattern)...");
 
   // Connect to Temporal server
   const connection = await Connection.connect({
     address: "localhost:7233",
   });
 
-  // Create type-safe client for our contract
+  // Create type-safe client with Result/Future pattern
   const contractClient = TypedClient.create(orderProcessingContract, {
     connection,
     namespace: "default",
@@ -70,53 +68,154 @@ async function run() {
     },
   ];
 
-  logger.info("📦 Processing orders...");
+  logger.info("📦 Processing orders with Result/Future pattern...");
 
   for (const order of orders) {
-    try {
-      logger.info({ order }, `📦 Creating order: ${order.orderId}`);
+    logger.info({ order }, `📦 Creating order: ${order.orderId}`);
 
-      // Start the workflow
-      const handle = await contractClient.startWorkflow("processOrder", {
+    // Start workflow and get handle
+    const handleResult = await contractClient
+      .startWorkflow("processOrder", {
         workflowId: order.orderId,
         args: order,
-      });
+      })
+      .toPromise();
 
-      logger.info({ workflowId: handle.workflowId }, `✅ Workflow started: ${handle.workflowId}`);
+    // Handle workflow start errors
+    if (handleResult.isError()) {
+      const error = handleResult.error;
+      match(error)
+        .with({ name: "WorkflowNotFoundError" }, (err) => {
+          logger.error({ error: err, orderId: order.orderId }, "❌ Workflow not found");
+        })
+        .with({ name: "WorkflowValidationError" }, (err) => {
+          logger.error({ error: err, orderId: order.orderId }, "❌ Workflow validation failed");
+        })
+        .with({ name: "TypedClientError" }, (err) => {
+          logger.error({ error: err, orderId: order.orderId }, "❌ Failed to start workflow");
+        })
+        .otherwise((err) => {
+          logger.error(
+            { error: err, orderId: order.orderId },
+            "❌ Unknown error starting workflow",
+          );
+        });
+      continue;
+    }
 
-      logger.info("⌛ Waiting for workflow result...");
+    const handle = handleResult.value;
+    logger.info({ workflowId: handle.workflowId }, `✅ Workflow started: ${handle.workflowId}`);
+    logger.info("⌛ Waiting for workflow result...");
 
-      // Wait for the result (fully typed)
-      const result = await handle.result();
+    // Get workflow result
+    const resultFuture = await handle.result().toPromise();
 
-      if (result.status === "completed") {
-        logger.info(
-          {
-            orderId: result.orderId,
-            transactionId: result.transactionId,
-            trackingNumber: result.trackingNumber,
-          },
-          `🎉 Order ${result.orderId} completed successfully!`,
-        );
-      } else {
-        logger.error(
-          {
-            orderId: result.orderId,
-            failureReason: result.failureReason,
-            errorCode: result.errorCode,
-          },
-          `❌ Order ${result.orderId} failed`,
-        );
-      }
-    } catch (error) {
-      logger.error({ error, orderId: order.orderId }, "❌ Error processing order");
+    // Handle workflow execution result
+    if (resultFuture.isError()) {
+      const error = resultFuture.error;
+      match(error)
+        .with({ name: "WorkflowValidationError" }, (err) => {
+          logger.error(
+            { error: err, orderId: order.orderId },
+            "❌ Workflow result validation failed",
+          );
+        })
+        .with({ name: "TypedClientError" }, (err) => {
+          logger.error({ error: err, orderId: order.orderId }, "❌ Workflow execution failed");
+        })
+        .otherwise((err) => {
+          logger.error(
+            { error: err, orderId: order.orderId },
+            "❌ Unknown error during workflow execution",
+          );
+        });
+      continue;
+    }
+
+    const output = resultFuture.value;
+    // Handle successful result
+    if (output.status === "completed") {
+      logger.info(
+        {
+          orderId: output.orderId,
+          transactionId: output.transactionId,
+          trackingNumber: output.trackingNumber,
+        },
+        `🎉 Order ${output.orderId} completed successfully!`,
+      );
+    } else {
+      logger.error(
+        {
+          orderId: output.orderId,
+          failureReason: output.failureReason,
+          errorCode: output.errorCode,
+        },
+        `❌ Order ${output.orderId} failed`,
+      );
     }
   }
 
-  logger.info("✨ Done!");
+  // Example using executeWorkflow with Result pattern
+  logger.info("\n📦 Example: Using executeWorkflow with Result pattern...");
+
+  const exampleOrder: Order = {
+    orderId: `ORD-${Date.now()}-EXAMPLE`,
+    customerId: "CUST-789",
+    items: [
+      {
+        productId: "PROD-004",
+        quantity: 1,
+        price: 99.99,
+      },
+    ],
+    totalAmount: 99.99,
+  };
+
+  // Execute workflow and handle result
+  const result = await contractClient
+    .executeWorkflow("processOrder", {
+      workflowId: exampleOrder.orderId,
+      args: exampleOrder,
+    })
+    .toPromise();
+
+  // Handle result with pattern matching
+  if (result.isOk()) {
+    const output = result.value;
+    const summary = {
+      id: output.orderId,
+      success: output.status === "completed",
+      message:
+        output.status === "completed"
+          ? `Order completed with tracking: ${output.trackingNumber}`
+          : `Order failed: ${output.failureReason}`,
+    };
+    logger.info({ data: summary }, `📊 Order summary: ${summary.message}`);
+  } else {
+    // Handle errors
+    match(result.error)
+      .with({ name: "WorkflowNotFoundError" }, (err) => {
+        logger.error({ error: err }, "❌ Workflow not found");
+      })
+      .with({ name: "WorkflowValidationError" }, (err) => {
+        logger.error({ error: err }, "❌ Validation failed");
+      })
+      .with({ name: "TypedClientError" }, (err) => {
+        logger.error({ error: err }, "❌ Workflow execution failed");
+      })
+      .otherwise((err) => {
+        logger.error({ error: err }, "❌ Unknown error");
+      });
+  }
+
+  logger.info("\n✨ Done!");
   logger.info("");
-  logger.info("💡 Note: This client works with any worker implementation");
-  logger.info("   (basic or boxed) since they implement the same contract.");
+  logger.info("💡 Benefits of Result/Future pattern:");
+  logger.info("   - Explicit error handling - no hidden exceptions");
+  logger.info("   - Type-safe error values");
+  logger.info("   - Functional composition with flatMapOk, tapOk, tapError");
+  logger.info("   - Railway-oriented programming");
+  logger.info("   - Exhaustive error matching with ts-pattern");
 
   process.exit(0);
 }
