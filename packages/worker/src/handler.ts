@@ -15,11 +15,13 @@ import type {
   QueryDefinition,
   SignalDefinition,
   UpdateDefinition,
+  WorkflowDefinition,
+} from "@temporal-contract/contract";
+import type {
   WorkerInferInput,
   WorkerInferOutput,
   WorkerInferWorkflowContextActivities,
-  WorkflowDefinition,
-} from "@temporal-contract/contract";
+} from "./types.js";
 import {
   ActivityDefinitionNotFoundError,
   ActivityInputValidationError,
