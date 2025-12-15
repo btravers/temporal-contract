@@ -255,6 +255,100 @@ if (shipmentResult.isError()) {
 }
 ```
 
+## Child Workflows
+
+Child workflows use the same Future/Result pattern for consistent error handling:
+
+### Execute and Wait
+
+```typescript
+import { declareWorkflow } from '@temporal-contract/worker/workflow';
+
+export const parentWorkflow = declareWorkflow({
+  workflowName: 'parentWorkflow',
+  contract: myContract,
+  implementation: async (context, input) => {
+    // Execute child workflow and wait for result
+    const result = await context.executeChildWorkflow(myContract, 'processPayment', {
+      workflowId: `payment-${input.orderId}`,
+      args: { amount: input.totalAmount }
+    }).toPromise();
+
+    return result.match({
+      Ok: (output) => Result.Ok({
+        success: true,
+        transactionId: output.transactionId
+      }),
+      Error: (error) => Result.Error({
+        type: 'ChildWorkflowFailed',
+        error
+      }),
+    });
+  },
+});
+```
+
+### Start Without Waiting
+
+```typescript
+export const parentWorkflow = declareWorkflow({
+  workflowName: 'parentWorkflow',
+  contract: myContract,
+  implementation: async (context, input) => {
+    // Start child workflow without waiting
+    const handleResult = await context.startChildWorkflow(myContract, 'sendNotification', {
+      workflowId: `notification-${input.orderId}`,
+      args: { message: 'Order received' }
+    }).toPromise();
+
+    handleResult.match({
+      Ok: async (handle) => {
+        // Child started successfully
+        // Can wait for result later if needed
+        const result = await handle.result().toPromise();
+      },
+      Error: (error) => {
+        console.error('Failed to start child:', error);
+      },
+    });
+
+    return Result.Ok({ success: true });
+  },
+});
+```
+
+### Cross-Contract Child Workflows
+
+Invoke workflows from different contracts/workers:
+
+```typescript
+import { orderContract, notificationContract } from './contracts';
+
+export const orderWorkflow = declareWorkflow({
+  workflowName: 'processOrder',
+  contract: orderContract,
+  implementation: async (context, input) => {
+    // Child workflow from another contract
+    const notifyResult = await context.executeChildWorkflow(
+      notificationContract,
+      'sendOrderConfirmation',
+      {
+        workflowId: `notify-${input.orderId}`,
+        args: { orderId: input.orderId }
+      }
+    ).toPromise();
+
+    return notifyResult.match({
+      Ok: () => Result.Ok({ status: 'completed' }),
+      Error: (error) => Result.Error({
+        type: 'NotificationFailed',
+        error
+      }),
+    });
+  },
+});
+```
+
 ## When to Use
 
 ### Use Result Pattern When:

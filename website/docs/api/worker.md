@@ -42,8 +42,38 @@ import type {
   WorkerInferWorkflow,
   WorkerInferSignal,
   WorkerInferQuery,
-  WorkerInferUpdate
+  WorkerInferUpdate,
+  WorkflowContext
 } from '@temporal-contract/worker/workflow';
+```
+
+### Workflow Context
+
+The workflow context provides access to activities and child workflows:
+
+```typescript
+export const myWorkflow = declareWorkflow({
+  workflowName: 'myWorkflow',
+  contract: myContract,
+  implementation: async (context, input) => {
+    // Access activities
+    await context.activities.sendEmail({ to: 'user@example.com' });
+
+    // Execute child workflow
+    const result = await context.executeChildWorkflow(myContract, 'childWorkflow', {
+      workflowId: 'child-123',
+      args: { data: input.data }
+    }).toPromise();
+
+    // Start child workflow without waiting
+    const handle = await context.startChildWorkflow(myContract, 'backgroundTask', {
+      workflowId: 'task-123',
+      args: { taskId: input.taskId }
+    }).toPromise();
+
+    return { success: true };
+  },
+});
 ```
 
 ## Type Utilities
