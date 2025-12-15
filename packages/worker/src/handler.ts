@@ -709,11 +709,74 @@ export function declareWorkflow<
       );
     }
 
+    // Helper to validate child workflow output
+    async function validateChildWorkflowOutput<TChildWorkflow extends WorkflowDefinition>(
+      childDefinition: TChildWorkflow,
+      result: unknown,
+      childWorkflowName: string,
+    ): Promise<Result<WorkerInferOutput<TChildWorkflow>, ChildWorkflowError>> {
+      const outputResult = await childDefinition.output["~standard"].validate(result);
+      if (outputResult.issues) {
+        return Result.Error(
+          new ChildWorkflowError(
+            `Child workflow "${childWorkflowName}" output validation failed: ${outputResult.issues.map((i: StandardSchemaV1.Issue) => i.message).join("; ")}`,
+          ),
+        );
+      }
+      return Result.Ok(outputResult.value as WorkerInferOutput<TChildWorkflow>);
+    }
+
+    // Helper to get and validate child workflow definition and input
+    async function getAndValidateChildWorkflow<
+      TChildWorkflowName extends keyof TContract["workflows"],
+    >(
+      childWorkflowName: TChildWorkflowName,
+      args: unknown,
+    ): Promise<
+      Result<
+        {
+          definition: TContract["workflows"][TChildWorkflowName];
+          validatedInput: WorkerInferInput<TContract["workflows"][TChildWorkflowName]>;
+        },
+        ChildWorkflowError
+      >
+    > {
+      const childDefinition = contract.workflows[childWorkflowName as string];
+
+      if (!childDefinition) {
+        return Result.Error(
+          new ChildWorkflowNotFoundError(
+            String(childWorkflowName),
+            Object.keys(contract.workflows) as string[],
+          ),
+        );
+      }
+
+      const inputResult = await childDefinition.input["~standard"].validate(args);
+      if (inputResult.issues) {
+        return Result.Error(
+          new ChildWorkflowError(
+            `Child workflow "${String(childWorkflowName)}" input validation failed: ${inputResult.issues.map((i: StandardSchemaV1.Issue) => i.message).join("; ")}`,
+          ),
+        );
+      }
+
+      const validatedInput = inputResult.value as WorkerInferInput<
+        TContract["workflows"][TChildWorkflowName]
+      >;
+
+      return Result.Ok({
+        definition: childDefinition as TContract["workflows"][TChildWorkflowName],
+        validatedInput,
+      });
+    }
+
     // Helper function to create a typed child workflow handle
     function createTypedChildHandle<TChildWorkflow extends WorkflowDefinition>(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       handle: ChildWorkflowHandle<any>,
       childDefinition: TChildWorkflow,
+      childWorkflowName: string,
     ): TypedChildWorkflowHandle<TChildWorkflow> {
       return {
         workflowId: handle.workflowId,
@@ -722,19 +785,12 @@ export function declareWorkflow<
             (async () => {
               try {
                 const result = await handle.result();
-                // Validate output with Standard Schema
-                const outputResult = await childDefinition.output["~standard"].validate(result);
-                if (outputResult.issues) {
-                  resolve(
-                    Result.Error(
-                      new ChildWorkflowError(
-                        `Child workflow output validation failed: ${outputResult.issues.map((i: StandardSchemaV1.Issue) => i.message).join("; ")}`,
-                      ),
-                    ),
-                  );
-                  return;
-                }
-                resolve(Result.Ok(outputResult.value as WorkerInferOutput<TChildWorkflow>));
+                const validationResult = await validateChildWorkflowOutput(
+                  childDefinition,
+                  result,
+                  childWorkflowName,
+                );
+                resolve(validationResult);
               } catch (error) {
                 resolve(
                   Result.Error(
@@ -764,37 +820,19 @@ export function declareWorkflow<
       >
     > {
       return Future.make((resolve) => {
-        const childDefinition = contract.workflows[childWorkflowName as string];
-
-        if (!childDefinition) {
-          resolve(
-            Result.Error(
-              new ChildWorkflowNotFoundError(
-                String(childWorkflowName),
-                Object.keys(contract.workflows) as string[],
-              ),
-            ),
-          );
-          return;
-        }
-
-        // Validate input and start child workflow
         (async () => {
-          const inputResult = await childDefinition.input["~standard"].validate(options.args);
-          if (inputResult.issues) {
-            resolve(
-              Result.Error(
-                new ChildWorkflowError(
-                  `Child workflow "${String(childWorkflowName)}" input validation failed: ${inputResult.issues.map((i: StandardSchemaV1.Issue) => i.message).join("; ")}`,
-                ),
-              ),
-            );
+          // Validate input and get definition
+          const validationResult = await getAndValidateChildWorkflow(
+            childWorkflowName,
+            options.args,
+          );
+
+          if (validationResult.isError()) {
+            resolve(Result.Error(validationResult.error));
             return;
           }
 
-          const validatedInput = inputResult.value as WorkerInferInput<
-            TContract["workflows"][TChildWorkflowName]
-          >;
+          const { definition: childDefinition, validatedInput } = validationResult.value;
 
           try {
             // Start child workflow (Temporal expects args as array)
@@ -808,6 +846,7 @@ export function declareWorkflow<
             const typedHandle = createTypedChildHandle(
               handle,
               childDefinition,
+              String(childWorkflowName),
             ) as TypedChildWorkflowHandle<TContract["workflows"][TChildWorkflowName]>;
 
             resolve(Result.Ok(typedHandle));
@@ -835,37 +874,19 @@ export function declareWorkflow<
       Result<WorkerInferOutput<TContract["workflows"][TChildWorkflowName]>, ChildWorkflowError>
     > {
       return Future.make((resolve) => {
-        const childDefinition = contract.workflows[childWorkflowName as string];
-
-        if (!childDefinition) {
-          resolve(
-            Result.Error(
-              new ChildWorkflowNotFoundError(
-                String(childWorkflowName),
-                Object.keys(contract.workflows) as string[],
-              ),
-            ),
-          );
-          return;
-        }
-
-        // Validate input and execute child workflow
         (async () => {
-          const inputResult = await childDefinition.input["~standard"].validate(options.args);
-          if (inputResult.issues) {
-            resolve(
-              Result.Error(
-                new ChildWorkflowError(
-                  `Child workflow "${String(childWorkflowName)}" input validation failed: ${inputResult.issues.map((i: StandardSchemaV1.Issue) => i.message).join("; ")}`,
-                ),
-              ),
-            );
+          // Validate input and get definition
+          const validationResult = await getAndValidateChildWorkflow(
+            childWorkflowName,
+            options.args,
+          );
+
+          if (validationResult.isError()) {
+            resolve(Result.Error(validationResult.error));
             return;
           }
 
-          const validatedInput = inputResult.value as WorkerInferInput<
-            TContract["workflows"][TChildWorkflowName]
-          >;
+          const { definition: childDefinition, validatedInput } = validationResult.value;
 
           try {
             // Execute child workflow (Temporal expects args as array)
@@ -877,21 +898,22 @@ export function declareWorkflow<
             });
 
             // Validate output with Standard Schema
-            const outputResult = await childDefinition.output["~standard"].validate(result);
-            if (outputResult.issues) {
-              resolve(
-                Result.Error(
-                  new ChildWorkflowError(
-                    `Child workflow "${String(childWorkflowName)}" output validation failed: ${outputResult.issues.map((i: StandardSchemaV1.Issue) => i.message).join("; ")}`,
-                  ),
-                ),
-              );
+            const outputValidationResult = await validateChildWorkflowOutput(
+              childDefinition,
+              result,
+              String(childWorkflowName),
+            );
+
+            if (outputValidationResult.isError()) {
+              resolve(Result.Error(outputValidationResult.error));
               return;
             }
 
             resolve(
               Result.Ok(
-                outputResult.value as WorkerInferOutput<TContract["workflows"][TChildWorkflowName]>,
+                outputValidationResult.value as WorkerInferOutput<
+                  TContract["workflows"][TChildWorkflowName]
+                >,
               ),
             );
           } catch (error) {
