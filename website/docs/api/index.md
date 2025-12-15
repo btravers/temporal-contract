@@ -47,7 +47,7 @@ pnpm add @temporal-contract/client @swan-io/boxed
 **Testing utilities for workflows and activities**
 
 - Testcontainers integration for Temporal server
-- Vitest extension with `temporalClient` and `temporalConnection`
+- Vitest extension with `clientConnection` and `workerConnection`
 - Global setup for test lifecycle
 - Type-safe testing helpers
 
