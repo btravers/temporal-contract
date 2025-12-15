@@ -161,9 +161,6 @@ importers:
       "@standard-schema/spec":
         specifier: "catalog:"
         version: 1.0.0
-      "@swan-io/boxed":
-        specifier: "catalog:"
-        version: 3.2.1(typescript@5.9.3)
       zod:
         specifier: "catalog:"
         version: 4.1.13
