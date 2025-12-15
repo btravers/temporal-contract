@@ -102,17 +102,17 @@ export interface WorkflowContext<
    * const childResult = await context.startChildWorkflow(myContract, 'processPayment', {
    *   workflowId: 'payment-123',
    *   args: { amount: 100 }
-   * }).toPromise();
+   * });
    *
    * // Cross-contract child workflow (from another worker)
    * const otherResult = await context.startChildWorkflow(otherContract, 'sendNotification', {
    *   workflowId: 'notification-123',
    *   args: { message: 'Hello' }
-   * }).toPromise();
+   * });
    *
    * childResult.match({
    *   Ok: async (handle) => {
-   *     const result = await handle.result().toPromise();
+   *     const result = await handle.result();
    *     // ... handle result
    *   },
    *   Error: (error) => console.error('Failed to start:', error),
@@ -148,13 +148,13 @@ export interface WorkflowContext<
    * const result = await context.executeChildWorkflow(myContract, 'processPayment', {
    *   workflowId: 'payment-123',
    *   args: { amount: 100 }
-   * }).toPromise();
+   * });
    *
    * // Cross-contract child workflow (from another worker)
    * const otherResult = await context.executeChildWorkflow(otherContract, 'sendNotification', {
    *   workflowId: 'notification-123',
    *   args: { message: 'Hello' }
-   * }).toPromise();
+   * });
    *
    * result.match({
    *   Ok: (output) => console.log('Payment processed:', output),
