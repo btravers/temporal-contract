@@ -46,9 +46,10 @@ pnpm add @temporal-contract/client @swan-io/boxed
 
 **Testing utilities for workflows and activities**
 
-- Mock activity implementations
-- Workflow testing helpers
-- Integration test utilities
+- Testcontainers integration for Temporal server
+- Vitest extension with `clientConnection` and `workerConnection`
+- Global setup for test lifecycle
+- Type-safe testing helpers
 
 ```bash
 pnpm add -D @temporal-contract/testing
