@@ -74,12 +74,10 @@ async function run() {
     logger.info({ order }, `📦 Creating order: ${order.orderId}`);
 
     // Start workflow and get handle
-    const handleResult = await contractClient
-      .startWorkflow("processOrder", {
-        workflowId: order.orderId,
-        args: order,
-      })
-      .toPromise();
+    const handleResult = await contractClient.startWorkflow("processOrder", {
+      workflowId: order.orderId,
+      args: order,
+    });
 
     // Handle workflow start errors
     if (handleResult.isError()) {
@@ -108,7 +106,7 @@ async function run() {
     logger.info("⌛ Waiting for workflow result...");
 
     // Get workflow result
-    const resultFuture = await handle.result().toPromise();
+    const resultFuture = await handle.result();
 
     // Handle workflow execution result
     if (resultFuture.isError()) {
@@ -172,12 +170,10 @@ async function run() {
   };
 
   // Execute workflow and handle result
-  const result = await contractClient
-    .executeWorkflow("processOrder", {
-      workflowId: exampleOrder.orderId,
-      args: exampleOrder,
-    })
-    .toPromise();
+  const result = await contractClient.executeWorkflow("processOrder", {
+    workflowId: exampleOrder.orderId,
+    args: exampleOrder,
+  });
 
   // Handle result with pattern matching
   if (result.isOk()) {

@@ -504,8 +504,8 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
         activityImpl as (args: unknown) => Future<Result<unknown, ActivityError>>
       )(inputResult.value);
 
-      // Unwrap Future and Result
-      const result = await futureResult.toPromise();
+      // Unwrap Future and Result (Future is awaitable)
+      const result = await futureResult;
 
       // Handle the result - validation must be done before match to avoid async callbacks
       if (result.isOk()) {

@@ -87,7 +87,7 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      const result = await future.toPromise();
+      const result = await future;
 
       expect(result.isOk()).toBe(true);
       expect(mockWorkflow.start).toHaveBeenCalledWith("testWorkflow", {
@@ -107,7 +107,7 @@ describe("TypedClient", () => {
         args: { name: "hello", value: "not-a-number" as unknown as number },
       });
 
-      const result = await future.toPromise();
+      const result = await future;
 
       expect(result.isError()).toBe(true);
       if (result.isError()) {
@@ -121,7 +121,7 @@ describe("TypedClient", () => {
         args: {} as unknown as { name: string; value: number },
       });
 
-      const result = await future.toPromise();
+      const result = await future;
 
       expect(result.isError()).toBe(true);
       if (result.isError()) {
@@ -139,7 +139,7 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      const result = await future.toPromise();
+      const result = await future;
 
       expect(result.isOk()).toBe(true);
       expect(mockWorkflow.execute).toHaveBeenCalledWith("testWorkflow", {
@@ -161,7 +161,7 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      const result = await future.toPromise();
+      const result = await future;
 
       expect(result.isError()).toBe(true);
       if (result.isError()) {
@@ -177,7 +177,7 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      const result = await future.toPromise();
+      const result = await future;
 
       expect(result.isError()).toBe(true);
     });
@@ -200,7 +200,7 @@ describe("TypedClient", () => {
       mockWorkflow.getHandle.mockReturnValue(mockHandle);
 
       const future = typedClient.getHandle("testWorkflow", "test-123");
-      const result = await future.toPromise();
+      const result = await future;
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -213,7 +213,7 @@ describe("TypedClient", () => {
         "nonExistentWorkflow" as unknown as "testWorkflow",
         "test-123",
       );
-      const result = await future.toPromise();
+      const result = await future;
 
       expect(result.isError()).toBe(true);
       if (result.isError()) {
@@ -263,12 +263,12 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      const handleResult = await handleFuture.toPromise();
+      const handleResult = await handleFuture;
       expect(handleResult.isOk()).toBe(true);
 
       if (handleResult.isOk()) {
         const resultFuture = handleResult.value.result();
-        const result = await resultFuture.toPromise();
+        const result = await resultFuture;
 
         expect(result.isOk()).toBe(true);
         if (result.isOk()) {
@@ -285,12 +285,12 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      const handleResult = await handleFuture.toPromise();
+      const handleResult = await handleFuture;
       expect(handleResult.isOk()).toBe(true);
 
       if (handleResult.isOk()) {
         const queryFuture = handleResult.value.queries.getStatus([]);
-        const result = await queryFuture.toPromise();
+        const result = await queryFuture;
 
         expect(result.isOk()).toBe(true);
         if (result.isOk()) {
@@ -305,12 +305,12 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      const handleResult = await handleFuture.toPromise();
+      const handleResult = await handleFuture;
       expect(handleResult.isOk()).toBe(true);
 
       if (handleResult.isOk()) {
         const signalFuture = handleResult.value.signals.updateProgress([50]);
-        const result = await signalFuture.toPromise();
+        const result = await signalFuture;
 
         expect(result.isOk()).toBe(true);
         expect(mockHandle.signal).toHaveBeenCalledWith("updateProgress", [50]);
@@ -325,12 +325,12 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      const handleResult = await handleFuture.toPromise();
+      const handleResult = await handleFuture;
       expect(handleResult.isOk()).toBe(true);
 
       if (handleResult.isOk()) {
         const updateFuture = handleResult.value.updates.setConfig([{ value: "new-config" }]);
-        const result = await updateFuture.toPromise();
+        const result = await updateFuture;
 
         expect(result.isOk()).toBe(true);
         if (result.isOk()) {
@@ -345,12 +345,12 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      const handleResult = await handleFuture.toPromise();
+      const handleResult = await handleFuture;
       expect(handleResult.isOk()).toBe(true);
 
       if (handleResult.isOk()) {
         const terminateFuture = handleResult.value.terminate("test reason");
-        const result = await terminateFuture.toPromise();
+        const result = await terminateFuture;
 
         expect(result.isOk()).toBe(true);
         expect(mockHandle.terminate).toHaveBeenCalledWith("test reason");
@@ -363,12 +363,12 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      const handleResult = await handleFuture.toPromise();
+      const handleResult = await handleFuture;
       expect(handleResult.isOk()).toBe(true);
 
       if (handleResult.isOk()) {
         const cancelFuture = handleResult.value.cancel();
-        const result = await cancelFuture.toPromise();
+        const result = await cancelFuture;
 
         expect(result.isOk()).toBe(true);
         expect(mockHandle.cancel).toHaveBeenCalled();
@@ -381,12 +381,12 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      const handleResult = await handleFuture.toPromise();
+      const handleResult = await handleFuture;
       expect(handleResult.isOk()).toBe(true);
 
       if (handleResult.isOk()) {
         const describeFuture = handleResult.value.describe();
-        const result = await describeFuture.toPromise();
+        const result = await describeFuture;
 
         expect(result.isOk()).toBe(true);
         if (result.isOk()) {
@@ -405,7 +405,7 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      const result = await future.toPromise();
+      const result = await future;
 
       let matched = false;
       result.match({
@@ -429,7 +429,7 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      const result = await future.toPromise();
+      const result = await future;
       const mapped = result.map((value) => value.result.toUpperCase());
 
       expect(mapped.isOk()).toBe(true);
