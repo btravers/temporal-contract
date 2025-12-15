@@ -36,6 +36,49 @@ export const processOrder = declareWorkflow({
 });
 ```
 
+### Child Workflows
+
+Execute child workflows with type-safe Future/Result pattern:
+
+```typescript
+// workflows.ts
+import { declareWorkflow } from '@temporal-contract/worker/workflow';
+
+export const parentWorkflow = declareWorkflow({
+  workflowName: 'parentWorkflow',
+  contract: myContract,
+  implementation: async (context, input) => {
+    // Execute child workflow and wait for result
+    const childResult = await context.executeChildWorkflow('processPayment', {
+      workflowId: `payment-${input.orderId}`,
+      args: { amount: input.totalAmount }
+    }).toPromise();
+
+    childResult.match({
+      Ok: (output) => console.log('Payment processed:', output),
+      Error: (error) => console.error('Payment failed:', error),
+    });
+
+    // Or start child workflow without waiting
+    const handleResult = await context.startChildWorkflow('sendNotification', {
+      workflowId: `notification-${input.orderId}`,
+      args: { message: 'Order received' }
+    }).toPromise();
+
+    handleResult.match({
+      Ok: async (handle) => {
+        // Can wait for result later
+        const result = await handle.result().toPromise();
+        // ...
+      },
+      Error: (error) => console.error('Failed to start:', error),
+    });
+
+    return { success: true };
+  }
+});
+```
+
 ## Documentation
 
 📖 **[Read the full documentation →](https://btravers.github.io/temporal-contract)**
