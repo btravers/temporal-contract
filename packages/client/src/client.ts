@@ -1,4 +1,5 @@
-import type { ClientOptions, WorkflowHandle } from "@temporalio/client";
+import { Client, WorkflowHandle } from "@temporalio/client";
+import type { ClientOptions, WorkflowStartOptions, WorkflowOptions } from "@temporalio/client";
 import type {
   ClientInferInput,
   ClientInferOutput,
@@ -7,87 +8,120 @@ import type {
   ClientInferWorkflowUpdates,
   ContractDefinition,
   WorkflowDefinition,
+  QueryDefinition,
+  SignalDefinition,
+  UpdateDefinition,
 } from "@temporal-contract/contract";
+import { Future, Result } from "@swan-io/boxed";
 import {
-  TypedClientBoxed,
-  type TypedWorkflowStartOptions,
-  type TypedWorkflowHandleBoxed,
-  type TypedClientError,
-  type Future,
-  type Result,
-} from "@temporal-contract/client-boxed";
-
-// Re-export TypedWorkflowStartOptions for convenience
-export type { TypedWorkflowStartOptions };
+  WorkflowNotFoundError,
+  WorkflowValidationError,
+  QueryValidationError,
+  SignalValidationError,
+  UpdateValidationError,
+  TypedClientError,
+} from "./errors.js";
 
 /**
- * Typed workflow handle with validated results, queries, signals and updates
+ * Extended options for starting workflows with Temporal-specific features
+ * Combines required workflowId with optional Temporal workflow options
+ */
+export type TypedWorkflowStartOptions = Pick<
+  WorkflowStartOptions,
+  | "workflowId"
+  | "workflowIdReusePolicy"
+  | "workflowExecutionTimeout"
+  | "workflowRunTimeout"
+  | "workflowTaskTimeout"
+  | "retry"
+  | "memo"
+  | "searchAttributes"
+  | "cronSchedule"
+> &
+  Pick<WorkflowOptions, "workflowId">;
+
+/**
+ * Typed workflow handle with validated results using Result/Future pattern
  */
 export interface TypedWorkflowHandle<TWorkflow extends WorkflowDefinition> {
   workflowId: string;
 
   /**
-   * Type-safe queries based on workflow definition
+   * Type-safe queries based on workflow definition with Result pattern
+   * Each query returns Future<Result<T, Error>> instead of Promise<T>
    */
-  queries: ClientInferWorkflowQueries<TWorkflow>;
+  queries: {
+    [K in keyof ClientInferWorkflowQueries<TWorkflow>]: ClientInferWorkflowQueries<TWorkflow>[K] extends (
+      ...args: infer Args
+    ) => Promise<infer R>
+      ? (...args: Args) => Future<Result<R, TypedClientError>>
+      : never;
+  };
 
   /**
-   * Type-safe signals based on workflow definition
+   * Type-safe signals based on workflow definition with Result pattern
+   * Each signal returns Future<Result<void, Error>> instead of Promise<void>
    */
-  signals: ClientInferWorkflowSignals<TWorkflow>;
+  signals: {
+    [K in keyof ClientInferWorkflowSignals<TWorkflow>]: ClientInferWorkflowSignals<TWorkflow>[K] extends (
+      ...args: infer Args
+    ) => Promise<void>
+      ? (...args: Args) => Future<Result<void, TypedClientError>>
+      : never;
+  };
 
   /**
-   * Type-safe updates based on workflow definition
+   * Type-safe updates based on workflow definition with Result pattern
+   * Each update returns Future<Result<T, Error>> instead of Promise<T>
    */
-  updates: ClientInferWorkflowUpdates<TWorkflow>;
+  updates: {
+    [K in keyof ClientInferWorkflowUpdates<TWorkflow>]: ClientInferWorkflowUpdates<TWorkflow>[K] extends (
+      ...args: infer Args
+    ) => Promise<infer R>
+      ? (...args: Args) => Future<Result<R, TypedClientError>>
+      : never;
+  };
 
-  result: () => Promise<ClientInferOutput<TWorkflow>>;
-  terminate: (reason?: string) => Promise<void>;
-  cancel: () => Promise<void>;
+  /**
+   * Get workflow result with Result pattern
+   */
+  result: () => Future<Result<ClientInferOutput<TWorkflow>, TypedClientError>>;
+
+  /**
+   * Terminate workflow with Result pattern
+   */
+  terminate: (reason?: string) => Future<Result<void, TypedClientError>>;
+
+  /**
+   * Cancel workflow with Result pattern
+   */
+  cancel: () => Future<Result<void, TypedClientError>>;
 
   /**
    * Get workflow execution description including status and metadata
-   *
-   * @example
-   * ```ts
-   * const handle = await client.getHandle('processOrder', 'order-123');
-   * const description = await handle.describe();
-   * console.log(description.workflowExecutionInfo.status); // RUNNING, COMPLETED, etc.
-   * ```
    */
-  describe: () => ReturnType<WorkflowHandle["describe"]>;
+  describe: () => Future<Result<Awaited<ReturnType<WorkflowHandle["describe"]>>, TypedClientError>>;
 
   /**
    * Fetch the workflow execution history
-   *
-   * @example
-   * ```ts
-   * const handle = await client.getHandle('processOrder', 'order-123');
-   * const history = handle.fetchHistory();
-   * for await (const event of history) {
-   *   console.log(event);
-   * }
-   * ```
    */
   fetchHistory: () => ReturnType<WorkflowHandle["fetchHistory"]>;
 }
 
 /**
- * Typed Temporal client based on a contract
+ * Typed Temporal client with Result/Future pattern based on a contract
  *
  * Provides type-safe methods to start and execute workflows
- * defined in the contract. This client wraps TypedClientBoxed
- * and provides a Promise-based API for easier use.
+ * defined in the contract, with explicit error handling using Result pattern.
  */
 export class TypedClient<TContract extends ContractDefinition> {
-  private readonly boxedClient: TypedClientBoxed<TContract>;
-
-  private constructor(boxedClient: TypedClientBoxed<TContract>) {
-    this.boxedClient = boxedClient;
-  }
+  private constructor(
+    private readonly contract: TContract,
+    private readonly client: Client,
+  ) {}
 
   /**
-   * Create a typed Temporal client from a contract
+   * Create a typed Temporal client with boxed pattern from a contract
    *
    * @example
    * ```ts
@@ -99,7 +133,12 @@ export class TypedClient<TContract extends ContractDefinition> {
    *
    * const result = await client.executeWorkflow('processOrder', {
    *   workflowId: 'order-123',
-   *   args: [...],
+   *   args: { ... },
+   * }).toPromise();
+   *
+   * result.match({
+   *   Ok: (output) => console.log('Success:', output),
+   *   Error: (error) => console.error('Failed:', error),
    * });
    * ```
    */
@@ -107,131 +146,460 @@ export class TypedClient<TContract extends ContractDefinition> {
     contract: TContract,
     options: ClientOptions,
   ): TypedClient<TContract> {
-    const boxedClient = TypedClientBoxed.create(contract, options);
-    return new TypedClient(boxedClient);
+    const client = new Client(options);
+    return new TypedClient(contract, client);
   }
 
   /**
-   * Start a workflow and return a typed handle
+   * Start a workflow and return a typed handle with Future pattern
    *
    * @example
    * ```ts
-   * const handle = await client.startWorkflow('processOrder', {
+   * const handleResult = await client.startWorkflow('processOrder', {
    *   workflowId: 'order-123',
-   *   args: ['ORD-123', 'CUST-456', [{ productId: 'PROD-1', quantity: 2 }]],
+   *   args: { orderId: 'ORD-123' },
    *   workflowExecutionTimeout: '1 day',
    *   retry: { maximumAttempts: 3 },
-   * });
+   * }).toPromise();
    *
-   * const result = await handle.result();
+   * handleResult.match({
+   *   Ok: async (handle) => {
+   *     const result = await handle.result().toPromise();
+   *     // ... handle result
+   *   },
+   *   Error: (error) => console.error('Failed to start:', error),
+   * });
    * ```
    */
-  async startWorkflow<TWorkflowName extends keyof TContract["workflows"]>(
+  startWorkflow<TWorkflowName extends keyof TContract["workflows"]>(
     workflowName: TWorkflowName,
-    options: TypedWorkflowStartOptions & {
+    {
+      args,
+      ...temporalOptions
+    }: TypedWorkflowStartOptions & {
       args: ClientInferInput<TContract["workflows"][TWorkflowName]>;
     },
-  ): Promise<TypedWorkflowHandle<TContract["workflows"][TWorkflowName]>> {
-    const boxedHandle = await this.boxedClient
-      .startWorkflow(workflowName, options)
-      .resultToPromise();
-    return this.wrapBoxedHandle(boxedHandle);
+  ): Future<Result<TypedWorkflowHandle<TContract["workflows"][TWorkflowName]>, TypedClientError>> {
+    return Future.make((resolve) => {
+      const definition = this.contract.workflows[workflowName as string];
+
+      if (!definition) {
+        resolve(
+          Result.Error(
+            new WorkflowNotFoundError(
+              String(workflowName),
+              Object.keys(this.contract.workflows) as string[],
+            ),
+          ),
+        );
+        return;
+      }
+
+      // Validate input with Standard Schema and start workflow
+      (async () => {
+        const inputResult = await definition.input["~standard"].validate(args);
+        if (inputResult.issues) {
+          resolve(
+            Result.Error(
+              new WorkflowValidationError(String(workflowName), "input", inputResult.issues),
+            ),
+          );
+          return;
+        }
+        const validatedInput = inputResult.value as ClientInferInput<
+          TContract["workflows"][TWorkflowName]
+        >;
+
+        // Start workflow (Temporal expects args as array, so wrap single parameter)
+        try {
+          const handle = await this.client.workflow.start(workflowName as string, {
+            ...temporalOptions,
+            taskQueue: this.contract.taskQueue,
+            args: [validatedInput],
+          });
+
+          const typedHandle = this.createTypedHandle(handle, definition) as TypedWorkflowHandle<
+            TContract["workflows"][TWorkflowName]
+          >;
+          resolve(Result.Ok(typedHandle));
+        } catch (error) {
+          resolve(
+            Result.Error(
+              new TypedClientError(
+                `Failed to start workflow: ${error instanceof Error ? error.message : String(error)}`,
+              ),
+            ),
+          );
+        }
+      })();
+    });
   }
 
   /**
-   * Execute a workflow (start and wait for result)
+   * Execute a workflow (start and wait for result) with Future/Result pattern
    *
    * @example
    * ```ts
    * const result = await client.executeWorkflow('processOrder', {
    *   workflowId: 'order-123',
-   *   args: ['ORD-123', 'CUST-456', [{ productId: 'PROD-1', quantity: 2 }]],
+   *   args: { orderId: 'ORD-123' },
    *   workflowExecutionTimeout: '1 day',
    *   retry: { maximumAttempts: 3 },
-   * });
+   * }).toPromise();
    *
-   * console.log(result.status); // fully typed!
+   * result.match({
+   *   Ok: (output) => console.log('Order processed:', output.status),
+   *   Error: (error) => console.error('Processing failed:', error),
+   * });
    * ```
    */
-  async executeWorkflow<TWorkflowName extends keyof TContract["workflows"]>(
+  executeWorkflow<TWorkflowName extends keyof TContract["workflows"]>(
     workflowName: TWorkflowName,
-    options: TypedWorkflowStartOptions & {
+    {
+      args,
+      ...temporalOptions
+    }: TypedWorkflowStartOptions & {
       args: ClientInferInput<TContract["workflows"][TWorkflowName]>;
     },
-  ): Promise<ClientInferOutput<TContract["workflows"][TWorkflowName]>> {
-    return this.boxedClient.executeWorkflow(workflowName, options).resultToPromise();
+  ): Future<Result<ClientInferOutput<TContract["workflows"][TWorkflowName]>, TypedClientError>> {
+    return Future.make((resolve) => {
+      const definition = this.contract.workflows[workflowName as string];
+
+      if (!definition) {
+        resolve(
+          Result.Error(
+            new WorkflowNotFoundError(
+              String(workflowName),
+              Object.keys(this.contract.workflows) as string[],
+            ),
+          ),
+        );
+        return;
+      }
+
+      // Validate input and execute workflow
+      (async () => {
+        const inputResult = await definition.input["~standard"].validate(args);
+        if (inputResult.issues) {
+          resolve(
+            Result.Error(
+              new WorkflowValidationError(String(workflowName), "input", inputResult.issues),
+            ),
+          );
+          return;
+        }
+        const validatedInput = inputResult.value as ClientInferInput<
+          TContract["workflows"][TWorkflowName]
+        >;
+
+        // Execute workflow (Temporal expects args as array, so wrap single parameter)
+        try {
+          const result = await this.client.workflow.execute(workflowName as string, {
+            ...temporalOptions,
+            taskQueue: this.contract.taskQueue,
+            args: [validatedInput],
+          });
+
+          // Validate output with Standard Schema
+          const outputResult = await definition.output["~standard"].validate(result);
+          if (outputResult.issues) {
+            resolve(
+              Result.Error(
+                new WorkflowValidationError(String(workflowName), "output", outputResult.issues),
+              ),
+            );
+            return;
+          }
+
+          resolve(
+            Result.Ok(
+              outputResult.value as ClientInferOutput<TContract["workflows"][TWorkflowName]>,
+            ),
+          );
+        } catch (error) {
+          resolve(
+            Result.Error(
+              new TypedClientError(
+                `Failed to execute workflow: ${error instanceof Error ? error.message : String(error)}`,
+              ),
+            ),
+          );
+        }
+      })();
+    });
   }
 
   /**
-   * Get a handle to an existing workflow
+   * Get a handle to an existing workflow with Future/Result pattern
    *
    * @example
    * ```ts
-   * const handle = await client.getHandle('processOrder', 'order-123');
-   * const result = await handle.result();
+   * const handleResult = await client.getHandle('processOrder', 'order-123').toPromise();
+   * handleResult.match({
+   *   Ok: async (handle) => {
+   *     const result = await handle.result().toPromise();
+   *     // ... handle result
+   *   },
+   *   Error: (error) => console.error('Failed to get handle:', error),
+   * });
    * ```
    */
-  async getHandle<TWorkflowName extends keyof TContract["workflows"]>(
+  getHandle<TWorkflowName extends keyof TContract["workflows"]>(
     workflowName: TWorkflowName,
     workflowId: string,
-  ): Promise<TypedWorkflowHandle<TContract["workflows"][TWorkflowName]>> {
-    const boxedHandle = await this.boxedClient
-      .getHandle(workflowName, workflowId)
-      .resultToPromise();
-    return this.wrapBoxedHandle(boxedHandle);
+  ): Future<Result<TypedWorkflowHandle<TContract["workflows"][TWorkflowName]>, TypedClientError>> {
+    return Future.make((resolve) => {
+      const definition = this.contract.workflows[workflowName as string];
+
+      if (!definition) {
+        resolve(
+          Result.Error(
+            new WorkflowNotFoundError(
+              String(workflowName),
+              Object.keys(this.contract.workflows) as string[],
+            ),
+          ),
+        );
+        return;
+      }
+
+      try {
+        const handle = this.client.workflow.getHandle(workflowId);
+        const typedHandle = this.createTypedHandle(handle, definition) as TypedWorkflowHandle<
+          TContract["workflows"][TWorkflowName]
+        >;
+        resolve(Result.Ok(typedHandle));
+      } catch (error) {
+        resolve(
+          Result.Error(
+            new TypedClientError(
+              `Failed to get workflow handle: ${error instanceof Error ? error.message : String(error)}`,
+            ),
+          ),
+        );
+      }
+    });
   }
 
-  private wrapBoxedHandle<TWorkflow extends WorkflowDefinition>(
-    boxedHandle: TypedWorkflowHandleBoxed<TWorkflow>,
+  private createTypedHandle<TWorkflow extends WorkflowDefinition>(
+    handle: WorkflowHandle,
+    definition: TWorkflow,
   ): TypedWorkflowHandle<TWorkflow> {
-    // Create typed queries proxy
-    const queries = {} as ClientInferWorkflowQueries<TWorkflow>;
-    for (const [queryName, queryFn] of Object.entries(boxedHandle.queries)) {
-      (queries as Record<string, unknown>)[queryName] = (args: unknown) => {
-        return (queryFn as (...args: unknown[]) => Future<Result<unknown, TypedClientError>>)(
-          args,
-        ).resultToPromise();
+    // Create typed queries proxy with Future/Result
+    const queries = {} as TypedWorkflowHandle<TWorkflow>["queries"];
+    for (const [queryName, queryDef] of Object.entries(definition.queries ?? {}) as Array<
+      [string, QueryDefinition]
+    >) {
+      (queries as Record<string, unknown>)[queryName] = (
+        args: ClientInferInput<typeof queryDef>,
+      ): Future<Result<unknown, TypedClientError>> => {
+        return Future.make((resolve) => {
+          (async () => {
+            const inputResult = await queryDef.input["~standard"].validate(args);
+            if (inputResult.issues) {
+              resolve(
+                Result.Error(new QueryValidationError(queryName, "input", inputResult.issues)),
+              );
+              return;
+            }
+
+            try {
+              const result = await handle.query(queryName as string, inputResult.value);
+
+              const outputResult = await queryDef.output["~standard"].validate(result);
+              if (outputResult.issues) {
+                resolve(
+                  Result.Error(new QueryValidationError(queryName, "output", outputResult.issues)),
+                );
+                return;
+              }
+
+              resolve(Result.Ok(outputResult.value));
+            } catch (error) {
+              resolve(
+                Result.Error(
+                  new TypedClientError(
+                    `Query failed: ${error instanceof Error ? error.message : String(error)}`,
+                  ),
+                ),
+              );
+            }
+          })();
+        });
       };
     }
 
-    // Create typed signals proxy
-    const signals = {} as ClientInferWorkflowSignals<TWorkflow>;
-    for (const [signalName, signalFn] of Object.entries(boxedHandle.signals)) {
-      (signals as Record<string, unknown>)[signalName] = (args: unknown) => {
-        return (signalFn as (...args: unknown[]) => Future<Result<void, TypedClientError>>)(
-          args,
-        ).resultToPromise();
+    // Create typed signals proxy with Future/Result
+    const signals = {} as TypedWorkflowHandle<TWorkflow>["signals"];
+    for (const [signalName, signalDef] of Object.entries(definition.signals ?? {}) as Array<
+      [string, SignalDefinition]
+    >) {
+      (signals as Record<string, unknown>)[signalName] = (
+        args: ClientInferInput<typeof signalDef>,
+      ): Future<Result<void, TypedClientError>> => {
+        return Future.make((resolve) => {
+          (async () => {
+            const inputResult = await signalDef.input["~standard"].validate(args);
+            if (inputResult.issues) {
+              resolve(Result.Error(new SignalValidationError(signalName, inputResult.issues)));
+              return;
+            }
+
+            try {
+              await handle.signal(signalName as string, inputResult.value);
+              resolve(Result.Ok(undefined));
+            } catch (error) {
+              resolve(
+                Result.Error(
+                  new TypedClientError(
+                    `Signal failed: ${error instanceof Error ? error.message : String(error)}`,
+                  ),
+                ),
+              );
+            }
+          })();
+        });
       };
     }
 
-    // Create typed updates proxy
-    const updates = {} as ClientInferWorkflowUpdates<TWorkflow>;
-    for (const [updateName, updateFn] of Object.entries(boxedHandle.updates)) {
-      (updates as Record<string, unknown>)[updateName] = (args: unknown) => {
-        return (updateFn as (...args: unknown[]) => Future<Result<unknown, TypedClientError>>)(
-          args,
-        ).resultToPromise();
+    // Create typed updates proxy with Future/Result
+    const updates = {} as TypedWorkflowHandle<TWorkflow>["updates"];
+    for (const [updateName, updateDef] of Object.entries(definition.updates ?? {}) as Array<
+      [string, UpdateDefinition]
+    >) {
+      (updates as Record<string, unknown>)[updateName] = (
+        args: ClientInferInput<typeof updateDef>,
+      ): Future<Result<unknown, TypedClientError>> => {
+        return Future.make((resolve) => {
+          (async () => {
+            const inputResult = await updateDef.input["~standard"].validate(args);
+            if (inputResult.issues) {
+              resolve(
+                Result.Error(new UpdateValidationError(updateName, "input", inputResult.issues)),
+              );
+              return;
+            }
+
+            try {
+              const result = await handle.executeUpdate(updateName as string, {
+                args: [inputResult.value],
+              });
+
+              const outputResult = await updateDef.output["~standard"].validate(result);
+              if (outputResult.issues) {
+                resolve(
+                  Result.Error(
+                    new UpdateValidationError(updateName, "output", outputResult.issues),
+                  ),
+                );
+                return;
+              }
+
+              resolve(Result.Ok(outputResult.value));
+            } catch (error) {
+              resolve(
+                Result.Error(
+                  new TypedClientError(
+                    `Update failed: ${error instanceof Error ? error.message : String(error)}`,
+                  ),
+                ),
+              );
+            }
+          })();
+        });
       };
     }
 
     const typedHandle: TypedWorkflowHandle<TWorkflow> = {
-      workflowId: boxedHandle.workflowId,
+      workflowId: handle.workflowId,
       queries,
       signals,
       updates,
-      result: () => {
-        return boxedHandle.result().resultToPromise();
+      result: (): Future<Result<ClientInferOutput<TWorkflow>, TypedClientError>> => {
+        return Future.make((resolve) => {
+          (async () => {
+            try {
+              const result = await handle.result();
+              // Validate output with Standard Schema
+              const outputResult = await definition.output["~standard"].validate(result);
+              if (outputResult.issues) {
+                resolve(
+                  Result.Error(
+                    new WorkflowValidationError(handle.workflowId, "output", outputResult.issues),
+                  ),
+                );
+                return;
+              }
+              resolve(Result.Ok(outputResult.value as ClientInferOutput<TWorkflow>));
+            } catch (error) {
+              resolve(
+                Result.Error(
+                  new TypedClientError(
+                    `Workflow execution failed: ${error instanceof Error ? error.message : String(error)}`,
+                  ),
+                ),
+              );
+            }
+          })();
+        });
       },
-      terminate: (reason?: string) => {
-        return boxedHandle.terminate(reason).resultToPromise();
+      terminate: (reason?: string): Future<Result<void, TypedClientError>> => {
+        return Future.make((resolve) => {
+          (async () => {
+            try {
+              await handle.terminate(reason);
+              resolve(Result.Ok(undefined));
+            } catch (error) {
+              resolve(
+                Result.Error(
+                  new TypedClientError(
+                    `Terminate failed: ${error instanceof Error ? error.message : String(error)}`,
+                  ),
+                ),
+              );
+            }
+          })();
+        });
       },
-      cancel: () => {
-        return boxedHandle.cancel().resultToPromise();
+      cancel: (): Future<Result<void, TypedClientError>> => {
+        return Future.make((resolve) => {
+          (async () => {
+            try {
+              await handle.cancel();
+              resolve(Result.Ok(undefined));
+            } catch (error) {
+              resolve(
+                Result.Error(
+                  new TypedClientError(
+                    `Cancel failed: ${error instanceof Error ? error.message : String(error)}`,
+                  ),
+                ),
+              );
+            }
+          })();
+        });
       },
-      describe: () => {
-        return boxedHandle.describe().resultToPromise();
+      describe: (): Future<
+        Result<Awaited<ReturnType<WorkflowHandle["describe"]>>, TypedClientError>
+      > => {
+        return Future.make((resolve) => {
+          (async () => {
+            try {
+              const description = await handle.describe();
+              resolve(Result.Ok(description));
+            } catch (error) {
+              resolve(
+                Result.Error(
+                  new TypedClientError(
+                    `Describe failed: ${error instanceof Error ? error.message : String(error)}`,
+                  ),
+                ),
+              );
+            }
+          })();
+        });
       },
-      fetchHistory: () => boxedHandle.fetchHistory(),
+      fetchHistory: () => handle.fetchHistory(),
     };
 
     return typedHandle;

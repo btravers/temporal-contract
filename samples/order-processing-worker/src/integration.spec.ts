@@ -86,18 +86,25 @@ describe("Order Processing Workflow - Integration Tests", () => {
     };
 
     // WHEN
-    const result = await client.executeWorkflow("processOrder", {
-      workflowId: order.orderId,
-      args: order,
-    });
+    const resultFuture = await client
+      .executeWorkflow("processOrder", {
+        workflowId: order.orderId,
+        args: order,
+      })
+      .toPromise();
 
     // THEN
-    expect(result).toEqual({
-      orderId: order.orderId,
-      status: "completed",
-      transactionId: expect.any(String),
-      trackingNumber: expect.any(String),
-    });
+    expect(resultFuture).toEqual(
+      expect.objectContaining({
+        tag: "Ok",
+        value: {
+          orderId: order.orderId,
+          status: "completed",
+          transactionId: expect.any(String),
+          trackingNumber: expect.any(String),
+        },
+      }),
+    );
   });
 
   it("should handle workflow with startWorkflow and result", async ({ client }) => {
@@ -116,20 +123,35 @@ describe("Order Processing Workflow - Integration Tests", () => {
     };
 
     // WHEN
-    const handle = await client.startWorkflow("processOrder", {
-      workflowId: order.orderId,
-      args: order,
-    });
+    const handleResult = await client
+      .startWorkflow("processOrder", {
+        workflowId: order.orderId,
+        args: order,
+      })
+      .toPromise();
 
     // THEN
+    expect(handleResult).toEqual(
+      expect.objectContaining({
+        tag: "Ok",
+      }),
+    );
+    if (!handleResult.isOk()) throw new Error("Expected Ok result");
+    const handle = handleResult.value;
     expect(handle.workflowId).toBe(order.orderId);
 
-    await expect(handle.result()).resolves.toEqual({
-      orderId: order.orderId,
-      status: "completed",
-      transactionId: expect.any(String),
-      trackingNumber: expect.any(String),
-    });
+    const result = await handle.result().toPromise();
+    expect(result).toEqual(
+      expect.objectContaining({
+        tag: "Ok",
+        value: {
+          orderId: order.orderId,
+          status: "completed",
+          transactionId: expect.any(String),
+          trackingNumber: expect.any(String),
+        },
+      }),
+    );
   });
 
   it("should be able to get workflow handle after start", async ({ client }) => {
@@ -148,22 +170,37 @@ describe("Order Processing Workflow - Integration Tests", () => {
     };
 
     // WHEN
-    await client.startWorkflow("processOrder", {
-      workflowId: order.orderId,
-      args: order,
-    });
+    await client
+      .startWorkflow("processOrder", {
+        workflowId: order.orderId,
+        args: order,
+      })
+      .toPromise();
 
     // THEN
-    const handle = await client.getHandle("processOrder", order.orderId);
+    const handleResult = await client.getHandle("processOrder", order.orderId).toPromise();
 
+    expect(handleResult).toEqual(
+      expect.objectContaining({
+        tag: "Ok",
+      }),
+    );
+    if (!handleResult.isOk()) throw new Error("Expected Ok result");
+    const handle = handleResult.value;
     expect(handle.workflowId).toBe(order.orderId);
 
-    await expect(handle.result()).resolves.toEqual({
-      orderId: order.orderId,
-      status: "completed",
-      transactionId: expect.any(String),
-      trackingNumber: expect.any(String),
-    });
+    const result = await handle.result().toPromise();
+    expect(result).toEqual(
+      expect.objectContaining({
+        tag: "Ok",
+        value: {
+          orderId: order.orderId,
+          status: "completed",
+          transactionId: expect.any(String),
+          trackingNumber: expect.any(String),
+        },
+      }),
+    );
   });
 
   it("should handle describe and terminate operations", async ({ client }) => {
@@ -182,20 +219,34 @@ describe("Order Processing Workflow - Integration Tests", () => {
     };
 
     // WHEN
-    const handle = await client.startWorkflow("processOrder", {
-      workflowId: order.orderId,
-      args: order,
-    });
+    const handleResult = await client
+      .startWorkflow("processOrder", {
+        workflowId: order.orderId,
+        args: order,
+      })
+      .toPromise();
 
     // THEN
-    await expect(handle.describe()).resolves.toEqual(
+    expect(handleResult).toEqual(
       expect.objectContaining({
-        workflowId: order.orderId,
-        type: "processOrder",
+        tag: "Ok",
+      }),
+    );
+    if (!handleResult.isOk()) throw new Error("Expected Ok result");
+    const handle = handleResult.value;
+
+    const describeResult = await handle.describe().toPromise();
+    expect(describeResult).toEqual(
+      expect.objectContaining({
+        tag: "Ok",
+        value: expect.objectContaining({
+          workflowId: order.orderId,
+          type: "processOrder",
+        }),
       }),
     );
 
-    await handle.result();
+    await handle.result().toPromise();
   });
 
   it("should validate input data with Zod", async ({ client }) => {
@@ -243,17 +294,24 @@ describe("Order Processing Workflow - Integration Tests", () => {
     };
 
     // WHEN
-    const result = await client.executeWorkflow("processOrder", {
-      workflowId: order.orderId,
-      args: order,
-    });
+    const resultFuture = await client
+      .executeWorkflow("processOrder", {
+        workflowId: order.orderId,
+        args: order,
+      })
+      .toPromise();
 
     // THEN - Should return failed status
-    expect(result).toEqual({
-      orderId: order.orderId,
-      status: "failed",
-      failureReason: "Payment failed",
-    });
+    expect(resultFuture).toEqual(
+      expect.objectContaining({
+        tag: "Ok",
+        value: {
+          orderId: order.orderId,
+          status: "failed",
+          failureReason: "Payment failed",
+        },
+      }),
+    );
   });
 });
 
