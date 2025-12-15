@@ -76,6 +76,15 @@ View the complete source code:
 
 ## Running the Example
 
+### Prerequisites
+
+1. Start Temporal server:
+   ```bash
+   temporal server start-dev
+   ```
+
+### Run the Example
+
 ```bash
 # Build the contract package first
 cd samples/order-processing-contract

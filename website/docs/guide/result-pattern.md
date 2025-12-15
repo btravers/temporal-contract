@@ -78,7 +78,7 @@ export const activities = declareActivitiesHandler({
 Use `Result<T, E>` for workflows:
 
 ```typescript
-import { declareWorkflow } from '@temporal-contract/worker-boxed/workflow';
+import { declareWorkflow } from '@temporal-contract/worker/workflow';
 import { Result } from '@swan-io/boxed';
 import { orderContract } from './contract';
 

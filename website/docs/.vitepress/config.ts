@@ -47,8 +47,8 @@ export default defineConfig({
             { text: "Overview", link: "/api/" },
             { text: "@temporal-contract/contract", link: "/api/contract" },
             { text: "@temporal-contract/worker", link: "/api/worker" },
-            { text: "@temporal-contract/worker-boxed", link: "/api/worker-boxed" },
             { text: "@temporal-contract/client", link: "/api/client" },
+            { text: "@temporal-contract/testing", link: "/api/testing" },
           ],
         },
       ],
@@ -58,7 +58,6 @@ export default defineConfig({
           items: [
             { text: "Overview", link: "/examples/" },
             { text: "Basic Order Processing", link: "/examples/basic-order-processing" },
-            { text: "Boxed Order Processing", link: "/examples/boxed-order-processing" },
           ],
         },
       ],

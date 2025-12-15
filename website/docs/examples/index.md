@@ -70,23 +70,24 @@ pnpm dev
 Each example follows this structure:
 
 ```
-example-name/
-├── src/
-│   ├── contracts/
-│   │   └── order.contract.ts      # Contract definition
-│   ├── activities/
-│   │   ├── payment.activities.ts  # Payment activities
-│   │   └── email.activities.ts    # Email activities
-│   ├── workflows/
-│   │   └── order.workflow.ts      # Workflow implementation
-│   ├── infrastructure/
-│   │   ├── payment.service.ts     # External services
-│   │   └── email.service.ts
-│   ├── client.ts                  # Example client
-│   └── worker.ts                  # Worker setup
-├── package.json
-├── tsconfig.json
-└── README.md
+samples/
+├── example-contract/              # Shared contract package
+│   ├── src/
+│   │   └── contract.ts            # Contract definition
+│   └── package.json
+├── example-worker/                # Worker implementation
+│   ├── src/
+│   │   ├── application/
+│   │   │   ├── activities.ts      # Activity implementations
+│   │   │   ├── workflows.ts       # Workflow implementations
+│   │   │   └── worker.ts          # Worker setup
+│   │   ├── domain/                # Business logic / use cases
+│   │   └── infrastructure/        # External adapters
+│   └── package.json
+└── example-client/                # Client application
+    ├── src/
+    │   └── client.ts              # Example client
+    └── package.json
 ```
 
 ## Code Snippets
