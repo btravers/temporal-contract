@@ -36,6 +36,55 @@ export const processOrder = declareWorkflow({
 });
 ```
 
+### Child Workflows
+
+Execute child workflows with type-safe Future/Result pattern. Supports both same-contract and cross-contract child workflows:
+
+```typescript
+// workflows.ts
+import { declareWorkflow } from '@temporal-contract/worker/workflow';
+
+export const parentWorkflow = declareWorkflow({
+  workflowName: 'parentWorkflow',
+  contract: myContract,
+  implementation: async (context, input) => {
+    // Execute child workflow from same contract and wait for result
+    const childResult = await context.executeChildWorkflow(myContract, 'processPayment', {
+      workflowId: `payment-${input.orderId}`,
+      args: { amount: input.totalAmount }
+    }).toPromise();
+
+    childResult.match({
+      Ok: (output) => console.log('Payment processed:', output),
+      Error: (error) => console.error('Payment failed:', error),
+    });
+
+    // Execute child workflow from another contract (another worker)
+    const notificationResult = await context.executeChildWorkflow(notificationContract, 'sendNotification', {
+      workflowId: `notification-${input.orderId}`,
+      args: { message: 'Order received' }
+    }).toPromise();
+
+    // Or start child workflow without waiting
+    const handleResult = await context.startChildWorkflow(myContract, 'sendEmail', {
+      workflowId: `email-${input.orderId}`,
+      args: { to: 'user@example.com', body: 'Order received' }
+    }).toPromise();
+
+    handleResult.match({
+      Ok: async (handle) => {
+        // Can wait for result later
+        const result = await handle.result().toPromise();
+        // ...
+      },
+      Error: (error) => console.error('Failed to start:', error),
+    });
+
+    return { success: true };
+  }
+});
+```
+
 ## Documentation
 
 📖 **[Read the full documentation →](https://btravers.github.io/temporal-contract)**

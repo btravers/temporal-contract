@@ -1,4 +1,5 @@
 import { Future, Result } from "@swan-io/boxed";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import {
   ActivityOptions,
   WorkflowInfo,
@@ -8,7 +9,10 @@ import {
   proxyActivities,
   setHandler,
   workflowInfo,
+  startChild,
+  executeChild,
 } from "@temporalio/workflow";
+import type { ChildWorkflowHandle, ChildWorkflowOptions } from "@temporalio/workflow";
 import type {
   ActivityDefinition,
   ContractDefinition,
@@ -34,10 +38,45 @@ import {
   UpdateInputValidationError,
   UpdateOutputValidationError,
   ActivityError,
+  ChildWorkflowNotFoundError,
+  ChildWorkflowError,
 } from "./errors.js";
 
 // Re-export ActivityError for convenience
 export { ActivityError };
+
+/**
+ * Typed handle for a child workflow with Future/Result pattern
+ */
+export interface TypedChildWorkflowHandle<TWorkflow extends WorkflowDefinition> {
+  /**
+   * Get child workflow result with Result pattern
+   */
+  result: () => Future<Result<WorkerInferOutput<TWorkflow>, ChildWorkflowError>>;
+
+  /**
+   * Child workflow ID
+   */
+  workflowId: string;
+}
+
+/**
+ * Options for starting a child workflow
+ */
+export type TypedChildWorkflowOptions = Pick<
+  ChildWorkflowOptions,
+  | "workflowId"
+  | "workflowIdReusePolicy"
+  | "parentClosePolicy"
+  | "workflowExecutionTimeout"
+  | "workflowRunTimeout"
+  | "workflowTaskTimeout"
+  | "retry"
+  | "memo"
+  | "searchAttributes"
+  | "cronSchedule"
+  | "cancellationType"
+>;
 
 /**
  * Workflow context with typed activities (workflow + global) and workflow info
@@ -49,6 +88,92 @@ export interface WorkflowContext<
 > {
   activities: WorkerInferWorkflowContextActivities<TContract, TWorkflowName>;
   info: WorkflowInfo;
+
+  /**
+   * Start a child workflow and return a typed handle with Future/Result pattern
+   *
+   * Supports both same-contract and cross-contract child workflows:
+   * - Same contract: Pass workflowName from current contract
+   * - Cross-contract: Pass contract and workflowName to invoke workflows from other workers
+   *
+   * @example
+   * ```ts
+   * // Same contract child workflow
+   * const childResult = await context.startChildWorkflow(myContract, 'processPayment', {
+   *   workflowId: 'payment-123',
+   *   args: { amount: 100 }
+   * }).toPromise();
+   *
+   * // Cross-contract child workflow (from another worker)
+   * const otherResult = await context.startChildWorkflow(otherContract, 'sendNotification', {
+   *   workflowId: 'notification-123',
+   *   args: { message: 'Hello' }
+   * }).toPromise();
+   *
+   * childResult.match({
+   *   Ok: async (handle) => {
+   *     const result = await handle.result().toPromise();
+   *     // ... handle result
+   *   },
+   *   Error: (error) => console.error('Failed to start:', error),
+   * });
+   * ```
+   */
+  startChildWorkflow: <
+    TChildContract extends ContractDefinition,
+    TChildWorkflowName extends keyof TChildContract["workflows"],
+  >(
+    contract: TChildContract,
+    workflowName: TChildWorkflowName,
+    options: TypedChildWorkflowOptions & {
+      args: WorkerInferInput<TChildContract["workflows"][TChildWorkflowName]>;
+    },
+  ) => Future<
+    Result<
+      TypedChildWorkflowHandle<TChildContract["workflows"][TChildWorkflowName]>,
+      ChildWorkflowError
+    >
+  >;
+
+  /**
+   * Execute a child workflow (start and wait for result) with Future/Result pattern
+   *
+   * Supports both same-contract and cross-contract child workflows:
+   * - Same contract: Pass workflowName from current contract
+   * - Cross-contract: Pass contract and workflowName to invoke workflows from other workers
+   *
+   * @example
+   * ```ts
+   * // Same contract child workflow
+   * const result = await context.executeChildWorkflow(myContract, 'processPayment', {
+   *   workflowId: 'payment-123',
+   *   args: { amount: 100 }
+   * }).toPromise();
+   *
+   * // Cross-contract child workflow (from another worker)
+   * const otherResult = await context.executeChildWorkflow(otherContract, 'sendNotification', {
+   *   workflowId: 'notification-123',
+   *   args: { message: 'Hello' }
+   * }).toPromise();
+   *
+   * result.match({
+   *   Ok: (output) => console.log('Payment processed:', output),
+   *   Error: (error) => console.error('Processing failed:', error),
+   * });
+   * ```
+   */
+  executeChildWorkflow: <
+    TChildContract extends ContractDefinition,
+    TChildWorkflowName extends keyof TChildContract["workflows"],
+  >(
+    contract: TChildContract,
+    workflowName: TChildWorkflowName,
+    options: TypedChildWorkflowOptions & {
+      args: WorkerInferInput<TChildContract["workflows"][TChildWorkflowName]>;
+    },
+  ) => Future<
+    Result<WorkerInferOutput<TChildContract["workflows"][TChildWorkflowName]>, ChildWorkflowError>
+  >;
 }
 
 /**
@@ -617,6 +742,241 @@ export function declareWorkflow<
       );
     }
 
+    // Helper to validate child workflow output
+    async function validateChildWorkflowOutput<TChildWorkflow extends WorkflowDefinition>(
+      childDefinition: TChildWorkflow,
+      result: unknown,
+      childWorkflowName: string,
+    ): Promise<Result<WorkerInferOutput<TChildWorkflow>, ChildWorkflowError>> {
+      const outputResult = await childDefinition.output["~standard"].validate(result);
+      if (outputResult.issues) {
+        return Result.Error(
+          new ChildWorkflowError(
+            `Child workflow "${childWorkflowName}" output validation failed: ${outputResult.issues.map((i: StandardSchemaV1.Issue) => i.message).join("; ")}`,
+          ),
+        );
+      }
+      return Result.Ok(outputResult.value as WorkerInferOutput<TChildWorkflow>);
+    }
+
+    // Helper to get and validate child workflow definition and input
+    async function getAndValidateChildWorkflow<
+      TChildContract extends ContractDefinition,
+      TChildWorkflowName extends keyof TChildContract["workflows"],
+    >(
+      childContract: TChildContract,
+      childWorkflowName: TChildWorkflowName,
+      args: unknown,
+    ): Promise<
+      Result<
+        {
+          definition: TChildContract["workflows"][TChildWorkflowName];
+          validatedInput: WorkerInferInput<TChildContract["workflows"][TChildWorkflowName]>;
+          taskQueue: string;
+        },
+        ChildWorkflowError
+      >
+    > {
+      const childDefinition = childContract.workflows[childWorkflowName as string];
+
+      if (!childDefinition) {
+        return Result.Error(
+          new ChildWorkflowNotFoundError(
+            String(childWorkflowName),
+            Object.keys(childContract.workflows) as string[],
+          ),
+        );
+      }
+
+      const inputResult = await childDefinition.input["~standard"].validate(args);
+      if (inputResult.issues) {
+        return Result.Error(
+          new ChildWorkflowError(
+            `Child workflow "${String(childWorkflowName)}" input validation failed: ${inputResult.issues.map((i: StandardSchemaV1.Issue) => i.message).join("; ")}`,
+          ),
+        );
+      }
+
+      const validatedInput = inputResult.value as WorkerInferInput<
+        TChildContract["workflows"][TChildWorkflowName]
+      >;
+
+      return Result.Ok({
+        definition: childDefinition as TChildContract["workflows"][TChildWorkflowName],
+        validatedInput,
+        taskQueue: childContract.taskQueue,
+      });
+    }
+
+    // Helper function to create a typed child workflow handle
+    function createTypedChildHandle<TChildWorkflow extends WorkflowDefinition>(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      handle: ChildWorkflowHandle<any>,
+      childDefinition: TChildWorkflow,
+      childWorkflowName: string,
+    ): TypedChildWorkflowHandle<TChildWorkflow> {
+      return {
+        workflowId: handle.workflowId,
+        result: (): Future<Result<WorkerInferOutput<TChildWorkflow>, ChildWorkflowError>> => {
+          return Future.make((resolve) => {
+            (async () => {
+              try {
+                const result = await handle.result();
+                const validationResult = await validateChildWorkflowOutput(
+                  childDefinition,
+                  result,
+                  childWorkflowName,
+                );
+                resolve(validationResult);
+              } catch (error) {
+                resolve(
+                  Result.Error(
+                    new ChildWorkflowError(
+                      `Child workflow execution failed: ${error instanceof Error ? error.message : String(error)}`,
+                      error,
+                    ),
+                  ),
+                );
+              }
+            })();
+          });
+        },
+      };
+    }
+
+    // Helper function to start a child workflow
+    function createStartChildWorkflow<
+      TChildContract extends ContractDefinition,
+      TChildWorkflowName extends keyof TChildContract["workflows"],
+    >(
+      childContract: TChildContract,
+      childWorkflowName: TChildWorkflowName,
+      options: TypedChildWorkflowOptions & {
+        args: WorkerInferInput<TChildContract["workflows"][TChildWorkflowName]>;
+      },
+    ): Future<
+      Result<
+        TypedChildWorkflowHandle<TChildContract["workflows"][TChildWorkflowName]>,
+        ChildWorkflowError
+      >
+    > {
+      return Future.make((resolve) => {
+        (async () => {
+          // Validate input and get definition
+          const validationResult = await getAndValidateChildWorkflow(
+            childContract,
+            childWorkflowName,
+            options.args,
+          );
+
+          if (validationResult.isError()) {
+            resolve(Result.Error(validationResult.error));
+            return;
+          }
+
+          const { definition: childDefinition, validatedInput, taskQueue } = validationResult.value;
+
+          try {
+            // Start child workflow (Temporal expects args as array)
+            const { args: _args, ...temporalOptions } = options;
+            const handle = await startChild(childWorkflowName as string, {
+              ...temporalOptions,
+              taskQueue,
+              args: [validatedInput],
+            });
+
+            const typedHandle = createTypedChildHandle(
+              handle,
+              childDefinition,
+              String(childWorkflowName),
+            ) as TypedChildWorkflowHandle<TChildContract["workflows"][TChildWorkflowName]>;
+
+            resolve(Result.Ok(typedHandle));
+          } catch (error) {
+            resolve(
+              Result.Error(
+                new ChildWorkflowError(
+                  `Failed to start child workflow: ${error instanceof Error ? error.message : String(error)}`,
+                  error,
+                ),
+              ),
+            );
+          }
+        })();
+      });
+    }
+
+    // Helper function to execute a child workflow
+    function createExecuteChildWorkflow<
+      TChildContract extends ContractDefinition,
+      TChildWorkflowName extends keyof TChildContract["workflows"],
+    >(
+      childContract: TChildContract,
+      childWorkflowName: TChildWorkflowName,
+      options: TypedChildWorkflowOptions & {
+        args: WorkerInferInput<TChildContract["workflows"][TChildWorkflowName]>;
+      },
+    ): Future<
+      Result<WorkerInferOutput<TChildContract["workflows"][TChildWorkflowName]>, ChildWorkflowError>
+    > {
+      return Future.make((resolve) => {
+        (async () => {
+          // Validate input and get definition
+          const validationResult = await getAndValidateChildWorkflow(
+            childContract,
+            childWorkflowName,
+            options.args,
+          );
+
+          if (validationResult.isError()) {
+            resolve(Result.Error(validationResult.error));
+            return;
+          }
+
+          const { definition: childDefinition, validatedInput, taskQueue } = validationResult.value;
+
+          try {
+            // Execute child workflow (Temporal expects args as array)
+            const { args: _args, ...temporalOptions } = options;
+            const result = await executeChild(childWorkflowName as string, {
+              ...temporalOptions,
+              taskQueue,
+              args: [validatedInput],
+            });
+
+            // Validate output with Standard Schema
+            const outputValidationResult = await validateChildWorkflowOutput(
+              childDefinition,
+              result,
+              String(childWorkflowName),
+            );
+
+            if (outputValidationResult.isError()) {
+              resolve(Result.Error(outputValidationResult.error));
+              return;
+            }
+
+            resolve(
+              Result.Ok(
+                outputValidationResult.value as WorkerInferOutput<
+                  TChildContract["workflows"][TChildWorkflowName]
+                >,
+              ),
+            );
+          } catch (error) {
+            resolve(
+              Result.Error(
+                new ChildWorkflowError(
+                  `Failed to execute child workflow: ${error instanceof Error ? error.message : String(error)}`,
+                  error,
+                ),
+              ),
+            );
+          }
+        })();
+      });
+    }
+
     // Create workflow context
     const context: WorkflowContext<TContract, TWorkflowName> = {
       activities: contextActivities as WorkerInferWorkflowContextActivities<
@@ -624,6 +984,8 @@ export function declareWorkflow<
         TWorkflowName
       >,
       info: workflowInfo(),
+      startChildWorkflow: createStartChildWorkflow,
+      executeChildWorkflow: createExecuteChildWorkflow,
     };
 
     // Execute workflow (pass validated input as tuple)

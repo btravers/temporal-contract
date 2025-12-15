@@ -7,6 +7,8 @@ export type {
   QueryHandlerImplementation,
   UpdateHandlerImplementation,
   DeclareWorkflowOptions,
+  TypedChildWorkflowHandle,
+  TypedChildWorkflowOptions,
 } from "./handler.js";
 export {
   WorkerError,
@@ -17,6 +19,8 @@ export {
   QueryOutputValidationError,
   UpdateInputValidationError,
   UpdateOutputValidationError,
+  ChildWorkflowNotFoundError,
+  ChildWorkflowError,
 } from "./errors.js";
 export type {
   WorkerInferInput,

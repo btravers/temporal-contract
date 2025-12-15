@@ -175,3 +175,27 @@ export class UpdateOutputValidationError extends WorkerError {
     this.name = "UpdateOutputValidationError";
   }
 }
+
+/**
+ * Error thrown when a child workflow is not found in the contract
+ */
+export class ChildWorkflowNotFoundError extends WorkerError {
+  constructor(
+    public readonly workflowName: string,
+    public readonly availableWorkflows: readonly string[] = [],
+  ) {
+    const available = availableWorkflows.length > 0 ? availableWorkflows.join(", ") : "none";
+    super(`Child workflow not found: "${workflowName}". Available workflows: ${available}`);
+    this.name = "ChildWorkflowNotFoundError";
+  }
+}
+
+/**
+ * Generic error for child workflow operations
+ */
+export class ChildWorkflowError extends WorkerError {
+  constructor(message: string, cause?: unknown) {
+    super(message, cause);
+    this.name = "ChildWorkflowError";
+  }
+}

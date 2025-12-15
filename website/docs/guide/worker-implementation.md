@@ -133,6 +133,138 @@ implementation: async (context, input) => {
 }
 ```
 
+## Child Workflows
+
+Execute child workflows with type-safe Future/Result pattern. Child workflows can be from the same contract or from a different contract (cross-worker communication).
+
+### Basic Usage
+
+```typescript
+import { declareWorkflow } from '@temporal-contract/worker/workflow';
+import { myContract, notificationContract } from './contracts';
+
+export const parentWorkflow = declareWorkflow({
+  workflowName: 'parentWorkflow',
+  contract: myContract,
+  implementation: async (context, input) => {
+    // Execute child workflow from same contract and wait for result
+    const result = await context.executeChildWorkflow(myContract, 'processPayment', {
+      workflowId: `payment-${input.orderId}`,
+      args: { amount: input.totalAmount }
+    }).toPromise();
+
+    result.match({
+      Ok: (output) => console.log('Payment processed:', output),
+      Error: (error) => console.error('Payment failed:', error),
+    });
+
+    return { success: true };
+  },
+});
+```
+
+### Cross-Contract Child Workflows
+
+Invoke child workflows from different contracts and workers:
+
+```typescript
+export const orderWorkflow = declareWorkflow({
+  workflowName: 'processOrder',
+  contract: orderContract,
+  implementation: async (context, input) => {
+    // Process payment in same contract
+    const paymentResult = await context.executeChildWorkflow(
+      orderContract,
+      'processPayment',
+      {
+        workflowId: `payment-${input.orderId}`,
+        args: { amount: input.total }
+      }
+    ).toPromise();
+
+    if (paymentResult.isError()) {
+      return { status: 'failed', reason: 'payment' };
+    }
+
+    // Send notification using another worker's contract
+    const notificationResult = await context.executeChildWorkflow(
+      notificationContract,
+      'sendOrderConfirmation',
+      {
+        workflowId: `notify-${input.orderId}`,
+        args: { orderId: input.orderId, email: input.customerEmail }
+      }
+    ).toPromise();
+
+    return {
+      status: 'completed',
+      transactionId: paymentResult.value.transactionId
+    };
+  },
+});
+```
+
+### Start Without Waiting
+
+Use `startChildWorkflow` to start a child workflow without waiting for its result:
+
+```typescript
+export const orderWorkflow = declareWorkflow({
+  workflowName: 'processOrder',
+  contract: myContract,
+  implementation: async (context, input) => {
+    // Start background notification workflow
+    const handleResult = await context.startChildWorkflow(
+      notificationContract,
+      'sendEmail',
+      {
+        workflowId: `email-${input.orderId}`,
+        args: { to: input.customerEmail, subject: 'Order received' }
+      }
+    ).toPromise();
+
+    handleResult.match({
+      Ok: async (handle) => {
+        // Child workflow started successfully
+        // Can wait for result later if needed
+        const result = await handle.result().toPromise();
+      },
+      Error: (error) => {
+        console.error('Failed to start notification:', error);
+      },
+    });
+
+    return { success: true };
+  },
+});
+```
+
+### Error Handling
+
+Child workflow errors are returned as `ChildWorkflowError`:
+
+```typescript
+const result = await context.executeChildWorkflow(myContract, 'processPayment', {
+  workflowId: 'payment-123',
+  args: { amount: 100 }
+}).toPromise();
+
+result.match({
+  Ok: (output) => {
+    // Child workflow completed successfully
+    console.log('Transaction ID:', output.transactionId);
+  },
+  Error: (error) => {
+    // Handle child workflow errors
+    if (error instanceof ChildWorkflowNotFoundError) {
+      console.error('Workflow not found in contract');
+    } else {
+      console.error('Child workflow failed:', error.message);
+    }
+  },
+});
+```
+
 ## Best Practices
 
 ### 1. Separate Activity Files
