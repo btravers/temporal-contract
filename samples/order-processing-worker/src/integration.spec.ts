@@ -86,13 +86,13 @@ describe("Order Processing Workflow - Integration Tests", () => {
     };
 
     // WHEN
-    const resultFuture = await client.executeWorkflow("processOrder", {
+    const result = await client.executeWorkflow("processOrder", {
       workflowId: order.orderId,
       args: order,
     });
 
     // THEN
-    expect(resultFuture).toEqual(
+    expect(result).toEqual(
       expect.objectContaining({
         tag: "Ok",
         value: {
@@ -286,13 +286,13 @@ describe("Order Processing Workflow - Integration Tests", () => {
     };
 
     // WHEN
-    const resultFuture = await client.executeWorkflow("processOrder", {
+    const result = await client.executeWorkflow("processOrder", {
       workflowId: order.orderId,
       args: order,
     });
 
     // THEN - Should return failed status
-    expect(resultFuture).toEqual(
+    expect(result).toEqual(
       expect.objectContaining({
         tag: "Ok",
         value: {

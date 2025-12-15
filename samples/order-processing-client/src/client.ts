@@ -106,11 +106,11 @@ async function run() {
     logger.info("⌛ Waiting for workflow result...");
 
     // Get workflow result
-    const resultFuture = await handle.result();
+    const result = await handle.result();
 
     // Handle workflow execution result
-    if (resultFuture.isError()) {
-      const error = resultFuture.error;
+    if (result.isError()) {
+      const error = result.error;
       match(error)
         .with({ name: "WorkflowValidationError" }, (err) => {
           logger.error(
@@ -130,7 +130,7 @@ async function run() {
       continue;
     }
 
-    const output = resultFuture.value;
+    const output = result.value;
     // Handle successful result
     if (output.status === "completed") {
       logger.info(

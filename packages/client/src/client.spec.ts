@@ -82,12 +82,10 @@ describe("TypedClient", () => {
 
       mockWorkflow.start.mockResolvedValue(mockHandle);
 
-      const future = typedClient.startWorkflow("testWorkflow", {
+      const result = await typedClient.startWorkflow("testWorkflow", {
         workflowId: "test-123",
         args: { name: "hello", value: 42 },
       });
-
-      const result = await future;
 
       expect(result.isOk()).toBe(true);
       expect(mockWorkflow.start).toHaveBeenCalledWith("testWorkflow", {
@@ -102,12 +100,10 @@ describe("TypedClient", () => {
     });
 
     it("should return Error result for invalid input", async () => {
-      const future = typedClient.startWorkflow("testWorkflow", {
+      const result = await typedClient.startWorkflow("testWorkflow", {
         workflowId: "test-123",
         args: { name: "hello", value: "not-a-number" as unknown as number },
       });
-
-      const result = await future;
 
       expect(result.isError()).toBe(true);
       if (result.isError()) {
@@ -116,12 +112,13 @@ describe("TypedClient", () => {
     });
 
     it("should return Error result for non-existent workflow", async () => {
-      const future = typedClient.startWorkflow("nonExistentWorkflow" as unknown as "testWorkflow", {
-        workflowId: "test-123",
-        args: {} as unknown as { name: string; value: number },
-      });
-
-      const result = await future;
+      const result = await typedClient.startWorkflow(
+        "nonExistentWorkflow" as unknown as "testWorkflow",
+        {
+          workflowId: "test-123",
+          args: {} as unknown as { name: string; value: number },
+        },
+      );
 
       expect(result.isError()).toBe(true);
       if (result.isError()) {
@@ -134,12 +131,10 @@ describe("TypedClient", () => {
     it("should execute a workflow with valid input and return Ok result", async () => {
       mockWorkflow.execute.mockResolvedValue({ result: "success" });
 
-      const future = typedClient.executeWorkflow("testWorkflow", {
+      const result = await typedClient.executeWorkflow("testWorkflow", {
         workflowId: "test-123",
         args: { name: "hello", value: 42 },
       });
-
-      const result = await future;
 
       expect(result.isOk()).toBe(true);
       expect(mockWorkflow.execute).toHaveBeenCalledWith("testWorkflow", {
@@ -156,12 +151,10 @@ describe("TypedClient", () => {
     it("should return Error result for invalid output", async () => {
       mockWorkflow.execute.mockResolvedValue({ wrong: "output" });
 
-      const future = typedClient.executeWorkflow("testWorkflow", {
+      const result = await typedClient.executeWorkflow("testWorkflow", {
         workflowId: "test-123",
         args: { name: "hello", value: 42 },
       });
-
-      const result = await future;
 
       expect(result.isError()).toBe(true);
       if (result.isError()) {
@@ -172,12 +165,10 @@ describe("TypedClient", () => {
     it("should return Error result when workflow execution throws", async () => {
       mockWorkflow.execute.mockRejectedValue(new Error("Workflow execution failed"));
 
-      const future = typedClient.executeWorkflow("testWorkflow", {
+      const result = await typedClient.executeWorkflow("testWorkflow", {
         workflowId: "test-123",
         args: { name: "hello", value: 42 },
       });
-
-      const result = await future;
 
       expect(result.isError()).toBe(true);
     });
@@ -199,8 +190,7 @@ describe("TypedClient", () => {
 
       mockWorkflow.getHandle.mockReturnValue(mockHandle);
 
-      const future = typedClient.getHandle("testWorkflow", "test-123");
-      const result = await future;
+      const result = await typedClient.getHandle("testWorkflow", "test-123");
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -209,11 +199,10 @@ describe("TypedClient", () => {
     });
 
     it("should return Error result for non-existent workflow", async () => {
-      const future = typedClient.getHandle(
+      const result = await typedClient.getHandle(
         "nonExistentWorkflow" as unknown as "testWorkflow",
         "test-123",
       );
-      const result = await future;
 
       expect(result.isError()).toBe(true);
       if (result.isError()) {
@@ -258,17 +247,15 @@ describe("TypedClient", () => {
     });
 
     it("should call result() with Result pattern", async () => {
-      const handleFuture = typedClient.startWorkflow("testWorkflow", {
+      const handleResult = await typedClient.startWorkflow("testWorkflow", {
         workflowId: "test-123",
         args: { name: "hello", value: 42 },
       });
 
-      const handleResult = await handleFuture;
       expect(handleResult.isOk()).toBe(true);
 
       if (handleResult.isOk()) {
-        const resultFuture = handleResult.value.result();
-        const result = await resultFuture;
+        const result = await handleResult.value.result();
 
         expect(result.isOk()).toBe(true);
         if (result.isOk()) {
@@ -280,17 +267,15 @@ describe("TypedClient", () => {
     it("should call queries with Result pattern", async () => {
       mockHandle.query.mockResolvedValue("running");
 
-      const handleFuture = typedClient.startWorkflow("testWorkflow", {
+      const handleResult = await typedClient.startWorkflow("testWorkflow", {
         workflowId: "test-123",
         args: { name: "hello", value: 42 },
       });
 
-      const handleResult = await handleFuture;
       expect(handleResult.isOk()).toBe(true);
 
       if (handleResult.isOk()) {
-        const queryFuture = handleResult.value.queries.getStatus([]);
-        const result = await queryFuture;
+        const result = await handleResult.value.queries.getStatus([]);
 
         expect(result.isOk()).toBe(true);
         if (result.isOk()) {
@@ -300,17 +285,15 @@ describe("TypedClient", () => {
     });
 
     it("should call signals with Result pattern", async () => {
-      const handleFuture = typedClient.startWorkflow("testWorkflow", {
+      const handleResult = await typedClient.startWorkflow("testWorkflow", {
         workflowId: "test-123",
         args: { name: "hello", value: 42 },
       });
 
-      const handleResult = await handleFuture;
       expect(handleResult.isOk()).toBe(true);
 
       if (handleResult.isOk()) {
-        const signalFuture = handleResult.value.signals.updateProgress([50]);
-        const result = await signalFuture;
+        const result = await handleResult.value.signals.updateProgress([50]);
 
         expect(result.isOk()).toBe(true);
         expect(mockHandle.signal).toHaveBeenCalledWith("updateProgress", [50]);
@@ -320,17 +303,15 @@ describe("TypedClient", () => {
     it("should call updates with Result pattern", async () => {
       mockHandle.executeUpdate.mockResolvedValue(true);
 
-      const handleFuture = typedClient.startWorkflow("testWorkflow", {
+      const handleResult = await typedClient.startWorkflow("testWorkflow", {
         workflowId: "test-123",
         args: { name: "hello", value: 42 },
       });
 
-      const handleResult = await handleFuture;
       expect(handleResult.isOk()).toBe(true);
 
       if (handleResult.isOk()) {
-        const updateFuture = handleResult.value.updates.setConfig([{ value: "new-config" }]);
-        const result = await updateFuture;
+        const result = await handleResult.value.updates.setConfig([{ value: "new-config" }]);
 
         expect(result.isOk()).toBe(true);
         if (result.isOk()) {
@@ -340,17 +321,15 @@ describe("TypedClient", () => {
     });
 
     it("should call terminate with Result pattern", async () => {
-      const handleFuture = typedClient.startWorkflow("testWorkflow", {
+      const handleResult = await typedClient.startWorkflow("testWorkflow", {
         workflowId: "test-123",
         args: { name: "hello", value: 42 },
       });
 
-      const handleResult = await handleFuture;
       expect(handleResult.isOk()).toBe(true);
 
       if (handleResult.isOk()) {
-        const terminateFuture = handleResult.value.terminate("test reason");
-        const result = await terminateFuture;
+        const result = await handleResult.value.terminate("test reason");
 
         expect(result.isOk()).toBe(true);
         expect(mockHandle.terminate).toHaveBeenCalledWith("test reason");
@@ -358,17 +337,15 @@ describe("TypedClient", () => {
     });
 
     it("should call cancel with Result pattern", async () => {
-      const handleFuture = typedClient.startWorkflow("testWorkflow", {
+      const handleResult = await typedClient.startWorkflow("testWorkflow", {
         workflowId: "test-123",
         args: { name: "hello", value: 42 },
       });
 
-      const handleResult = await handleFuture;
       expect(handleResult.isOk()).toBe(true);
 
       if (handleResult.isOk()) {
-        const cancelFuture = handleResult.value.cancel();
-        const result = await cancelFuture;
+        const result = await handleResult.value.cancel();
 
         expect(result.isOk()).toBe(true);
         expect(mockHandle.cancel).toHaveBeenCalled();
@@ -376,17 +353,15 @@ describe("TypedClient", () => {
     });
 
     it("should call describe with Result pattern", async () => {
-      const handleFuture = typedClient.startWorkflow("testWorkflow", {
+      const handleResult = await typedClient.startWorkflow("testWorkflow", {
         workflowId: "test-123",
         args: { name: "hello", value: 42 },
       });
 
-      const handleResult = await handleFuture;
       expect(handleResult.isOk()).toBe(true);
 
       if (handleResult.isOk()) {
-        const describeFuture = handleResult.value.describe();
-        const result = await describeFuture;
+        const result = await handleResult.value.describe();
 
         expect(result.isOk()).toBe(true);
         if (result.isOk()) {
@@ -400,12 +375,10 @@ describe("TypedClient", () => {
     it("should support match() on results", async () => {
       mockWorkflow.execute.mockResolvedValue({ result: "success" });
 
-      const future = typedClient.executeWorkflow("testWorkflow", {
+      const result = await typedClient.executeWorkflow("testWorkflow", {
         workflowId: "test-123",
         args: { name: "hello", value: 42 },
       });
-
-      const result = await future;
 
       let matched = false;
       result.match({
@@ -424,12 +397,11 @@ describe("TypedClient", () => {
     it("should support map() on Ok results", async () => {
       mockWorkflow.execute.mockResolvedValue({ result: "success" });
 
-      const future = typedClient.executeWorkflow("testWorkflow", {
+      const result = await typedClient.executeWorkflow("testWorkflow", {
         workflowId: "test-123",
         args: { name: "hello", value: 42 },
       });
 
-      const result = await future;
       const mapped = result.map((value) => value.result.toUpperCase());
 
       expect(mapped.isOk()).toBe(true);
