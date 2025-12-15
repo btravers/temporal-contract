@@ -92,11 +92,22 @@ export interface WorkflowContext<
   /**
    * Start a child workflow and return a typed handle with Future/Result pattern
    *
+   * Supports both same-contract and cross-contract child workflows:
+   * - Same contract: Pass workflowName from current contract
+   * - Cross-contract: Pass contract and workflowName to invoke workflows from other workers
+   *
    * @example
    * ```ts
-   * const childResult = await context.startChildWorkflow('processPayment', {
+   * // Same contract child workflow
+   * const childResult = await context.startChildWorkflow(myContract, 'processPayment', {
    *   workflowId: 'payment-123',
    *   args: { amount: 100 }
+   * }).toPromise();
+   *
+   * // Cross-contract child workflow (from another worker)
+   * const otherResult = await context.startChildWorkflow(otherContract, 'sendNotification', {
+   *   workflowId: 'notification-123',
+   *   args: { message: 'Hello' }
    * }).toPromise();
    *
    * childResult.match({
@@ -108,23 +119,41 @@ export interface WorkflowContext<
    * });
    * ```
    */
-  startChildWorkflow: <TChildWorkflowName extends keyof TContract["workflows"]>(
+  startChildWorkflow: <
+    TChildContract extends ContractDefinition,
+    TChildWorkflowName extends keyof TChildContract["workflows"],
+  >(
+    contract: TChildContract,
     workflowName: TChildWorkflowName,
     options: TypedChildWorkflowOptions & {
-      args: WorkerInferInput<TContract["workflows"][TChildWorkflowName]>;
+      args: WorkerInferInput<TChildContract["workflows"][TChildWorkflowName]>;
     },
   ) => Future<
-    Result<TypedChildWorkflowHandle<TContract["workflows"][TChildWorkflowName]>, ChildWorkflowError>
+    Result<
+      TypedChildWorkflowHandle<TChildContract["workflows"][TChildWorkflowName]>,
+      ChildWorkflowError
+    >
   >;
 
   /**
    * Execute a child workflow (start and wait for result) with Future/Result pattern
    *
+   * Supports both same-contract and cross-contract child workflows:
+   * - Same contract: Pass workflowName from current contract
+   * - Cross-contract: Pass contract and workflowName to invoke workflows from other workers
+   *
    * @example
    * ```ts
-   * const result = await context.executeChildWorkflow('processPayment', {
+   * // Same contract child workflow
+   * const result = await context.executeChildWorkflow(myContract, 'processPayment', {
    *   workflowId: 'payment-123',
    *   args: { amount: 100 }
+   * }).toPromise();
+   *
+   * // Cross-contract child workflow (from another worker)
+   * const otherResult = await context.executeChildWorkflow(otherContract, 'sendNotification', {
+   *   workflowId: 'notification-123',
+   *   args: { message: 'Hello' }
    * }).toPromise();
    *
    * result.match({
@@ -133,13 +162,17 @@ export interface WorkflowContext<
    * });
    * ```
    */
-  executeChildWorkflow: <TChildWorkflowName extends keyof TContract["workflows"]>(
+  executeChildWorkflow: <
+    TChildContract extends ContractDefinition,
+    TChildWorkflowName extends keyof TChildContract["workflows"],
+  >(
+    contract: TChildContract,
     workflowName: TChildWorkflowName,
     options: TypedChildWorkflowOptions & {
-      args: WorkerInferInput<TContract["workflows"][TChildWorkflowName]>;
+      args: WorkerInferInput<TChildContract["workflows"][TChildWorkflowName]>;
     },
   ) => Future<
-    Result<WorkerInferOutput<TContract["workflows"][TChildWorkflowName]>, ChildWorkflowError>
+    Result<WorkerInferOutput<TChildContract["workflows"][TChildWorkflowName]>, ChildWorkflowError>
   >;
 }
 
@@ -728,26 +761,29 @@ export function declareWorkflow<
 
     // Helper to get and validate child workflow definition and input
     async function getAndValidateChildWorkflow<
-      TChildWorkflowName extends keyof TContract["workflows"],
+      TChildContract extends ContractDefinition,
+      TChildWorkflowName extends keyof TChildContract["workflows"],
     >(
+      childContract: TChildContract,
       childWorkflowName: TChildWorkflowName,
       args: unknown,
     ): Promise<
       Result<
         {
-          definition: TContract["workflows"][TChildWorkflowName];
-          validatedInput: WorkerInferInput<TContract["workflows"][TChildWorkflowName]>;
+          definition: TChildContract["workflows"][TChildWorkflowName];
+          validatedInput: WorkerInferInput<TChildContract["workflows"][TChildWorkflowName]>;
+          taskQueue: string;
         },
         ChildWorkflowError
       >
     > {
-      const childDefinition = contract.workflows[childWorkflowName as string];
+      const childDefinition = childContract.workflows[childWorkflowName as string];
 
       if (!childDefinition) {
         return Result.Error(
           new ChildWorkflowNotFoundError(
             String(childWorkflowName),
-            Object.keys(contract.workflows) as string[],
+            Object.keys(childContract.workflows) as string[],
           ),
         );
       }
@@ -762,12 +798,13 @@ export function declareWorkflow<
       }
 
       const validatedInput = inputResult.value as WorkerInferInput<
-        TContract["workflows"][TChildWorkflowName]
+        TChildContract["workflows"][TChildWorkflowName]
       >;
 
       return Result.Ok({
-        definition: childDefinition as TContract["workflows"][TChildWorkflowName],
+        definition: childDefinition as TChildContract["workflows"][TChildWorkflowName],
         validatedInput,
+        taskQueue: childContract.taskQueue,
       });
     }
 
@@ -808,14 +845,18 @@ export function declareWorkflow<
     }
 
     // Helper function to start a child workflow
-    function createStartChildWorkflow<TChildWorkflowName extends keyof TContract["workflows"]>(
+    function createStartChildWorkflow<
+      TChildContract extends ContractDefinition,
+      TChildWorkflowName extends keyof TChildContract["workflows"],
+    >(
+      childContract: TChildContract,
       childWorkflowName: TChildWorkflowName,
       options: TypedChildWorkflowOptions & {
-        args: WorkerInferInput<TContract["workflows"][TChildWorkflowName]>;
+        args: WorkerInferInput<TChildContract["workflows"][TChildWorkflowName]>;
       },
     ): Future<
       Result<
-        TypedChildWorkflowHandle<TContract["workflows"][TChildWorkflowName]>,
+        TypedChildWorkflowHandle<TChildContract["workflows"][TChildWorkflowName]>,
         ChildWorkflowError
       >
     > {
@@ -823,6 +864,7 @@ export function declareWorkflow<
         (async () => {
           // Validate input and get definition
           const validationResult = await getAndValidateChildWorkflow(
+            childContract,
             childWorkflowName,
             options.args,
           );
@@ -832,14 +874,14 @@ export function declareWorkflow<
             return;
           }
 
-          const { definition: childDefinition, validatedInput } = validationResult.value;
+          const { definition: childDefinition, validatedInput, taskQueue } = validationResult.value;
 
           try {
             // Start child workflow (Temporal expects args as array)
             const { args: _args, ...temporalOptions } = options;
             const handle = await startChild(childWorkflowName as string, {
               ...temporalOptions,
-              taskQueue: contract.taskQueue,
+              taskQueue,
               args: [validatedInput],
             });
 
@@ -847,7 +889,7 @@ export function declareWorkflow<
               handle,
               childDefinition,
               String(childWorkflowName),
-            ) as TypedChildWorkflowHandle<TContract["workflows"][TChildWorkflowName]>;
+            ) as TypedChildWorkflowHandle<TChildContract["workflows"][TChildWorkflowName]>;
 
             resolve(Result.Ok(typedHandle));
           } catch (error) {
@@ -865,18 +907,23 @@ export function declareWorkflow<
     }
 
     // Helper function to execute a child workflow
-    function createExecuteChildWorkflow<TChildWorkflowName extends keyof TContract["workflows"]>(
+    function createExecuteChildWorkflow<
+      TChildContract extends ContractDefinition,
+      TChildWorkflowName extends keyof TChildContract["workflows"],
+    >(
+      childContract: TChildContract,
       childWorkflowName: TChildWorkflowName,
       options: TypedChildWorkflowOptions & {
-        args: WorkerInferInput<TContract["workflows"][TChildWorkflowName]>;
+        args: WorkerInferInput<TChildContract["workflows"][TChildWorkflowName]>;
       },
     ): Future<
-      Result<WorkerInferOutput<TContract["workflows"][TChildWorkflowName]>, ChildWorkflowError>
+      Result<WorkerInferOutput<TChildContract["workflows"][TChildWorkflowName]>, ChildWorkflowError>
     > {
       return Future.make((resolve) => {
         (async () => {
           // Validate input and get definition
           const validationResult = await getAndValidateChildWorkflow(
+            childContract,
             childWorkflowName,
             options.args,
           );
@@ -886,14 +933,14 @@ export function declareWorkflow<
             return;
           }
 
-          const { definition: childDefinition, validatedInput } = validationResult.value;
+          const { definition: childDefinition, validatedInput, taskQueue } = validationResult.value;
 
           try {
             // Execute child workflow (Temporal expects args as array)
             const { args: _args, ...temporalOptions } = options;
             const result = await executeChild(childWorkflowName as string, {
               ...temporalOptions,
-              taskQueue: contract.taskQueue,
+              taskQueue,
               args: [validatedInput],
             });
 
@@ -912,7 +959,7 @@ export function declareWorkflow<
             resolve(
               Result.Ok(
                 outputValidationResult.value as WorkerInferOutput<
-                  TContract["workflows"][TChildWorkflowName]
+                  TChildContract["workflows"][TChildWorkflowName]
                 >,
               ),
             );

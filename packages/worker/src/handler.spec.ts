@@ -327,10 +327,12 @@ describe("Worker-Boxed Package", () => {
   });
 
   describe("Child Workflow Support", () => {
-    it("should provide startChildWorkflow and executeChildWorkflow on context", () => {
+    it("should provide startChildWorkflow and executeChildWorkflow on context", async () => {
       // This test validates the API surface - we can't actually call child workflows
       // in unit tests since they require the Temporal runtime
-      const contract = {
+      const { defineContract } = await import("@temporal-contract/contract");
+
+      const contract = defineContract({
         taskQueue: "test-queue",
         workflows: {
           parentWorkflow: {
@@ -342,16 +344,27 @@ describe("Worker-Boxed Package", () => {
             output: z.object({ processed: z.boolean() }),
           },
         },
-      } satisfies ContractDefinition;
+      });
 
       // In a real workflow implementation, the context would have:
-      // - context.startChildWorkflow<WorkflowName>(workflowName, options)
-      // - context.executeChildWorkflow<WorkflowName>(workflowName, options)
+      // - context.startChildWorkflow(contract, workflowName, options)
+      // - context.executeChildWorkflow(contract, workflowName, options)
       // Both return Future<Result<T, ChildWorkflowError>>
 
       // These methods are type-safe and follow the same pattern as the client
-      expect(contract.workflows.childWorkflow).toBeDefined();
-      expect(contract.workflows.parentWorkflow).toBeDefined();
+      expect(contract).toEqual({
+        taskQueue: "test-queue",
+        workflows: {
+          parentWorkflow: {
+            input: expect.any(Object),
+            output: expect.any(Object),
+          },
+          childWorkflow: {
+            input: expect.any(Object),
+            output: expect.any(Object),
+          },
+        },
+      });
     });
   });
 });

@@ -38,7 +38,7 @@ export const processOrder = declareWorkflow({
 
 ### Child Workflows
 
-Execute child workflows with type-safe Future/Result pattern:
+Execute child workflows with type-safe Future/Result pattern. Supports both same-contract and cross-contract child workflows:
 
 ```typescript
 // workflows.ts
@@ -48,8 +48,8 @@ export const parentWorkflow = declareWorkflow({
   workflowName: 'parentWorkflow',
   contract: myContract,
   implementation: async (context, input) => {
-    // Execute child workflow and wait for result
-    const childResult = await context.executeChildWorkflow('processPayment', {
+    // Execute child workflow from same contract and wait for result
+    const childResult = await context.executeChildWorkflow(myContract, 'processPayment', {
       workflowId: `payment-${input.orderId}`,
       args: { amount: input.totalAmount }
     }).toPromise();
@@ -59,10 +59,16 @@ export const parentWorkflow = declareWorkflow({
       Error: (error) => console.error('Payment failed:', error),
     });
 
-    // Or start child workflow without waiting
-    const handleResult = await context.startChildWorkflow('sendNotification', {
+    // Execute child workflow from another contract (another worker)
+    const notificationResult = await context.executeChildWorkflow(notificationContract, 'sendNotification', {
       workflowId: `notification-${input.orderId}`,
       args: { message: 'Order received' }
+    }).toPromise();
+
+    // Or start child workflow without waiting
+    const handleResult = await context.startChildWorkflow(myContract, 'sendEmail', {
+      workflowId: `email-${input.orderId}`,
+      args: { to: 'user@example.com', body: 'Order received' }
     }).toPromise();
 
     handleResult.match({
