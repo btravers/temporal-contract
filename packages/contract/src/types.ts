@@ -1,4 +1,5 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
+import type { Future, Result } from "@swan-io/boxed";
 
 /**
  * Base types for validation schemas
@@ -176,27 +177,27 @@ export type ClientInferActivity<TActivity extends ActivityDefinition> = (
 
 /**
  * Infer signal handler signature from client perspective
- * Client sends z.output
+ * Client sends z.output and returns Future<Result<void, Error>>
  */
 export type ClientInferSignal<TSignal extends SignalDefinition> = (
   args: ClientInferInput<TSignal>,
-) => Promise<void>;
+) => Future<Result<void, Error>>;
 
 /**
  * Infer query handler signature from client perspective
- * Client sends z.output and receives z.input
+ * Client sends z.output and receives z.input wrapped in Future<Result<T, Error>>
  */
 export type ClientInferQuery<TQuery extends QueryDefinition> = (
   args: ClientInferInput<TQuery>,
-) => Promise<ClientInferOutput<TQuery>>;
+) => Future<Result<ClientInferOutput<TQuery>, Error>>;
 
 /**
  * Infer update handler signature from client perspective
- * Client sends z.output and receives z.input
+ * Client sends z.output and receives z.input wrapped in Future<Result<T, Error>>
  */
 export type ClientInferUpdate<TUpdate extends UpdateDefinition> = (
   args: ClientInferInput<TUpdate>,
-) => Promise<ClientInferOutput<TUpdate>>;
+) => Future<Result<ClientInferOutput<TUpdate>, Error>>;
 
 /**
  * WORKER PERSPECTIVE - Contract-level types

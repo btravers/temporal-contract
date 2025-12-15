@@ -47,6 +47,7 @@
   },
   "dependencies": {
     "@standard-schema/spec": "catalog:",
+    "@swan-io/boxed": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
