@@ -7,9 +7,6 @@ export {
   defineWorkflow,
 } from "./builder.js";
 
-// Re-export boxed utilities for convenience
-export { Future, Result } from "@swan-io/boxed";
-
 export type {
   AnySchema,
   ActivityDefinition,
