@@ -1,5 +1,13 @@
 # @temporal-contract/worker
 
+## 0.0.4
+
+### Patch Changes
+
+- Merge client and worker boxed implementations
+- Updated dependencies
+  - @temporal-contract/contract@0.0.4
+
 ## 0.0.3
 
 ### Patch Changes
