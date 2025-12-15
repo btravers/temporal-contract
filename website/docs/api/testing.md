@@ -15,7 +15,7 @@ The `@temporal-contract/testing` package provides utilities for testing workflow
 ## Features
 
 - **Testcontainers Integration** - Automatically starts and stops a Temporal server for tests
-- **Vitest Extension** - Provides `temporalClient` and `temporalConnection` in test context
+- **Vitest Extension** - Provides `clientConnection` and `workerConnection` in test context
 - **Global Setup** - Handles Temporal server lifecycle
 - **Type-safe** - Full TypeScript support
 
@@ -32,23 +32,25 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     globalSetup: '@temporal-contract/testing/global-setup',
-    setupFiles: '@temporal-contract/testing/extension',
   },
 });
 ```
 
 ### 2. Use in Tests
 
-The extension provides `temporalClient` and `temporalConnection` in your test context:
+Import the extended `it` function from the testing package:
 
 ```typescript
-import { test, expect } from 'vitest';
+import { it, expect } from '@temporal-contract/testing/extension';
 
-test('workflow execution', async ({ temporalClient, temporalConnection }) => {
-  // temporalClient is a @temporalio/client Client instance
-  // temporalConnection is a @temporalio/client Connection instance
+it('workflow execution', async ({ clientConnection, workerConnection }) => {
+  // clientConnection is a @temporalio/client Connection instance
+  // workerConnection is a @temporalio/worker NativeConnection instance
 
-  const result = await temporalClient.workflow.execute('myWorkflow', {
+  // Use clientConnection for client operations
+  const client = new WorkflowClient({ connection: clientConnection });
+
+  const result = await client.execute('myWorkflow', {
     taskQueue: 'test',
     workflowId: 'test-workflow',
     args: [{ input: 'test' }],
@@ -63,17 +65,17 @@ test('workflow execution', async ({ temporalClient, temporalConnection }) => {
 Here's a complete example of testing a workflow:
 
 ```typescript
-import { test, expect } from 'vitest';
+import { it, expect } from '@temporal-contract/testing/extension';
 import { Worker } from '@temporalio/worker';
 import { TypedClient } from '@temporal-contract/client';
 import { orderContract } from './contract';
 import { processOrder } from './workflows';
 import { activitiesHandler } from './activities';
 
-test('order processing workflow completes successfully', async ({ temporalConnection }) => {
+it('order processing workflow completes successfully', async ({ clientConnection, workerConnection }) => {
   // Create worker
   const worker = await Worker.create({
-    connection: temporalConnection,
+    connection: workerConnection,
     taskQueue: orderContract.taskQueue,
     workflowsPath: require.resolve('./workflows'),
     activities: activitiesHandler.activities,
@@ -84,7 +86,7 @@ test('order processing workflow completes successfully', async ({ temporalConnec
 
   // Create typed client
   const client = TypedClient.create(orderContract, {
-    connection: temporalConnection,
+    connection: clientConnection,
   });
 
   // Execute workflow
@@ -119,10 +121,16 @@ Starts a Temporal server using testcontainers before all tests and stops it afte
 
 `@temporal-contract/testing/extension`
 
-Provides test context with:
+Provides an extended `it` function with test context:
 
-- `temporalClient: Client` - Connected Temporal client
-- `temporalConnection: Connection` - Temporal connection instance
+- `clientConnection: Connection` - Temporal client connection for executing workflows
+- `workerConnection: NativeConnection` - Temporal native connection for workers
+
+Import this instead of Vitest's `it`:
+
+```typescript
+import { it, expect } from '@temporal-contract/testing/extension';
+```
 
 ## Best Practices
 
