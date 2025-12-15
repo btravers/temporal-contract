@@ -25,4 +25,56 @@ const contract = defineContract({
 });
 ```
 
+## Type Definitions
+
+The contract package exports core type definitions that are used by both client and worker packages:
+
+```typescript
+import type {
+  ContractDefinition,
+  WorkflowDefinition,
+  ActivityDefinition,
+  SignalDefinition,
+  QueryDefinition,
+  UpdateDefinition
+} from '@temporal-contract/contract';
+```
+
+## Utility Types
+
+Extract metadata from contracts:
+
+```typescript
+import type {
+  InferWorkflowNames,
+  InferActivityNames,
+  InferContractWorkflows
+} from '@temporal-contract/contract';
+
+// Extract workflow names as union type
+type WorkflowNames = InferWorkflowNames<typeof myContract>;
+// "processOrder" | "cancelOrder"
+
+// Extract activity names as union type
+type ActivityNames = InferActivityNames<typeof myContract>;
+// "sendEmail" | "log"
+
+// Extract workflow definitions
+type Workflows = InferContractWorkflows<typeof myContract>;
+```
+
+## Type Inference
+
+For input/output type inference, use the appropriate package:
+
+- **Worker types**: Import from `@temporal-contract/worker/activity` or `@temporal-contract/worker/workflow`
+- **Client types**: Import from `@temporal-contract/client`
+
+See the respective API documentation:
+
+- [Worker API](/api/worker)
+- [Client API](/api/client)
+
+## Documentation
+
 See [Getting Started](/guide/getting-started) for complete examples.

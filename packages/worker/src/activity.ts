@@ -13,6 +13,16 @@ export {
   ActivityInputValidationError,
   ActivityOutputValidationError,
 } from "./errors.js";
+export type {
+  WorkerInferInput,
+  WorkerInferOutput,
+  WorkerInferActivity,
+  WorkerInferActivities,
+  WorkerInferWorkflowActivities,
+  WorkerInferWorkflowContextActivities,
+  ActivityHandler,
+  WorkflowActivityHandler,
+} from "./types.js";
 
 // Re-export boxed utilities for convenience in activities
 export { Result, Future, Option, AsyncData } from "@swan-io/boxed";

@@ -7,6 +7,22 @@ export {
   SignalValidationError,
   UpdateValidationError,
 } from "./errors.js";
+export type {
+  ClientInferInput,
+  ClientInferOutput,
+  ClientInferWorkflow,
+  ClientInferActivity,
+  ClientInferSignal,
+  ClientInferQuery,
+  ClientInferUpdate,
+  ClientInferWorkflows,
+  ClientInferActivities,
+  ClientInferWorkflowActivities,
+  ClientInferWorkflowSignals,
+  ClientInferWorkflowQueries,
+  ClientInferWorkflowUpdates,
+  ClientInferWorkflowContextActivities,
+} from "./types.js";
 
 // Re-export boxed utilities for convenience
 export { Result, Future, Option, AsyncData } from "@swan-io/boxed";

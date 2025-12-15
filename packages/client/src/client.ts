@@ -1,17 +1,19 @@
 import { Client, WorkflowHandle } from "@temporalio/client";
 import type { ClientOptions, WorkflowStartOptions, WorkflowOptions } from "@temporalio/client";
 import type {
-  ClientInferInput,
-  ClientInferOutput,
-  ClientInferWorkflowQueries,
-  ClientInferWorkflowSignals,
-  ClientInferWorkflowUpdates,
   ContractDefinition,
   WorkflowDefinition,
   QueryDefinition,
   SignalDefinition,
   UpdateDefinition,
 } from "@temporal-contract/contract";
+import type {
+  ClientInferInput,
+  ClientInferOutput,
+  ClientInferWorkflowQueries,
+  ClientInferWorkflowSignals,
+  ClientInferWorkflowUpdates,
+} from "./types.js";
 import { Future, Result } from "@swan-io/boxed";
 import {
   WorkflowNotFoundError,

@@ -18,3 +18,15 @@ export {
   UpdateInputValidationError,
   UpdateOutputValidationError,
 } from "./errors.js";
+export type {
+  WorkerInferInput,
+  WorkerInferOutput,
+  WorkerInferWorkflow,
+  WorkerInferSignal,
+  WorkerInferQuery,
+  WorkerInferUpdate,
+  WorkerInferWorkflows,
+  WorkerInferWorkflowSignals,
+  WorkerInferWorkflowQueries,
+  WorkerInferWorkflowUpdates,
+} from "./types.js";
