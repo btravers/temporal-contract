@@ -1,6 +1,6 @@
 {
   "name": "@temporal-contract/testing",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Temporal testing utilities",
   "type": "module",
   "exports": {

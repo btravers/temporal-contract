@@ -1,5 +1,11 @@
 # @temporal-contract/testing
 
+## 0.0.4
+
+### Patch Changes
+
+- Merge client and worker boxed implementations
+
 ## 0.0.3
 
 ### Patch Changes
