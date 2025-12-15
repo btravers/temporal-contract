@@ -53,7 +53,7 @@ export interface TypedWorkflowHandle<TWorkflow extends WorkflowDefinition> {
   queries: {
     [K in keyof ClientInferWorkflowQueries<TWorkflow>]: ClientInferWorkflowQueries<TWorkflow>[K] extends (
       ...args: infer Args
-    ) => Promise<infer R>
+    ) => Future<Result<infer R, Error>>
       ? (...args: Args) => Future<Result<R, TypedClientError>>
       : never;
   };
@@ -65,7 +65,7 @@ export interface TypedWorkflowHandle<TWorkflow extends WorkflowDefinition> {
   signals: {
     [K in keyof ClientInferWorkflowSignals<TWorkflow>]: ClientInferWorkflowSignals<TWorkflow>[K] extends (
       ...args: infer Args
-    ) => Promise<void>
+    ) => Future<Result<void, Error>>
       ? (...args: Args) => Future<Result<void, TypedClientError>>
       : never;
   };
@@ -77,7 +77,7 @@ export interface TypedWorkflowHandle<TWorkflow extends WorkflowDefinition> {
   updates: {
     [K in keyof ClientInferWorkflowUpdates<TWorkflow>]: ClientInferWorkflowUpdates<TWorkflow>[K] extends (
       ...args: infer Args
-    ) => Promise<infer R>
+    ) => Future<Result<infer R, Error>>
       ? (...args: Args) => Future<Result<R, TypedClientError>>
       : never;
   };

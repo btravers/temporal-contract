@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import { Future, Result } from "@swan-io/boxed";
 import type {
   ActivityDefinition,
   ActivityHandler,
@@ -348,11 +349,13 @@ describe("Core Types", () => {
         } satisfies SignalDefinition;
 
         type ClientHandler = ClientInferSignal<typeof signalDef>;
-        const clientSignal: ClientHandler = async (args: ClientInferInput<typeof signalDef>) => {
+        const clientSignal: ClientHandler = (args: ClientInferInput<typeof signalDef>) => {
           expect(args.value).toBe("42");
+          return Future.value(Result.Ok(undefined));
         };
 
-        await clientSignal({ value: "42" });
+        const result = await clientSignal({ value: "42" }).toPromise();
+        expect(result.isOk()).toBe(true);
       });
 
       it("should correctly infer worker query signature", async () => {
@@ -377,12 +380,16 @@ describe("Core Types", () => {
         } satisfies QueryDefinition;
 
         type ClientHandler = ClientInferQuery<typeof queryDef>;
-        const clientQuery: ClientHandler = async (args: ClientInferInput<typeof queryDef>) => {
+        const clientQuery: ClientHandler = (args: ClientInferInput<typeof queryDef>) => {
           expect(args.id).toBe("123");
-          return { value: "456" };
+          return Future.value(Result.Ok({ value: "456" }));
         };
 
-        await expect(clientQuery({ id: "123" })).resolves.toEqual({ value: "456" });
+        const result = await clientQuery({ id: "123" }).toPromise();
+        expect(result.isOk()).toBe(true);
+        if (result.isOk()) {
+          expect(result.value).toEqual({ value: "456" });
+        }
       });
 
       it("should correctly infer worker update signature", async () => {
@@ -407,12 +414,16 @@ describe("Core Types", () => {
         } satisfies UpdateDefinition;
 
         type ClientHandler = ClientInferUpdate<typeof updateDef>;
-        const clientUpdate: ClientHandler = async (args: ClientInferInput<typeof updateDef>) => {
+        const clientUpdate: ClientHandler = (args: ClientInferInput<typeof updateDef>) => {
           expect(args.value).toBe("10");
-          return { result: "20" };
+          return Future.value(Result.Ok({ result: "20" }));
         };
 
-        await expect(clientUpdate({ value: "10" })).resolves.toEqual({ result: "20" });
+        const result = await clientUpdate({ value: "10" }).toPromise();
+        expect(result.isOk()).toBe(true);
+        if (result.isOk()) {
+          expect(result.value).toEqual({ result: "20" });
+        }
       });
 
       it("should correctly infer worker activity signature", async () => {
