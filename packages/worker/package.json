@@ -3,12 +3,12 @@
   "version": "0.0.4",
   "description": "Worker utilities with Result/Future pattern for implementing temporal-contract workflows and activities",
   "keywords": [
+    "contract",
+    "future",
+    "result",
     "temporal",
     "typescript",
-    "contract",
-    "worker",
-    "result",
-    "future"
+    "worker"
   ],
   "homepage": "https://github.com/btravers/temporal-contract#readme",
   "bugs": {
@@ -33,6 +33,7 @@
         "default": "./dist/activity.cjs"
       }
     },
+    "./package.json": "./package.json",
     "./workflow": {
       "import": {
         "types": "./dist/workflow.d.mts",
@@ -42,8 +43,7 @@
         "types": "./dist/workflow.d.cts",
         "default": "./dist/workflow.cjs"
       }
-    },
-    "./package.json": "./package.json"
+    }
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
