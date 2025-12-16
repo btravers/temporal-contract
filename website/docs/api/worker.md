@@ -63,13 +63,13 @@ export const myWorkflow = declareWorkflow({
     const result = await context.executeChildWorkflow(myContract, 'childWorkflow', {
       workflowId: 'child-123',
       args: { data: input.data }
-    }).toPromise();
+    });
 
     // Start child workflow without waiting
     const handle = await context.startChildWorkflow(myContract, 'backgroundTask', {
       workflowId: 'task-123',
       args: { taskId: input.taskId }
-    }).toPromise();
+    });
 
     return { success: true };
   },

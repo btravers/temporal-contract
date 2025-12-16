@@ -161,8 +161,8 @@ const resultFuture = client.executeWorkflow('processOrder', {
   args: { orderId: 'ORD-123' }
 });
 
-// Convert to Promise and handle result
-const result = await resultFuture.toPromise();
+// Await the Future and handle result
+const result = await resultFuture;
 result.match({
   Ok: (output) => console.log('Success:', output),
   Error: (error) => console.error('Failed:', error)
@@ -214,9 +214,9 @@ await resultFuture.tapOk((output) => {
   console.log('Success:', output);
 }).tapError((error) => {
   console.error('Failed:', error);
-}).toPromise();
+});
 
-// Or convert to Promise and throw on error
+// Or await directly and throw on error
 try {
   const output = await resultFuture.resultToPromise();
   console.log('Success:', output);

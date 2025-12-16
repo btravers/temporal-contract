@@ -272,7 +272,7 @@ export const parentWorkflow = declareWorkflow({
     const result = await context.executeChildWorkflow(myContract, 'processPayment', {
       workflowId: `payment-${input.orderId}`,
       args: { amount: input.totalAmount }
-    }).toPromise();
+    });
 
     return result.match({
       Ok: (output) => Result.Ok({
@@ -299,13 +299,13 @@ export const parentWorkflow = declareWorkflow({
     const handleResult = await context.startChildWorkflow(myContract, 'sendNotification', {
       workflowId: `notification-${input.orderId}`,
       args: { message: 'Order received' }
-    }).toPromise();
+    });
 
     handleResult.match({
       Ok: async (handle) => {
         // Child started successfully
         // Can wait for result later if needed
-        const result = await handle.result().toPromise();
+        const result = await handle.result();
       },
       Error: (error) => {
         console.error('Failed to start child:', error);
@@ -336,7 +336,7 @@ export const orderWorkflow = declareWorkflow({
         workflowId: `notify-${input.orderId}`,
         args: { orderId: input.orderId }
       }
-    ).toPromise();
+    );
 
     return notifyResult.match({
       Ok: () => Result.Ok({ status: 'completed' }),

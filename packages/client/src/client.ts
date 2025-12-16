@@ -136,7 +136,7 @@ export class TypedClient<TContract extends ContractDefinition> {
    * const result = await client.executeWorkflow('processOrder', {
    *   workflowId: 'order-123',
    *   args: { ... },
-   * }).toPromise();
+   * });
    *
    * result.match({
    *   Ok: (output) => console.log('Success:', output),
@@ -162,11 +162,11 @@ export class TypedClient<TContract extends ContractDefinition> {
    *   args: { orderId: 'ORD-123' },
    *   workflowExecutionTimeout: '1 day',
    *   retry: { maximumAttempts: 3 },
-   * }).toPromise();
+   * });
    *
    * handleResult.match({
    *   Ok: async (handle) => {
-   *     const result = await handle.result().toPromise();
+   *     const result = await handle.result();
    *     // ... handle result
    *   },
    *   Error: (error) => console.error('Failed to start:', error),
@@ -247,7 +247,7 @@ export class TypedClient<TContract extends ContractDefinition> {
    *   args: { orderId: 'ORD-123' },
    *   workflowExecutionTimeout: '1 day',
    *   retry: { maximumAttempts: 3 },
-   * }).toPromise();
+   * });
    *
    * result.match({
    *   Ok: (output) => console.log('Order processed:', output.status),
@@ -336,10 +336,10 @@ export class TypedClient<TContract extends ContractDefinition> {
    *
    * @example
    * ```ts
-   * const handleResult = await client.getHandle('processOrder', 'order-123').toPromise();
+   * const handleResult = await client.getHandle('processOrder', 'order-123');
    * handleResult.match({
    *   Ok: async (handle) => {
-   *     const result = await handle.result().toPromise();
+   *     const result = await handle.result();
    *     // ... handle result
    *   },
    *   Error: (error) => console.error('Failed to get handle:', error),
