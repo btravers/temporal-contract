@@ -52,7 +52,7 @@ The contract is separated into its own package (`order-processing-contract`) whi
 
 ### Result/Future Pattern
 
-This example uses `@swan-io/boxed` for explicit error handling:
+This example uses `@temporal-contract/boxed` for explicit error handling:
 
 - Activities return `Future<Result<T, ActivityError>>` instead of throwing
 - Client methods return `Future<Result<T, TypedClientError>>`

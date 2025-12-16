@@ -4,7 +4,7 @@ Learn how to use explicit error handling with the Result/Future pattern.
 
 ## Overview
 
-The `@temporal-contract/worker` and `@temporal-contract/client` packages use the Result/Future pattern from [@swan-io/boxed](https://swan-io.github.io/boxed/) for explicit error handling.
+The `@temporal-contract/worker` and `@temporal-contract/client` packages use the Result/Future pattern from @temporal-contract/boxed for explicit error handling.
 
 ## Why Use Result Pattern?
 
@@ -41,7 +41,7 @@ return Result.Ok({ success: true });
 ## Installation
 
 ```bash
-pnpm add @temporal-contract/worker @temporal-contract/client @swan-io/boxed
+pnpm add @temporal-contract/worker @temporal-contract/client @temporal-contract/boxed
 ```
 
 ## Basic Usage
@@ -52,7 +52,7 @@ Use `Future<T, E>` for async activities:
 
 ```typescript
 import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
-import { Future } from '@swan-io/boxed';
+import { Future } from '@temporal-contract/boxed';
 import { orderContract } from './contract';
 
 export const activities = declareActivitiesHandler({
@@ -79,7 +79,7 @@ Use `Result<T, E>` for workflows:
 
 ```typescript
 import { declareWorkflow } from '@temporal-contract/worker/workflow';
-import { Result } from '@swan-io/boxed';
+import { Result } from '@temporal-contract/boxed';
 import { orderContract } from './contract';
 
 export const processOrder = declareWorkflow({
@@ -367,6 +367,6 @@ export const orderWorkflow = declareWorkflow({
 
 ## See Also
 
-- [@swan-io/boxed Documentation](https://swan-io.github.io/boxed/)
+- [@temporal-contract/boxed API Reference](/api/index#error-handling)
 - [Order Processing Example](/examples/basic-order-processing)
 - [Worker Implementation](/guide/worker-implementation)

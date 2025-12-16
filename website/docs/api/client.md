@@ -5,7 +5,7 @@ Type-safe client for executing workflows with Result/Future pattern.
 ## Installation
 
 ```bash
-pnpm add @temporal-contract/client @swan-io/boxed
+pnpm add @temporal-contract/client @temporal-contract/boxed
 ```
 
 ## Features
@@ -78,7 +78,7 @@ import type {
   ClientInferQuery,
   ClientInferUpdate
 } from '@temporal-contract/client';
-import { Future, Result } from '@swan-io/boxed';
+import { Future, Result } from '@temporal-contract/boxed';
 
 // Signal returns Future<Result<void, Error>>
 type SignalFn = ClientInferSignal<typeof signalDef>;

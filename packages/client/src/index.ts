@@ -23,6 +23,3 @@ export type {
   ClientInferWorkflowUpdates,
   ClientInferWorkflowContextActivities,
 } from "./types.js";
-
-// Re-export boxed utilities for convenience
-export { Result, Future, Option, AsyncData } from "@swan-io/boxed";

@@ -23,10 +23,10 @@ pnpm add @temporal-contract/contract
 - `declareActivitiesHandler()` - Implement activities with Result/Future pattern
 - `declareWorkflow()` - Implement workflows with typed context
 - Automatic input/output validation
-- Built on [@swan-io/boxed](https://swan-io.github.io/boxed/)
+- Built on @temporal-contract/boxed
 
 ```bash
-pnpm add @temporal-contract/worker @swan-io/boxed
+pnpm add @temporal-contract/worker @temporal-contract/boxed
 ```
 
 ### [@temporal-contract/client](/api/client)
@@ -39,7 +39,7 @@ pnpm add @temporal-contract/worker @swan-io/boxed
 - Type-safe workflow execution
 
 ```bash
-pnpm add @temporal-contract/client @swan-io/boxed
+pnpm add @temporal-contract/client @temporal-contract/boxed
 ```
 
 ### [@temporal-contract/testing](/api/testing)
@@ -96,7 +96,7 @@ const contract = defineContract({
 
 ```typescript
 import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
-import { Future, Result } from '@swan-io/boxed';
+import { Future, Result } from '@temporal-contract/boxed';
 
 const handler = declareActivitiesHandler({
   contract,
@@ -201,7 +201,7 @@ type OrderOutput = InferOutput<typeof contract, 'processOrder'>;
 
 ```typescript
 import { TypedClient } from '@temporal-contract/client';
-import { Future, Result } from '@swan-io/boxed';
+import { Future, Result } from '@temporal-contract/boxed';
 
 // Client returns Future<Result<T, E>>
 const resultFuture = client.executeWorkflow('processOrder', {

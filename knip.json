@@ -8,6 +8,9 @@
       "entry": ["src/index.ts"],
       "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
     },
+    "packages/boxed": {
+      "ignoreDependencies": ["@swan-io/boxed"]
+    },
     "packages/worker": {
       "entry": ["src/activity.ts", "src/workflow.ts"],
       "project": ["src/**/*.ts", "!src/**/*.spec.ts"]

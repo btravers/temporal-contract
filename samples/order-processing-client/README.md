@@ -99,7 +99,7 @@ Both workers implement the exact same contract but with different patterns:
 
 2. **Boxed Worker** (`samples/order-processing-worker-boxed`)
    - Uses `@temporal-contract/worker-boxed`
-   - Result/Future pattern with `@swan-io/boxed`
+   - Result/Future pattern with `@temporal-contract/boxed`
    - Explicit error types in function signatures
    - Better type safety and functional composition
 
