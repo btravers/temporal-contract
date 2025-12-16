@@ -74,6 +74,6 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "@temporalio/workflow": ">=1.13.0 <2.0.0"
+    "@temporalio/workflow": "^1"
   }
 }
