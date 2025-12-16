@@ -2,8 +2,8 @@
   "name": "@temporal-contract/root",
   "private": true,
   "description": "Type-safe contract system for Temporal.io workflows and activities",
-  "author": "Benoit TRAVERS <benoit.travers.frgmail.com>",
   "license": "MIT",
+  "author": "Benoit TRAVERS <benoit.travers.frgmail.com>",
   "type": "module",
   "scripts": {
     "build": "turbo run build",
