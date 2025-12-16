@@ -4,18 +4,18 @@
   "description": "Temporal testing utilities",
   "type": "module",
   "exports": {
-    "./global-setup": {
-      "types": "./dist/global-setup.d.mts",
-      "import": "./dist/global-setup.mjs"
-    },
     "./extension": {
       "types": "./dist/extension.d.mts",
       "import": "./dist/extension.mjs"
+    },
+    "./global-setup": {
+      "types": "./dist/global-setup.d.mts",
+      "import": "./dist/global-setup.mjs"
     }
   },
   "files": [
-    "dist",
-    "config"
+    "config",
+    "dist"
   ],
   "scripts": {
     "build": "tsdown src/global-setup.ts src/extension.ts --format esm --dts --clean",

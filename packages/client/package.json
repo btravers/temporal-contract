@@ -3,12 +3,12 @@
   "version": "0.0.4",
   "description": "Client utilities with Result/Future pattern for consuming temporal-contract workflows",
   "keywords": [
-    "temporal",
-    "typescript",
-    "contract",
     "client",
+    "contract",
+    "future",
     "result",
-    "future"
+    "temporal",
+    "typescript"
   ],
   "homepage": "https://github.com/btravers/temporal-contract#readme",
   "bugs": {

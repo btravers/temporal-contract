@@ -3,9 +3,9 @@
   "version": "0.0.4",
   "description": "Contract builder for temporal-contract",
   "keywords": [
+    "contract",
     "temporal",
-    "typescript",
-    "contract"
+    "typescript"
   ],
   "homepage": "https://github.com/btravers/temporal-contract#readme",
   "bugs": {
