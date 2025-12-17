@@ -479,6 +479,76 @@ importers:
         specifier: 'catalog:'
         version: 4.0.16(@types/node@25.0.2)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
 
+  samples/order-processing-worker-nestjs:
+    dependencies:
+      '@nestjs/common':
+        specifier: 'catalog:'
+        version: 10.4.20(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: 'catalog:'
+        version: 10.4.20(@nestjs/common@10.4.20(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@temporal-contract/boxed':
+        specifier: workspace:*
+        version: link:../../packages/boxed
+      '@temporal-contract/sample-order-processing-contract':
+        specifier: workspace:*
+        version: link:../order-processing-contract
+      '@temporal-contract/worker':
+        specifier: workspace:*
+        version: link:../../packages/worker
+      '@temporal-contract/worker-nestjs':
+        specifier: workspace:*
+        version: link:../../packages/worker-nestjs
+      '@temporalio/worker':
+        specifier: 'catalog:'
+        version: 1.13.2
+      '@temporalio/workflow':
+        specifier: 'catalog:'
+        version: 1.13.2
+      pino:
+        specifier: 'catalog:'
+        version: 10.1.0
+      pino-pretty:
+        specifier: 'catalog:'
+        version: 13.1.3
+      reflect-metadata:
+        specifier: 'catalog:'
+        version: 0.2.2
+      zod:
+        specifier: 'catalog:'
+        version: 4.2.1
+    devDependencies:
+      '@nestjs/testing':
+        specifier: 'catalog:'
+        version: 10.4.20(@nestjs/common@10.4.20(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.20(@nestjs/common@10.4.20(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))
+      '@temporal-contract/client':
+        specifier: workspace:*
+        version: link:../../packages/client
+      '@temporal-contract/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      '@temporal-contract/tsconfig':
+        specifier: workspace:*
+        version: link:../../tools/tsconfig
+      '@temporalio/client':
+        specifier: 'catalog:'
+        version: 1.13.2
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.0.2
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 4.0.16(vitest@4.0.16(@types/node@25.0.2)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2))
+      tsx:
+        specifier: 'catalog:'
+        version: 4.21.0
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.16(@types/node@25.0.2)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
+
   tools/tsconfig: {}
 
   website:
