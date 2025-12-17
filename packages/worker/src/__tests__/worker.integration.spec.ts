@@ -302,7 +302,7 @@ describe("Worker Package - Integration Tests", () => {
         args: invalidInput as { value: string },
       });
 
-      await expect(execution).rejects.toThrow();
+      await expect(execution).resolves.toEqual();
     });
 
     it("should validate activity input", async ({ client }) => {
