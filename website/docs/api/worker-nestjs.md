@@ -1,6 +1,6 @@
 # @temporal-contract/worker-nestjs
 
-NestJS integration for temporal-contract workers with decorators and dependency injection support.
+NestJS integration for temporal-contract workers using multi-handler approach for ultimate type safety.
 
 ## Installation
 
@@ -10,10 +10,10 @@ pnpm add @temporal-contract/worker-nestjs @nestjs/common @nestjs/core reflect-me
 
 ## Features
 
-- Decorator-based activity implementation (`@ImplementActivity`)
+- Multi-handler approach inspired by ts-rest
+- One handler class implements all activities from a contract
 - Full NestJS dependency injection support
 - Type-safe with automatic validation
-- Modular architecture with `createActivitiesModule()`
 
 ## Entry Points
 
@@ -23,38 +23,28 @@ For implementing activities with NestJS:
 
 ```typescript
 import {
-  ImplementActivity,
+  ActivitiesHandler,
   createActivitiesModule,
   ACTIVITIES_HANDLER_TOKEN,
-  extractActivitiesFromProvider,
-  getContractFromProvider,
+  extractActivitiesFromHandler,
+  getContractFromHandler,
 } from '@temporal-contract/worker-nestjs/activity';
 
 import type {
-  ActivityImplementationMetadata,
   ActivitiesModuleOptions,
-  BoxedActivityImplementation,
   ActivityImplementations,
-  ActivitiesHandler,
+  ActivitiesHandlerType,
 } from '@temporal-contract/worker-nestjs/activity';
 ```
 
 ### `@temporal-contract/worker-nestjs/workflow`
 
-For organizing workflows with NestJS:
+For workflow utilities (re-exported from worker package):
 
 ```typescript
-import {
-  ImplementWorkflow,
-  createWorkflowsModule,
-  WORKFLOW_IMPLEMENTATIONS_TOKEN,
-  extractWorkflowsFromProvider,
-  getWorkflowContractFromProvider,
-} from '@temporal-contract/worker-nestjs/workflow';
+import { declareWorkflow } from '@temporal-contract/worker-nestjs/workflow';
 
 import type {
-  WorkflowImplementationMetadata,
-  WorkflowsModuleOptions,
   WorkflowImplementation,
   WorkflowContext,
   DeclareWorkflowOptions,
@@ -65,48 +55,28 @@ import type {
 
 ### Decorators
 
-#### `@ImplementActivity(contract, activityName)`
+#### `@ActivitiesHandler(contract)`
 
-Binds a contract activity to a service method.
+Marks a handler class that implements all activities from a contract.
 
 **Parameters:**
 
 - `contract: ContractDefinition` - The contract definition
-- `activityName: string` - Name of the activity in the contract
 
 **Usage:**
 
 ```typescript
 @Injectable()
-export class PaymentService {
-  @ImplementActivity(orderContract, 'processPayment')
+@ActivitiesHandler(orderContract)
+export class OrderActivitiesHandler implements ActivityImplementations<typeof orderContract> {
+  constructor(private readonly gateway: PaymentGateway) {}
+
   processPayment(args: { customerId: string; amount: number }) {
     return Future.fromPromise(/*...*/)
       .mapError(error => new ActivityError(/*...*/));
   }
-}
-```
 
-#### `@ImplementWorkflow(contract, workflowName)`
-
-Marks a method that returns a workflow implementation.
-
-**Parameters:**
-
-- `contract: ContractDefinition` - The contract definition
-- `workflowName: string` - Name of the workflow in the contract
-
-**Usage:**
-
-```typescript
-@Injectable()
-export class OrderWorkflowService {
-  @ImplementWorkflow(orderContract, 'processOrder')
-  getProcessOrderImplementation() {
-    return async (context, args) => {
-      // Workflow implementation
-    };
-  }
+  // Implement all other activities...
 }
 ```
 
@@ -120,8 +90,8 @@ Creates a NestJS dynamic module for activities with full dependency injection su
 
 - `options: ActivitiesModuleOptions<TContract>`
   - `contract: TContract` - Contract definition
-  - `providers: Type<unknown>[]` - Array of provider classes with `@ImplementActivity` decorators
-  - `additionalActivities?: Partial<ActivityImplementations<TContract>>` - Optional additional implementations
+  - `handler: Type<ActivityImplementations<TContract>>` - Handler class with `@ActivitiesHandler` decorator
+  - `providers?: Type<unknown>[]` - Optional additional providers needed by the handler
 
 **Returns:** `DynamicModule`
 
@@ -130,32 +100,8 @@ Creates a NestJS dynamic module for activities with full dependency injection su
 ```typescript
 export const ActivitiesModule = createActivitiesModule({
   contract: orderContract,
-  providers: [PaymentService, InventoryService, NotificationService],
-  additionalActivities: {
-    // Optional: add implementations not from providers
-  },
-});
-```
-
-#### `createWorkflowsModule(options)`
-
-Creates a NestJS dynamic module for workflow organization.
-
-**Parameters:**
-
-- `options: WorkflowsModuleOptions<TContract>`
-  - `contract: TContract` - Contract definition
-  - `providers: Type<unknown>[]` - Array of provider classes with `@ImplementWorkflow` decorators
-  - `additionalWorkflows?: Record<string, WorkflowImplementation>` - Optional additional implementations
-
-**Returns:** `DynamicModule`
-
-**Example:**
-
-```typescript
-export const WorkflowsModule = createWorkflowsModule({
-  contract: orderContract,
-  providers: [OrderWorkflowService],
+  handler: OrderActivitiesHandler,
+  providers: [PaymentGateway, InventoryRepository, EmailService],
 });
 ```
 
@@ -180,58 +126,25 @@ const worker = await Worker.create({
 });
 ```
 
-#### `WORKFLOW_IMPLEMENTATIONS_TOKEN`
-
-Token for injecting workflow implementations map.
-
-**Type:** `string` - `'TEMPORAL_CONTRACT_WORKFLOW_IMPLEMENTATIONS'`
-
-**Usage:**
-
-```typescript
-const app = await NestFactory.createApplicationContext(AppModule);
-const workflowsMap = app.get(WORKFLOW_IMPLEMENTATIONS_TOKEN);
-```
-
 ### Helper Functions
 
-#### `extractActivitiesFromProvider<TContract>(provider)`
+#### `extractActivitiesFromHandler<TContract>(handler)`
 
-Extracts activity implementations from a provider instance.
-
-**Parameters:**
-
-- `provider: object` - Provider instance with decorated methods
-
-**Returns:** `Partial<ActivityImplementations<TContract>>`
-
-#### `getContractFromProvider<TContract>(providerClass)`
-
-Gets the contract from a provider class.
+Extracts activity implementations from a handler instance.
 
 **Parameters:**
 
-- `providerClass: new (...args: unknown[]) => unknown` - Provider class
+- `handler: object` - Handler instance with methods
 
-**Returns:** `TContract | undefined`
+**Returns:** `ActivityImplementations<TContract>`
 
-#### `extractWorkflowsFromProvider<TContract>(provider)`
+#### `getContractFromHandler<TContract>(handlerClass)`
 
-Extracts workflow implementations from a provider instance.
-
-**Parameters:**
-
-- `provider: object` - Provider instance with decorated methods
-
-**Returns:** `Record<string, WorkflowImplementation>`
-
-#### `getWorkflowContractFromProvider<TContract>(providerClass)`
-
-Gets the contract from a workflow provider class.
+Gets the contract from a handler class.
 
 **Parameters:**
 
-- `providerClass: new (...args: unknown[]) => unknown` - Provider class
+- `handlerClass: new (...args: unknown[]) => unknown` - Handler class
 
 **Returns:** `TContract | undefined`
 
@@ -241,9 +154,10 @@ All type utilities from `@temporal-contract/worker` are re-exported for convenie
 
 ```typescript
 import type {
-  BoxedActivityImplementation,
   ActivityImplementations,
-  ActivitiesHandler,
+  ActivityError,
+  BoxedActivityImplementation,
+  ActivitiesHandlerType,
   WorkflowImplementation,
   WorkflowContext,
   DeclareWorkflowOptions,

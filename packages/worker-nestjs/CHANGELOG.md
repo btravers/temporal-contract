@@ -5,10 +5,9 @@
 ### Patch Changes
 
 - Initial release of NestJS integration for temporal-contract
-- Add `@ImplementActivity` decorator for binding contract activities to service methods
+- Add `@ActivitiesHandler` decorator for multi-handler approach (inspired by ts-rest)
 - Add `createActivitiesModule()` helper for creating NestJS modules
-- Add `@ImplementWorkflow` decorator for organizing workflow implementations
-- Add `createWorkflowsModule()` helper for workflow organization
+- One handler class implements all activities from a contract for ultimate type safety
 - Full support for NestJS dependency injection in activities
-- Type-safe activity implementations with automatic validation
-- Inspired by oRPC's NestJS integration pattern
+- Re-export declareWorkflow from @temporal-contract/worker for convenience
+- Note: Only activities benefit from NestJS DI (workflows cannot due to Temporal isolation)

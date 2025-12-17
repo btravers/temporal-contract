@@ -1,4 +1,4 @@
-import { declareWorkflow } from "@temporal-contract/worker/workflow";
+import { declareWorkflow } from "@temporal-contract/worker-nestjs/workflow";
 import { orderProcessingContract } from "@temporal-contract/sample-order-processing-contract";
 
 /**

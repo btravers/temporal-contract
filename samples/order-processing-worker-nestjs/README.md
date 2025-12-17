@@ -1,29 +1,26 @@
 # Order Processing Worker - NestJS
 
-This sample demonstrates how to implement a Temporal worker using NestJS with the `@temporal-contract/worker-nestjs` package.
+This sample demonstrates how to implement a Temporal worker using NestJS with the `@temporal-contract/worker-nestjs` package using the multi-handler approach.
 
 ## Features
 
-- **NestJS Integration**: Uses `@ImplementActivity` decorators to bind contract activities to service methods
-- **Dependency Injection**: Full NestJS DI support for activities
-- **Type Safety**: Compile-time type checking with automatic validation
-- **Modular Architecture**: Activities organized in services with `createActivitiesModule()`
+- **Multi-handler approach**: One handler class implements all contract activities (inspired by ts-rest)
+- **NestJS Integration**: Uses `@ActivitiesHandler` decorator with full DI support
+- **Type Safety**: Implements `ActivityImplementations<typeof contract>` for compile-time type checking
+- **Modular Architecture**: Clean, maintainable code structure
 
 ## Structure
 
 ```
 src/
 ├── activities/
-│   ├── payment.service.ts         # Payment activities
-│   ├── inventory.service.ts       # Inventory activities
-│   ├── notification.service.ts    # Notification activities
-│   ├── shipping.service.ts        # Shipping activities
-│   └── activities.module.ts       # NestJS activities module
+│   ├── order-activities.handler.ts   # Single handler for all activities
+│   └── activities.module.ts          # NestJS activities module
 ├── workflows/
-│   └── workflows.ts                # Workflow implementations
-├── app.module.ts                   # Root NestJS module
-├── worker.ts                       # Worker bootstrap
-└── logger.ts                       # Logger configuration
+│   └── workflows.ts                  # Workflow implementations
+├── app.module.ts                     # Root NestJS module
+├── worker.ts                         # Worker bootstrap
+└── logger.ts                         # Logger configuration
 ```
 
 ## Running
@@ -46,9 +43,9 @@ pnpm dev:worker
 
 **NestJS Worker** (this sample):
 
-- Activities defined with `@ImplementActivity` decorator
-- Services with dependency injection
-- NestJS modular architecture
+- One handler class with `@ActivitiesHandler` decorator
+- Implements `ActivityImplementations<typeof contract>`
+- NestJS modular architecture and DI
 - Same contract, different implementation pattern
 
 ## Key Differences
@@ -62,36 +59,48 @@ export const activitiesHandler = declareActivitiesHandler({
     processPayment: (args) => {
       // Direct implementation
     },
+    refundPayment: (transactionId) => {
+      // Direct implementation
+    },
+    // ... more activities
   },
 });
 ```
 
-### NestJS Worker
+### NestJS Worker (Multi-handler)
 
 ```typescript
 @Injectable()
-export class PaymentService {
-  constructor(private gateway: PaymentGateway) {}
+@ActivitiesHandler(orderProcessingContract)
+export class OrderActivitiesHandler implements ActivityImplementations<typeof orderProcessingContract> {
+  constructor(private gateway: PaymentGateway) {} // DI support
 
-  @ImplementActivity(orderProcessingContract, 'processPayment')
   processPayment(args: { customerId: string; amount: number }) {
     // Implementation with DI
   }
+
+  refundPayment(transactionId: string) {
+    // Implementation with DI
+  }
+
+  // ... all other activities in one class
 }
 
 export const ActivitiesModule = createActivitiesModule({
   contract: orderProcessingContract,
-  providers: [PaymentService, InventoryService],
+  handler: OrderActivitiesHandler,
+  providers: [PaymentGateway], // Inject dependencies
 });
 ```
 
-## Benefits of NestJS Integration
+## Benefits of Multi-handler Approach
 
-1. **Dependency Injection**: Inject services, repositories, and configurations
-2. **Modular Organization**: Group related activities in services
-3. **Testability**: Easier to mock dependencies for testing
-4. **Familiar Patterns**: Use NestJS conventions you already know
-5. **Scalability**: Better code organization for large projects
+1. **Ultimate Type Safety**: Handler must implement all activities from contract
+2. **Dependency Injection**: Inject services, repositories, and configurations
+3. **Single Source of Truth**: All activities for a contract in one place
+4. **Better IDE Support**: Autocomplete and type checking for all methods
+5. **Easier to Test**: Mock dependencies for unit testing
+6. **Scalability**: Clear contract boundaries for large projects
 
 ## Learn More
 

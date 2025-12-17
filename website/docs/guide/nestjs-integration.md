@@ -1,6 +1,6 @@
 # NestJS Integration
 
-The `@temporal-contract/worker-nestjs` package provides seamless integration between temporal-contract and NestJS, inspired by [oRPC's decorator-based pattern](https://orpc.dev/docs/openapi/integrations/implement-contract-in-nest).
+The `@temporal-contract/worker-nestjs` package provides seamless integration between temporal-contract and NestJS, using a multi-handler approach inspired by [ts-rest](https://ts-rest.com/server/nest#multi-handler-approach---ultimate-type-safety) for ultimate type safety.
 
 ## Installation
 
@@ -10,30 +10,52 @@ pnpm add @temporal-contract/worker-nestjs @nestjs/common @nestjs/core reflect-me
 
 ## Key Features
 
-- **Decorator-based API** - Use `@ImplementActivity` to bind contract activities to service methods
+- **Multi-handler approach** - One handler class implements all activities from a contract
+- **Ultimate type safety** - Implements `ActivityImplementations<typeof contract>`
 - **Full DI Support** - Leverage NestJS dependency injection in activity implementations
-- **Type Safety** - Compile-time type checking with automatic validation
 - **Modular Architecture** - Organize activities using familiar NestJS module patterns
+
+**Note**: Only activities benefit from NestJS DI. Workflows cannot use DI due to Temporal's workflow isolation requirements.
 
 ## Quick Start
 
-### 1. Define Activities with Decorators
+### 1. Define an Activities Handler
 
-Create services with the `@ImplementActivity` decorator to bind contract activities:
+Create a handler class that implements all activities from your contract:
 
 ```typescript
-// services/payment.service.ts
+// activities/order-activities.handler.ts
 import { Injectable } from '@nestjs/common';
-import { ImplementActivity } from '@temporal-contract/worker-nestjs/activity';
+import { ActivitiesHandler } from '@temporal-contract/worker-nestjs/activity';
 import { Future } from '@temporal-contract/boxed';
 import { ActivityError } from '@temporal-contract/worker/activity';
+import type { ActivityImplementations } from '@temporal-contract/worker/activity';
 import { orderContract } from '../contract';
 
 @Injectable()
-export class PaymentService {
-  constructor(private readonly paymentGateway: PaymentGateway) {}
+@ActivitiesHandler(orderContract)
+export class OrderActivitiesHandler implements ActivityImplementations<typeof orderContract> {
+  constructor(
+    private readonly paymentGateway: PaymentGateway,
+    private readonly inventoryRepo: InventoryRepository,
+    private readonly emailService: EmailService,
+  ) {}
 
-  @ImplementActivity(orderContract, 'processPayment')
+  // Global activities
+  log(args: { level: string; message: string }) {
+    logger[args.level](args.message);
+    return Future.value(Result.Ok(undefined));
+  }
+
+  sendNotification(args: { customerId: string; subject: string; message: string }) {
+    return Future.fromPromise(
+      this.emailService.send(args)
+    ).mapError(
+      error => new ActivityError('NOTIFICATION_FAILED', error.message, error)
+    );
+  }
+
+  // Workflow-specific activities
   processPayment(args: { customerId: string; amount: number }) {
     return Future.fromPromise(
       this.paymentGateway.charge(args.customerId, args.amount)
@@ -42,12 +64,27 @@ export class PaymentService {
     );
   }
 
-  @ImplementActivity(orderContract, 'refundPayment')
   refundPayment(transactionId: string) {
     return Future.fromPromise(
       this.paymentGateway.refund(transactionId)
     ).mapError(
       error => new ActivityError('REFUND_FAILED', error.message, error)
+    );
+  }
+
+  reserveInventory(items: Array<{ productId: string; quantity: number }>) {
+    return Future.fromPromise(
+      this.inventoryRepo.reserve(items)
+    ).mapError(
+      error => new ActivityError('INVENTORY_RESERVATION_FAILED', error.message, error)
+    );
+  }
+
+  releaseInventory(reservationId: string) {
+    return Future.fromPromise(
+      this.inventoryRepo.release(reservationId)
+    ).mapError(
+      error => new ActivityError('INVENTORY_RELEASE_FAILED', error.message, error)
     );
   }
 }
@@ -61,16 +98,18 @@ Use `createActivitiesModule()` to create a NestJS dynamic module:
 // activities/activities.module.ts
 import { createActivitiesModule } from '@temporal-contract/worker-nestjs/activity';
 import { orderContract } from '../contract';
-import { PaymentService } from './services/payment.service';
-import { InventoryService } from './services/inventory.service';
-import { NotificationService } from './services/notification.service';
+import { OrderActivitiesHandler } from './order-activities.handler';
+import { PaymentGateway } from './services/payment-gateway';
+import { InventoryRepository } from './services/inventory-repository';
+import { EmailService } from './services/email.service';
 
 export const ActivitiesModule = createActivitiesModule({
   contract: orderContract,
+  handler: OrderActivitiesHandler,
   providers: [
-    PaymentService,
-    InventoryService,
-    NotificationService,
+    PaymentGateway,
+    InventoryRepository,
+    EmailService,
   ],
 });
 ```
@@ -126,113 +165,51 @@ async function bootstrap() {
 bootstrap().catch(console.error);
 ```
 
-## Dependency Injection
+## Workflows
 
-The NestJS integration supports full dependency injection in activity services:
-
-```typescript
-@Injectable()
-export class InventoryService {
-  constructor(
-    private readonly inventoryRepository: InventoryRepository,
-    private readonly logger: LoggerService,
-    private readonly config: ConfigService,
-  ) {}
-
-  @ImplementActivity(orderContract, 'reserveInventory')
-  async reserveInventory(items: Array<{ productId: string; quantity: number }>) {
-    this.logger.log('Reserving inventory', { items });
-
-    return Future.fromPromise(
-      this.inventoryRepository.reserve(items)
-    ).mapError(
-      error => new ActivityError('INVENTORY_RESERVATION_FAILED', error.message, error)
-    );
-  }
-}
-```
-
-## Multiple Activities per Service
-
-You can define multiple activities in a single service:
+Workflows cannot use NestJS dependency injection due to Temporal's workflow isolation. Simply use `declareWorkflow` from the worker package:
 
 ```typescript
-@Injectable()
-export class NotificationService {
-  constructor(private readonly emailClient: EmailClient) {}
+// workflows/order-workflow.ts
+import { declareWorkflow } from '@temporal-contract/worker-nestjs/workflow';
+import { orderContract } from '../contract';
 
-  @ImplementActivity(orderContract, 'sendOrderConfirmation')
-  sendOrderConfirmation(args: { customerId: string; orderId: string }) {
-    return Future.fromPromise(
-      this.emailClient.send({
-        to: args.customerId,
-        subject: 'Order Confirmation',
-        body: `Your order ${args.orderId} has been confirmed`,
-      })
-    ).mapError(
-      error => new ActivityError('EMAIL_SEND_FAILED', error.message, error)
-    );
-  }
+export const processOrder = declareWorkflow({
+  workflowName: 'processOrder',
+  contract: orderContract,
+  implementation: async (context, input) => {
+    // Use activities
+    const payment = await context.activities.processPayment({
+      customerId: input.customerId,
+      amount: input.totalAmount,
+    });
 
-  @ImplementActivity(orderContract, 'sendShippingNotification')
-  sendShippingNotification(args: { customerId: string; trackingNumber: string }) {
-    return Future.fromPromise(
-      this.emailClient.send({
-        to: args.customerId,
-        subject: 'Order Shipped',
-        body: `Your order has shipped. Tracking: ${args.trackingNumber}`,
-      })
-    ).mapError(
-      error => new ActivityError('EMAIL_SEND_FAILED', error.message, error)
-    );
-  }
-}
+    if (payment.isError()) {
+      throw new Error('Payment failed');
+    }
+
+    return { orderId: input.orderId, status: 'completed' };
+  },
+});
 ```
-
-## Workflow Organization
-
-While Temporal workflows cannot directly use NestJS DI due to workflow isolation requirements, the package provides decorators for organizing workflow implementations:
-
-```typescript
-@Injectable()
-export class OrderWorkflowService {
-  @ImplementWorkflow(orderContract, 'processOrder')
-  getProcessOrderImplementation() {
-    return async (context, args) => {
-      const payment = await context.activities.processPayment({
-        customerId: args.customerId,
-        amount: args.amount,
-      });
-
-      if (payment.isError()) {
-        throw new Error('Payment failed');
-      }
-
-      return { orderId: args.orderId, status: 'completed' };
-    };
-  }
-}
-```
-
-Note: For production use, workflow implementations must still be exported from separate files as required by Temporal.
 
 ## API Reference
 
-### `@ImplementActivity(contract, activityName)`
+### `@ActivitiesHandler(contract)`
 
-Decorator that binds a contract activity to a service method.
+Decorator that marks a handler class implementing all activities from a contract.
 
 **Parameters:**
 
 - `contract` - The contract definition
-- `activityName` - Name of the activity in the contract
 
 **Example:**
 
 ```typescript
-@ImplementActivity(myContract, 'processPayment')
-processPayment(args: PaymentArgs) {
-  // Implementation
+@Injectable()
+@ActivitiesHandler(myContract)
+export class MyActivitiesHandler implements ActivityImplementations<typeof myContract> {
+  // Implement all activities
 }
 ```
 
@@ -243,8 +220,8 @@ Factory function that creates a NestJS dynamic module for activities.
 **Parameters:**
 
 - `options.contract` - Contract definition
-- `options.providers` - Array of provider classes with `@ImplementActivity` decorators
-- `options.additionalActivities` - Optional additional activity implementations
+- `options.handler` - Handler class decorated with `@ActivitiesHandler`
+- `options.providers` - Optional additional providers needed by the handler
 
 **Returns:** `DynamicModule`
 
@@ -253,7 +230,8 @@ Factory function that creates a NestJS dynamic module for activities.
 ```typescript
 export const ActivitiesModule = createActivitiesModule({
   contract: orderContract,
-  providers: [PaymentService, InventoryService],
+  handler: OrderActivitiesHandler,
+  providers: [PaymentGateway, EmailService],
 });
 ```
 
@@ -267,30 +245,29 @@ Injection token for accessing the activities handler.
 const activitiesHandler = app.get(ACTIVITIES_HANDLER_TOKEN);
 ```
 
-## Comparison with oRPC
+## Comparison with ts-rest
 
-This integration is inspired by [oRPC's NestJS pattern](https://orpc.dev/docs/openapi/integrations/implement-contract-in-nest):
+This integration is inspired by [ts-rest's multi-handler approach](https://ts-rest.com/server/nest#multi-handler-approach---ultimate-type-safety):
 
-| Feature              | oRPC            | @temporal-contract/worker-nestjs |
-| -------------------- | --------------- | -------------------------------- |
-| Decorator-based      | ✅ `@Implement` | ✅ `@ImplementActivity`          |
-| Contract-first       | ✅              | ✅                               |
-| Type-safe            | ✅              | ✅                               |
-| DI Support           | ✅              | ✅                               |
-| Automatic validation | ✅              | ✅                               |
-| Domain               | RPC endpoints   | Temporal workflows               |
+| Feature              | ts-rest                     | @temporal-contract/worker-nestjs |
+| -------------------- | --------------------------- | -------------------------------- |
+| Multi-handler        | ✅ One handler per contract | ✅ One handler per contract      |
+| Type-safe            | ✅                          | ✅                               |
+| DI Support           | ✅                          | ✅ Activities only               |
+| Automatic validation | ✅                          | ✅                               |
+| Domain               | REST APIs                   | Temporal workflows               |
 
 ## Best Practices
 
-1. **Keep activities focused** - Each activity should do one thing well
-2. **Use dependency injection** - Leverage NestJS DI for testability and maintainability
+1. **One handler per contract** - Keep all activity implementations in a single handler class
+2. **Use dependency injection** - Leverage NestJS DI for services, repositories, and configurations
 3. **Handle errors explicitly** - Always wrap errors in `ActivityError` for proper retry behavior
-4. **Organize by domain** - Group related activities in the same service
+4. **Organize by domain** - Create separate contracts and handlers for different business domains
 5. **Use the Result pattern** - Return `Future<Result<T, ActivityError>>` for explicit error handling
 
 ## Examples
 
-See the complete [order-processing-worker sample](/examples/basic-order-processing) for a full example of a worker implementation.
+See the [order-processing-worker-nestjs sample](/examples/basic-order-processing) for a complete example.
 
 ## Next Steps
 

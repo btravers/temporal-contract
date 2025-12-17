@@ -13,15 +13,18 @@ pnpm add @temporal-contract/worker-nestjs @nestjs/common @nestjs/core reflect-me
 ## Quick Example
 
 ```typescript
-// payment.service.ts
+// order-activities.handler.ts
 import { Injectable } from '@nestjs/common';
-import { ImplementActivity } from '@temporal-contract/worker-nestjs/activity';
+import { ActivitiesHandler } from '@temporal-contract/worker-nestjs/activity';
 import { Future } from '@temporal-contract/boxed';
 import { ActivityError } from '@temporal-contract/worker/activity';
+import type { ActivityImplementations } from '@temporal-contract/worker/activity';
 
 @Injectable()
-export class PaymentService {
-  @ImplementActivity(orderContract, 'processPayment')
+@ActivitiesHandler(orderContract)
+export class OrderActivitiesHandler implements ActivityImplementations<typeof orderContract> {
+  constructor(private readonly gateway: PaymentGateway) {}
+
   processPayment(args: { customerId: string; amount: number }) {
     return Future.fromPromise(
       this.gateway.charge(args)
@@ -29,6 +32,8 @@ export class PaymentService {
       error => new ActivityError('PAYMENT_FAILED', error.message, error)
     );
   }
+
+  // ... implement all other activities
 }
 
 // activities.module.ts
@@ -36,7 +41,8 @@ import { createActivitiesModule } from '@temporal-contract/worker-nestjs/activit
 
 export const ActivitiesModule = createActivitiesModule({
   contract: orderContract,
-  providers: [PaymentService, InventoryService],
+  handler: OrderActivitiesHandler,
+  providers: [PaymentGateway],
 });
 
 // worker.ts
@@ -55,9 +61,9 @@ const worker = await Worker.create({
 
 ## Features
 
-- **`@ImplementActivity` decorator**: Bind contract activities to service methods (inspired by oRPC)
+- **`@ActivitiesHandler` decorator**: Multi-handler approach for ultimate type safety (inspired by ts-rest)
 - **`createActivitiesModule()`**: Create NestJS modules with full DI support
-- **Type Safety**: Compile-time type checking for implementations
+- **Type Safety**: One handler implements all activities from a contract
 - **Automatic Validation**: Input/output validation at network boundaries
 
 ## Documentation
