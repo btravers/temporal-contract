@@ -1,5 +1,14 @@
 # @temporal-contract/worker
 
+## 0.0.5
+
+### Patch Changes
+
+- Release version 0.0.5 - Add @temporal-contract/boxed to releases
+- Updated dependencies
+  - @temporal-contract/contract@0.0.5
+  - @temporal-contract/boxed@0.0.5
+
 ## 0.0.4
 
 ### Patch Changes
