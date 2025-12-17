@@ -2,11 +2,11 @@
 "@temporal-contract/worker-nestjs": minor
 ---
 
-Add NestJS integration package with decorators and DI support
+Add NestJS integration package for activities with multi-handler approach
 
-- Add @ImplementActivity decorator inspired by oRPC pattern
-- Add @ImplementWorkflow decorator for workflow organization
+- Add @ActivitiesHandler decorator for ultimate type safety (inspired by ts-rest)
 - Add createActivitiesModule() helper for NestJS modules
-- Add createWorkflowsModule() helper for workflow modules
+- One handler class implements all activities from a contract
 - Full support for NestJS dependency injection
-- Type-safe activity implementations with automatic validation
+- Re-export declareWorkflow from @temporal-contract/worker for convenience
+- Note: Only activities benefit from NestJS DI (workflows cannot due to Temporal isolation)

@@ -4,7 +4,8 @@ import { Test } from "@nestjs/testing";
 import { Future, Result } from "@temporal-contract/boxed";
 import { defineContract } from "@temporal-contract/contract";
 import { z } from "zod";
-import { ImplementActivity, createActivitiesModule, ACTIVITIES_HANDLER_TOKEN } from "./activity.js";
+import { ActivitiesHandler, createActivitiesModule, ACTIVITIES_HANDLER_TOKEN } from "./activity.js";
+import type { ActivityImplementations } from "@temporal-contract/worker/activity";
 
 // Test contract
 const testContract = defineContract({
@@ -27,54 +28,34 @@ const testContract = defineContract({
   },
 });
 
-describe("Activity Decorators", () => {
-  describe("@ImplementActivity", () => {
-    it("should decorate a method as an activity implementation", () => {
+describe("ActivitiesHandler Decorator", () => {
+  describe("@ActivitiesHandler", () => {
+    it("should decorate a handler class", () => {
       @Injectable()
-      class TestService {
-        @ImplementActivity(testContract, "testActivity")
-        testActivity(args: { value: number }) {
-          return Future.value(Result.Ok({ result: args.value * 2 }));
-        }
-      }
-
-      const service = new TestService();
-      const result = service.testActivity({ value: 5 });
-
-      expect(result).toBeDefined();
-    });
-
-    it("should allow multiple activity decorators on the same class", () => {
-      @Injectable()
-      class TestService {
-        @ImplementActivity(testContract, "testActivity")
+      @ActivitiesHandler(testContract)
+      class TestHandler implements ActivityImplementations<typeof testContract> {
         testActivity(args: { value: number }) {
           return Future.value(Result.Ok({ result: args.value * 2 }));
         }
 
-        @ImplementActivity(testContract, "anotherActivity")
         anotherActivity(args: { text: string }) {
           return Future.value(Result.Ok({ processed: args.text.toUpperCase() }));
         }
       }
 
-      const service = new TestService();
-
-      expect(service.testActivity).toBeDefined();
-      expect(service.anotherActivity).toBeDefined();
+      expect(TestHandler).toBeDefined();
     });
   });
 
   describe("createActivitiesModule", () => {
     it("should create a NestJS module with activities handler", async () => {
       @Injectable()
-      class TestService {
-        @ImplementActivity(testContract, "testActivity")
+      @ActivitiesHandler(testContract)
+      class TestHandler implements ActivityImplementations<typeof testContract> {
         testActivity(args: { value: number }) {
           return Future.value(Result.Ok({ result: args.value * 2 }));
         }
 
-        @ImplementActivity(testContract, "anotherActivity")
         anotherActivity(args: { text: string }) {
           return Future.value(Result.Ok({ processed: args.text.toUpperCase() }));
         }
@@ -82,7 +63,7 @@ describe("Activity Decorators", () => {
 
       const module = createActivitiesModule({
         contract: testContract,
-        providers: [TestService],
+        handler: TestHandler,
       });
 
       const testModule = await Test.createTestingModule({
@@ -94,51 +75,28 @@ describe("Activity Decorators", () => {
       expect(activitiesHandler).toBeDefined();
       expect(activitiesHandler.contract).toBe(testContract);
       expect(activitiesHandler.activities).toBeDefined();
-      expect(activitiesHandler.activities.testActivity).toBeDefined();
-      expect(activitiesHandler.activities.anotherActivity).toBeDefined();
+      expect(typeof activitiesHandler.activities.testActivity).toBe("function");
+      expect(typeof activitiesHandler.activities.anotherActivity).toBe("function");
     });
 
-    it("should preserve 'this' context in decorated methods", async () => {
+    it("should preserve 'this' context in handler methods", async () => {
       @Injectable()
-      class TestService {
+      @ActivitiesHandler(testContract)
+      class TestHandler implements ActivityImplementations<typeof testContract> {
         private multiplier = 3;
 
-        @ImplementActivity(testContract, "testActivity")
         testActivity(args: { value: number }) {
           return Future.value(Result.Ok({ result: args.value * this.multiplier }));
         }
-      }
 
-      const module = createActivitiesModule({
-        contract: testContract,
-        providers: [TestService],
-      });
-
-      const testModule = await Test.createTestingModule({
-        imports: [module],
-      }).compile();
-
-      const activitiesHandler = testModule.get(ACTIVITIES_HANDLER_TOKEN);
-
-      // Call the activity through the handler
-      const result = await activitiesHandler.activities.testActivity({ value: 5 });
-
-      expect(result).toEqual({ result: 15 });
-    });
-
-    it("should support dependency injection in services", async () => {
-      @Injectable()
-      class TestService {
-        @ImplementActivity(testContract, "testActivity")
-        testActivity(args: { value: number }) {
-          // Use a fixed multiplier for simplicity
-          return Future.value(Result.Ok({ result: args.value * 10 }));
+        anotherActivity(args: { text: string }) {
+          return Future.value(Result.Ok({ processed: args.text.toUpperCase() }));
         }
       }
 
       const module = createActivitiesModule({
         contract: testContract,
-        providers: [TestService],
+        handler: TestHandler,
       });
 
       const testModule = await Test.createTestingModule({
@@ -147,10 +105,57 @@ describe("Activity Decorators", () => {
 
       const activitiesHandler = testModule.get(ACTIVITIES_HANDLER_TOKEN);
 
-      // Call the activity through the handler
       const result = await activitiesHandler.activities.testActivity({ value: 5 });
+      expect(result).toEqual({ result: 15 });
+    });
 
+    it("should support dependency injection in handlers", async () => {
+      @Injectable()
+      @ActivitiesHandler(testContract)
+      class TestHandler implements ActivityImplementations<typeof testContract> {
+        testActivity(args: { value: number }) {
+          // Simple implementation without DI for simplicity
+          return Future.value(Result.Ok({ result: args.value * 10 }));
+        }
+
+        anotherActivity(args: { text: string }) {
+          return Future.value(Result.Ok({ processed: args.text.toUpperCase() }));
+        }
+      }
+
+      const module = createActivitiesModule({
+        contract: testContract,
+        handler: TestHandler,
+      });
+
+      const testModule = await Test.createTestingModule({
+        imports: [module],
+      }).compile();
+
+      const activitiesHandler = testModule.get(ACTIVITIES_HANDLER_TOKEN);
+
+      const result = await activitiesHandler.activities.testActivity({ value: 5 });
       expect(result).toEqual({ result: 50 });
+    });
+
+    it("should throw error if handler is not decorated", () => {
+      @Injectable()
+      class TestHandler implements ActivityImplementations<typeof testContract> {
+        testActivity(args: { value: number }) {
+          return Future.value(Result.Ok({ result: args.value * 2 }));
+        }
+
+        anotherActivity(args: { text: string }) {
+          return Future.value(Result.Ok({ processed: args.text.toUpperCase() }));
+        }
+      }
+
+      expect(() =>
+        createActivitiesModule({
+          contract: testContract,
+          handler: TestHandler,
+        }),
+      ).toThrow("Handler class must be decorated with @ActivitiesHandler decorator");
     });
   });
 });

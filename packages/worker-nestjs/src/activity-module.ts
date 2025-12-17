@@ -4,11 +4,7 @@ import {
   declareActivitiesHandler,
   ActivityImplementations,
 } from "@temporal-contract/worker/activity";
-import {
-  extractActivitiesFromProvider,
-  ACTIVITY_IMPLEMENTATION_METADATA,
-  ActivityImplementationMetadata,
-} from "./activity-decorators.js";
+import { extractActivitiesFromHandler, ACTIVITIES_HANDLER_METADATA } from "./activity-handler.js";
 
 /**
  * Token for injecting the activities handler
@@ -25,60 +21,72 @@ export interface ActivitiesModuleOptions<TContract extends ContractDefinition> {
   contract: TContract;
 
   /**
-   * NestJS providers that implement activities using @ImplementActivity decorator
-   * These providers will be scanned for decorated methods
+   * NestJS handler class that implements all activities using @ActivitiesHandler decorator
+   * The handler should implement ActivityImplementations<TContract>
    */
-  providers: Type<unknown>[];
+  handler: Type<ActivityImplementations<TContract>>;
 
   /**
-   * Optional additional activity implementations not from providers
-   * These will be merged with implementations extracted from providers
+   * Optional additional providers needed by the handler
    */
-  additionalActivities?: Partial<ActivityImplementations<TContract>>;
+  providers?: Type<unknown>[];
 }
 
 /**
  * Create a NestJS module for Temporal activities
  *
- * This function creates a dynamic NestJS module that:
- * 1. Registers activity providers with dependency injection
- * 2. Extracts activity implementations from @ImplementActivity decorated methods
- * 3. Creates an activities handler ready for Temporal Worker
- * 4. Exports the handler for use in worker setup
- *
- * Inspired by oRPC's NestJS integration pattern with @Implement decorator.
+ * This function creates a dynamic NestJS module using the multi-handler approach
+ * inspired by ts-rest for ultimate type safety. One handler class implements all
+ * activities from the contract.
  *
  * @example
  * ```ts
- * // activities/payment.service.ts
+ * // activities/order-activities.handler.ts
  * import { Injectable } from '@nestjs/common';
- * import { ImplementActivity } from '@temporal-contract/worker-nestjs/activity';
+ * import { ActivitiesHandler } from '@temporal-contract/worker-nestjs/activity';
  * import { Future, Result } from '@temporal-contract/boxed';
  * import { ActivityError } from '@temporal-contract/worker/activity';
+ * import type { ActivityImplementations } from '@temporal-contract/worker/activity';
  *
  * @Injectable()
- * export class PaymentService {
- *   constructor(private paymentGateway: PaymentGateway) {}
+ * @ActivitiesHandler(orderContract)
+ * export class OrderActivitiesHandler implements ActivityImplementations<typeof orderContract> {
+ *   constructor(
+ *     private readonly paymentGateway: PaymentGateway,
+ *     private readonly emailService: EmailService,
+ *   ) {}
  *
- *   @ImplementActivity(orderContract, 'processPayment')
+ *   log(args: { level: string; message: string }) {
+ *     logger[args.level](args.message);
+ *     return Future.value(Result.Ok(undefined));
+ *   }
+ *
+ *   sendNotification(args: { customerId: string; subject: string; message: string }) {
+ *     return Future.fromPromise(
+ *       this.emailService.send(args)
+ *     ).mapError(error => new ActivityError('NOTIFICATION_FAILED', error.message, error));
+ *   }
+ *
  *   processPayment(args: { customerId: string; amount: number }) {
  *     return Future.fromPromise(
  *       this.paymentGateway.charge(args)
- *     ).mapError(
- *       error => new ActivityError('PAYMENT_FAILED', error.message, error)
- *     );
+ *     ).mapError(error => new ActivityError('PAYMENT_FAILED', error.message, error));
  *   }
+ *
+ *   // ... implement all other activities
  * }
  *
  * // activities/activities.module.ts
  * import { createActivitiesModule } from '@temporal-contract/worker-nestjs/activity';
  * import { orderContract } from './contract';
- * import { PaymentService } from './payment.service';
- * import { InventoryService } from './inventory.service';
+ * import { OrderActivitiesHandler } from './order-activities.handler';
+ * import { PaymentGateway } from './payment-gateway.service';
+ * import { EmailService } from './email.service';
  *
  * export const ActivitiesModule = createActivitiesModule({
  *   contract: orderContract,
- *   providers: [PaymentService, InventoryService],
+ *   handler: OrderActivitiesHandler,
+ *   providers: [PaymentGateway, EmailService],
  * });
  *
  * // app.module.ts
@@ -113,51 +121,39 @@ export interface ActivitiesModuleOptions<TContract extends ContractDefinition> {
 export function createActivitiesModule<TContract extends ContractDefinition>(
   options: ActivitiesModuleOptions<TContract>,
 ): DynamicModule {
-  const { contract, providers, additionalActivities = {} } = options;
+  const { contract, handler, providers = [] } = options;
 
-  // Filter providers to only those with activity decorators
-  const activityProviders = providers.filter((provider) => {
-    const metadata: ActivityImplementationMetadata<TContract>[] =
-      Reflect.getMetadata(ACTIVITY_IMPLEMENTATION_METADATA, provider) || [];
-    return metadata.length > 0;
-  });
+  // Verify handler has the decorator
+  const handlerContract = Reflect.getMetadata(ACTIVITIES_HANDLER_METADATA, handler);
+  if (!handlerContract) {
+    throw new Error(`Handler class must be decorated with @ActivitiesHandler decorator`);
+  }
 
   // Create a factory provider that builds the activities handler
   const activitiesHandlerProvider: Provider = {
     provide: ACTIVITIES_HANDLER_TOKEN,
-    useFactory: (...providerInstances: object[]) => {
-      // Extract implementations from all providers
-      const extractedImplementations: Partial<ActivityImplementations<TContract>> = {};
-
-      for (const providerInstance of providerInstances) {
-        const implementations = extractActivitiesFromProvider<TContract>(providerInstance);
-        Object.assign(extractedImplementations, implementations);
-      }
-
-      // Merge with additional activities
-      const allActivities = {
-        ...extractedImplementations,
-        ...additionalActivities,
-      } as ActivityImplementations<TContract>;
+    useFactory: (handlerInstance: ActivityImplementations<TContract>) => {
+      // Extract implementations from the handler
+      const implementations = extractActivitiesFromHandler<TContract>(handlerInstance);
 
       // Create the activities handler
       return declareActivitiesHandler({
         contract,
-        activities: allActivities,
+        activities: implementations,
       });
     },
-    inject: activityProviders,
+    inject: [handler],
   };
 
   @Module({
-    providers: [...providers, activitiesHandlerProvider],
+    providers: [...providers, handler, activitiesHandlerProvider],
     exports: [ACTIVITIES_HANDLER_TOKEN],
   })
   class ActivitiesModuleClass {}
 
   return {
     module: ActivitiesModuleClass,
-    providers: [...providers, activitiesHandlerProvider],
+    providers: [...providers, handler, activitiesHandlerProvider],
     exports: [ACTIVITIES_HANDLER_TOKEN],
   };
 }
