@@ -9,20 +9,6 @@ export default defineConfig({
       reporter: ["text", "json", "json-summary", "html"],
       include: ["src/**", "!src/__tests__/**"],
     },
-    projects: [
-      {
-        test: {
-          name: "unit",
-          include: ["src/**/*.unit.spec.ts"],
-        },
-      },
-      {
-        test: {
-          name: "integration",
-          globalSetup: "@temporal-contract/testing/global-setup",
-          include: ["src/**/*.integration.spec.ts"],
-        },
-      },
-    ],
+    include: ["src/**/*.unit.spec.ts"],
   },
 });

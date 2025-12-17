@@ -309,9 +309,6 @@ importers:
       '@nestjs/core':
         specifier: 'catalog:'
         version: 11.1.9(@nestjs/common@11.1.9(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      '@standard-schema/spec':
-        specifier: 'catalog:'
-        version: 1.1.0
       '@temporal-contract/boxed':
         specifier: workspace:*
         version: link:../boxed
@@ -328,21 +325,9 @@ importers:
       '@nestjs/testing':
         specifier: 'catalog:'
         version: 11.1.9(@nestjs/common@11.1.9(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.9(@nestjs/common@11.1.9(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))
-      '@temporal-contract/client':
-        specifier: workspace:*
-        version: link:../client
-      '@temporal-contract/testing':
-        specifier: workspace:*
-        version: link:../testing
       '@temporal-contract/tsconfig':
         specifier: workspace:*
         version: link:../../tools/tsconfig
-      '@temporalio/client':
-        specifier: 'catalog:'
-        version: 1.13.2
-      '@temporalio/worker':
-        specifier: 'catalog:'
-        version: 1.13.2
       '@temporalio/workflow':
         specifier: 'catalog:'
         version: 1.13.2
@@ -514,25 +499,13 @@ importers:
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
-      zod:
-        specifier: 'catalog:'
-        version: 4.2.1
     devDependencies:
-      '@nestjs/testing':
-        specifier: 'catalog:'
-        version: 11.1.9(@nestjs/common@11.1.9(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.9(@nestjs/common@11.1.9(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))
-      '@temporal-contract/client':
-        specifier: workspace:*
-        version: link:../../packages/client
       '@temporal-contract/testing':
         specifier: workspace:*
         version: link:../../packages/testing
       '@temporal-contract/tsconfig':
         specifier: workspace:*
         version: link:../../tools/tsconfig
-      '@temporalio/client':
-        specifier: 'catalog:'
-        version: 1.13.2
       '@types/node':
         specifier: 'catalog:'
         version: 25.0.2

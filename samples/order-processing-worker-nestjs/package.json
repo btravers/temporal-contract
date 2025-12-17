@@ -19,15 +19,11 @@
     "@temporalio/workflow": "catalog:",
     "pino": "catalog:",
     "pino-pretty": "catalog:",
-    "reflect-metadata": "catalog:",
-    "zod": "catalog:"
+    "reflect-metadata": "catalog:"
   },
   "devDependencies": {
-    "@nestjs/testing": "catalog:",
-    "@temporal-contract/client": "workspace:*",
     "@temporal-contract/testing": "workspace:*",
     "@temporal-contract/tsconfig": "workspace:*",
-    "@temporalio/client": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "tsx": "catalog:",
