@@ -20,7 +20,7 @@ export default async function setup({ provide }: TestProject) {
 
   // Start PostgreSQL container first
   console.log("🐳 Starting PostgreSQL container...");
-  const postgresContainer = await new GenericContainer("postgres:16-alpine")
+  const postgresContainer = await new GenericContainer("postgres:18.1")
     .withNetwork(network)
     .withNetworkAliases("postgres")
     .withExposedPorts(5432)
@@ -30,10 +30,10 @@ export default async function setup({ provide }: TestProject) {
       POSTGRES_PASSWORD: "temporal",
     })
     .withHealthCheck({
-      test: ["CMD-SHELL", "pg_isready -U temporal -d temporal"],
+      test: ["CMD-SHELL", "pg_isready -U temporal"],
       interval: 1_000,
       retries: 30,
-      startPeriod: 2_000,
+      startPeriod: 1_000,
       timeout: 1_000,
     })
     .withWaitStrategy(Wait.forHealthCheck())
@@ -41,10 +41,7 @@ export default async function setup({ provide }: TestProject) {
 
   console.log("✅ PostgreSQL container started");
 
-  // Give more time for network DNS to propagate
-  await new Promise((resolve) => setTimeout(resolve, 5000));
-
-  // Start Temporal container with longer timeout
+  // Start Temporal container
   console.log("🐳 Starting Temporal container...");
   const temporalContainer = await new GenericContainer("temporalio/auto-setup:1.29.1")
     .withNetwork(network)
@@ -55,17 +52,20 @@ export default async function setup({ provide }: TestProject) {
       POSTGRES_SEEDS: "postgres",
       POSTGRES_USER: "temporal",
       POSTGRES_PWD: "temporal",
-      SKIP_SCHEMA_SETUP: "false",
-      SKIP_DB_CREATE: "false",
+      BIND_ON_IP: "0.0.0.0",
+      TEMPORAL_BROADCAST_ADDRESS: "127.0.0.1",
     })
-    .withWaitStrategy(Wait.forListeningPorts())
-    .withStartupTimeout(180_000) // 3 minutes for Temporal to initialize the database
+    .withHealthCheck({
+      test: ["CMD-SHELL", "tctl --address 127.0.0.1:7233 workflow list"],
+      interval: 1_000,
+      retries: 30,
+      startPeriod: 1_000,
+      timeout: 1_000,
+    })
+    .withWaitStrategy(Wait.forHealthCheck())
     .start();
 
   console.log("✅ Temporal container started");
-
-  // Give Temporal time to fully initialize
-  await new Promise((resolve) => setTimeout(resolve, 5000));
 
   const __TESTCONTAINERS_TEMPORAL_IP__ = temporalContainer.getHost();
   const __TESTCONTAINERS_TEMPORAL_PORT_7233__ = temporalContainer.getMappedPort(7233);
