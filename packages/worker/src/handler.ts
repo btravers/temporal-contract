@@ -90,6 +90,85 @@ export interface WorkflowContext<
   info: WorkflowInfo;
 
   /**
+   * Define a signal handler within the workflow implementation
+   * Allows the signal handler to access workflow state
+   *
+   * @example
+   * ```ts
+   * implementation: async (context, args) => {
+   *   let currentValue = args.initialValue;
+   *
+   *   context.defineSignal('increment', async (signalArgs) => {
+   *     currentValue += signalArgs.amount;
+   *   });
+   *
+   *   // ... rest of workflow
+   * }
+   * ```
+   */
+  defineSignal: <K extends keyof TContract["workflows"][TWorkflowName]["signals"]>(
+    signalName: K,
+    handler: SignalHandlerImplementation<
+      TContract["workflows"][TWorkflowName]["signals"][K] extends SignalDefinition
+        ? TContract["workflows"][TWorkflowName]["signals"][K]
+        : never
+    >,
+  ) => void;
+
+  /**
+   * Define a query handler within the workflow implementation
+   * Allows the query handler to access workflow state
+   *
+   * @example
+   * ```ts
+   * implementation: async (context, args) => {
+   *   let currentValue = args.initialValue;
+   *
+   *   context.defineQuery('getCurrentValue', () => {
+   *     return { value: currentValue };
+   *   });
+   *
+   *   // ... rest of workflow
+   * }
+   * ```
+   */
+  defineQuery: <K extends keyof TContract["workflows"][TWorkflowName]["queries"]>(
+    queryName: K,
+    handler: QueryHandlerImplementation<
+      TContract["workflows"][TWorkflowName]["queries"][K] extends QueryDefinition
+        ? TContract["workflows"][TWorkflowName]["queries"][K]
+        : never
+    >,
+  ) => void;
+
+  /**
+   * Define an update handler within the workflow implementation
+   * Allows the update handler to access and modify workflow state
+   *
+   * @example
+   * ```ts
+   * implementation: async (context, args) => {
+   *   let currentValue = args.initialValue;
+   *
+   *   context.defineUpdate('multiply', async (updateArgs) => {
+   *     currentValue *= updateArgs.factor;
+   *     return { newValue: currentValue };
+   *   });
+   *
+   *   // ... rest of workflow
+   * }
+   * ```
+   */
+  defineUpdate: <K extends keyof TContract["workflows"][TWorkflowName]["updates"]>(
+    updateName: K,
+    handler: UpdateHandlerImplementation<
+      TContract["workflows"][TWorkflowName]["updates"][K] extends UpdateDefinition
+        ? TContract["workflows"][TWorkflowName]["updates"][K]
+        : never
+    >,
+  ) => void;
+
+  /**
    * Start a child workflow and return a typed handle with Future/Result pattern
    *
    * Supports both same-contract and cross-contract child workflows:
@@ -298,42 +377,6 @@ export interface DeclareWorkflowOptions<
    * ```
    */
   activityOptions?: ActivityOptions;
-  /**
-   * Signal handlers (if defined in workflow)
-   */
-  signals?: TContract["workflows"][TWorkflowName]["signals"] extends Record<
-    string,
-    SignalDefinition
-  >
-    ? {
-        [K in keyof TContract["workflows"][TWorkflowName]["signals"]]: SignalHandlerImplementation<
-          TContract["workflows"][TWorkflowName]["signals"][K]
-        >;
-      }
-    : never;
-  /**
-   * Query handlers (if defined in workflow)
-   */
-  queries?: TContract["workflows"][TWorkflowName]["queries"] extends Record<string, QueryDefinition>
-    ? {
-        [K in keyof TContract["workflows"][TWorkflowName]["queries"]]: QueryHandlerImplementation<
-          TContract["workflows"][TWorkflowName]["queries"][K]
-        >;
-      }
-    : never;
-  /**
-   * Update handlers (if defined in workflow)
-   */
-  updates?: TContract["workflows"][TWorkflowName]["updates"] extends Record<
-    string,
-    UpdateDefinition
-  >
-    ? {
-        [K in keyof TContract["workflows"][TWorkflowName]["updates"]]: UpdateHandlerImplementation<
-          TContract["workflows"][TWorkflowName]["updates"][K]
-        >;
-      }
-    : never;
 }
 
 /**
@@ -600,8 +643,7 @@ export function declareWorkflow<
 ): (
   args: WorkerInferInput<TContract["workflows"][TWorkflowName]>,
 ) => Promise<WorkerInferOutput<TContract["workflows"][TWorkflowName]>> {
-  const { workflowName, contract, implementation, activityOptions, signals, queries, updates } =
-    options;
+  const { workflowName, contract, implementation, activityOptions } = options;
 
   // Get the workflow definition from the contract
   const definition = contract.workflows[
@@ -620,108 +662,6 @@ export function declareWorkflow<
     const validatedInput = inputResult.value as WorkerInferInput<
       TContract["workflows"][TWorkflowName]
     >;
-
-    // Register signal handlers
-    if (definition.signals && signals) {
-      const signalDefs = definition.signals as Record<string, SignalDefinition>;
-      const signalHandlers = signals as Record<string, unknown>;
-
-      for (const [signalName, signalDef] of Object.entries(signalDefs)) {
-        const handler = signalHandlers[signalName];
-        if (handler) {
-          const signal = defineSignal(signalName);
-          setHandler(signal, async (...args: unknown[]) => {
-            // Extract single parameter (Temporal passes as args array)
-            const input = args.length === 1 ? args[0] : args;
-            const inputResult = await signalDef.input["~standard"].validate(input);
-            if (inputResult.issues) {
-              throw new SignalInputValidationError(signalName, inputResult.issues);
-            }
-            await (handler as SignalHandlerImplementation<SignalDefinition>)(inputResult.value);
-          });
-        }
-      }
-    }
-
-    // Register query handlers
-    if (definition.queries && queries) {
-      const queryDefs = definition.queries as Record<string, QueryDefinition>;
-      const queryHandlers = queries as Record<string, unknown>;
-
-      for (const [queryName, queryDef] of Object.entries(queryDefs)) {
-        const handler = queryHandlers[queryName];
-        if (handler) {
-          const query = defineQuery(queryName);
-          setHandler(query, (...args: unknown[]) => {
-            // Extract single parameter (Temporal passes as args array)
-            const input = args.length === 1 ? args[0] : args;
-            // Note: Query handlers must be synchronous, so we need to handle validation synchronously
-            // Standard Schema validate can return sync or async results
-            const inputResult = queryDef.input["~standard"].validate(input);
-
-            // Handle both sync and async validation results
-            if (inputResult instanceof Promise) {
-              throw new Error(
-                `Query "${queryName}" validation must be synchronous. Use a schema library that supports synchronous validation for queries.`,
-              );
-            }
-
-            if (inputResult.issues) {
-              throw new QueryInputValidationError(queryName, inputResult.issues);
-            }
-
-            const result = (handler as QueryHandlerImplementation<QueryDefinition>)(
-              inputResult.value,
-            );
-
-            const outputResult = queryDef.output["~standard"].validate(result);
-            if (outputResult instanceof Promise) {
-              throw new Error(
-                `Query "${queryName}" output validation must be synchronous. Use a schema library that supports synchronous validation for queries.`,
-              );
-            }
-
-            if (outputResult.issues) {
-              throw new QueryOutputValidationError(queryName, outputResult.issues);
-            }
-
-            return outputResult.value;
-          });
-        }
-      }
-    }
-
-    // Register update handlers
-    if (definition.updates && updates) {
-      const updateDefs = definition.updates as Record<string, UpdateDefinition>;
-      const updateHandlers = updates as Record<string, unknown>;
-
-      for (const [updateName, updateDef] of Object.entries(updateDefs)) {
-        const handler = updateHandlers[updateName];
-        if (handler) {
-          const update = defineUpdate(updateName);
-          setHandler(update, async (...args: unknown[]) => {
-            // Extract single parameter (Temporal passes as args array)
-            const input = args.length === 1 ? args[0] : args;
-            const inputResult = await updateDef.input["~standard"].validate(input);
-            if (inputResult.issues) {
-              throw new UpdateInputValidationError(updateName, inputResult.issues);
-            }
-
-            const result = await (handler as UpdateHandlerImplementation<UpdateDefinition>)(
-              inputResult.value,
-            );
-
-            const outputResult = await updateDef.output["~standard"].validate(result);
-            if (outputResult.issues) {
-              throw new UpdateOutputValidationError(updateName, outputResult.issues);
-            }
-
-            return outputResult.value;
-          });
-        }
-      }
-    }
 
     // Create activities proxy if activities are defined
     let contextActivities: unknown = {};
@@ -977,6 +917,145 @@ export function declareWorkflow<
       });
     }
 
+    // Context methods for defining signals, queries, and updates
+    function createDefineSignal<K extends keyof TContract["workflows"][TWorkflowName]["signals"]>(
+      signalName: K,
+      handler: SignalHandlerImplementation<
+        TContract["workflows"][TWorkflowName]["signals"][K] extends SignalDefinition
+          ? TContract["workflows"][TWorkflowName]["signals"][K]
+          : never
+      >,
+    ): void {
+      if (!definition.signals) {
+        throw new Error(
+          `Signal "${String(signalName)}" cannot be defined: workflow "${String(workflowName)}" has no signals in its contract`,
+        );
+      }
+
+      const signalDef = (definition.signals as Record<string, SignalDefinition>)[
+        signalName as string
+      ];
+      if (!signalDef) {
+        throw new Error(
+          `Signal "${String(signalName)}" not found in workflow "${String(workflowName)}" contract`,
+        );
+      }
+
+      const signal = defineSignal(signalName as string);
+      setHandler(signal, async (...args: unknown[]) => {
+        // Extract single parameter (Temporal passes as args array)
+        const input = args.length === 1 ? args[0] : args;
+        const inputResult = await signalDef.input["~standard"].validate(input);
+        if (inputResult.issues) {
+          throw new SignalInputValidationError(signalName as string, inputResult.issues);
+        }
+        await (handler as SignalHandlerImplementation<SignalDefinition>)(inputResult.value);
+      });
+    }
+
+    function createDefineQuery<K extends keyof TContract["workflows"][TWorkflowName]["queries"]>(
+      queryName: K,
+      handler: QueryHandlerImplementation<
+        TContract["workflows"][TWorkflowName]["queries"][K] extends QueryDefinition
+          ? TContract["workflows"][TWorkflowName]["queries"][K]
+          : never
+      >,
+    ): void {
+      if (!definition.queries) {
+        throw new Error(
+          `Query "${String(queryName)}" cannot be defined: workflow "${String(workflowName)}" has no queries in its contract`,
+        );
+      }
+
+      const queryDef = (definition.queries as Record<string, QueryDefinition>)[queryName as string];
+      if (!queryDef) {
+        throw new Error(
+          `Query "${String(queryName)}" not found in workflow "${String(workflowName)}" contract`,
+        );
+      }
+
+      const query = defineQuery(queryName as string);
+      setHandler(query, (...args: unknown[]) => {
+        // Extract single parameter (Temporal passes as args array)
+        const input = args.length === 1 ? args[0] : args;
+        // Note: Query handlers must be synchronous, so we need to handle validation synchronously
+        const inputResult = queryDef.input["~standard"].validate(input);
+
+        // Handle both sync and async validation results
+        if (inputResult instanceof Promise) {
+          throw new Error(
+            `Query "${String(queryName)}" validation must be synchronous. Use a schema library that supports synchronous validation for queries.`,
+          );
+        }
+
+        if (inputResult.issues) {
+          throw new QueryInputValidationError(queryName as string, inputResult.issues);
+        }
+
+        const result = (handler as unknown as QueryHandlerImplementation<QueryDefinition>)(
+          inputResult.value,
+        );
+
+        const outputResult = queryDef.output["~standard"].validate(result);
+        if (outputResult instanceof Promise) {
+          throw new Error(
+            `Query "${String(queryName)}" output validation must be synchronous. Use a schema library that supports synchronous validation for queries.`,
+          );
+        }
+
+        if (outputResult.issues) {
+          throw new QueryOutputValidationError(queryName as string, outputResult.issues);
+        }
+
+        return outputResult.value;
+      });
+    }
+
+    function createDefineUpdate<K extends keyof TContract["workflows"][TWorkflowName]["updates"]>(
+      updateName: K,
+      handler: UpdateHandlerImplementation<
+        TContract["workflows"][TWorkflowName]["updates"][K] extends UpdateDefinition
+          ? TContract["workflows"][TWorkflowName]["updates"][K]
+          : never
+      >,
+    ): void {
+      if (!definition.updates) {
+        throw new Error(
+          `Update "${String(updateName)}" cannot be defined: workflow "${String(workflowName)}" has no updates in its contract`,
+        );
+      }
+
+      const updateDef = (definition.updates as Record<string, UpdateDefinition>)[
+        updateName as string
+      ];
+      if (!updateDef) {
+        throw new Error(
+          `Update "${String(updateName)}" not found in workflow "${String(workflowName)}" contract`,
+        );
+      }
+
+      const update = defineUpdate(updateName as string);
+      setHandler(update, async (...args: unknown[]) => {
+        // Extract single parameter (Temporal passes as args array)
+        const input = args.length === 1 ? args[0] : args;
+        const inputResult = await updateDef.input["~standard"].validate(input);
+        if (inputResult.issues) {
+          throw new UpdateInputValidationError(updateName as string, inputResult.issues);
+        }
+
+        const result = await (handler as unknown as UpdateHandlerImplementation<UpdateDefinition>)(
+          inputResult.value,
+        );
+
+        const outputResult = await updateDef.output["~standard"].validate(result);
+        if (outputResult.issues) {
+          throw new UpdateOutputValidationError(updateName as string, outputResult.issues);
+        }
+
+        return outputResult.value;
+      });
+    }
+
     // Create workflow context
     const context: WorkflowContext<TContract, TWorkflowName> = {
       activities: contextActivities as WorkerInferWorkflowContextActivities<
@@ -986,6 +1065,9 @@ export function declareWorkflow<
       info: workflowInfo(),
       startChildWorkflow: createStartChildWorkflow,
       executeChildWorkflow: createExecuteChildWorkflow,
+      defineSignal: createDefineSignal as WorkflowContext<TContract, TWorkflowName>["defineSignal"],
+      defineQuery: createDefineQuery as WorkflowContext<TContract, TWorkflowName>["defineQuery"],
+      defineUpdate: createDefineUpdate as WorkflowContext<TContract, TWorkflowName>["defineUpdate"],
     };
 
     // Execute workflow (pass validated input as tuple)

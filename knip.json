@@ -6,30 +6,35 @@
     },
     "packages/*": {
       "entry": ["src/index.ts"],
-      "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
+      "project": ["src/**/*.ts", "!src/**/*.spec.ts", "!src/**/*.integration.spec.ts"]
     },
     "packages/boxed": {
       "ignoreDependencies": ["@swan-io/boxed"]
     },
     "packages/worker": {
       "entry": ["src/activity.ts", "src/workflow.ts"],
-      "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
+      "project": [
+        "src/**/*.ts",
+        "!src/**/*.spec.ts",
+        "!src/**/*.integration.spec.ts",
+        "!src/__tests__/**"
+      ]
     },
     "packages/testing": {
       "entry": ["src/extension.ts", "src/global-setup.ts"],
-      "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
+      "project": ["src/**/*.ts", "!src/**/*.spec.ts", "!src/**/*.integration.spec.ts"]
     },
     "samples/order-processing-contract": {
       "entry": ["src/index.ts"],
-      "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
+      "project": ["src/**/*.ts", "!src/**/*.spec.ts", "!src/**/*.integration.spec.ts"]
     },
     "samples/order-processing-worker": {
       "entry": ["src/application/worker.ts", "src/application/workflows.ts"],
-      "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
+      "project": ["src/**/*.ts", "!src/**/*.spec.ts", "!src/**/*.integration.spec.ts"]
     },
     "samples/order-processing-client": {
       "entry": ["src/client.ts"],
-      "project": ["src/**/*.ts", "!src/**/*.spec.ts"]
+      "project": ["src/**/*.ts", "!src/**/*.spec.ts", "!src/**/*.integration.spec.ts"]
     },
     "tools/*": {
       "entry": ["*.json"]

@@ -257,13 +257,32 @@ describe("Order Processing Workflow - Integration Tests", () => {
     };
 
     // WHEN
-    const execution = client.executeWorkflow("processOrder", {
+    const execution = await client.executeWorkflow("processOrder", {
       workflowId: invalidOrder.orderId,
       args: invalidOrder as Order,
     });
 
     // THEN
-    await expect(execution).rejects.toThrow();
+    expect(execution).toEqual(
+      expect.objectContaining({
+        tag: "Error",
+        error: expect.objectContaining({
+          name: "WorkflowValidationError",
+          workflowName: "processOrder",
+          direction: "input",
+          issues: [
+            {
+              origin: "number",
+              code: "too_small",
+              minimum: 0,
+              inclusive: false,
+              path: ["items", 0, "quantity"],
+              message: "Too small: expected number to be >0",
+            },
+          ],
+        }),
+      }),
+    );
   });
 
   it("should handle payment failure", async ({ client }) => {
@@ -296,9 +315,10 @@ describe("Order Processing Workflow - Integration Tests", () => {
       expect.objectContaining({
         tag: "Ok",
         value: {
-          orderId: order.orderId,
           status: "failed",
-          failureReason: "Payment failed",
+          errorCode: "PAYMENT_FAILED",
+          failureReason: "Payment was declined",
+          orderId: order.orderId,
         },
       }),
     );
