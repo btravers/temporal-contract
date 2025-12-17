@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev:worker": "tsx watch src/application/worker.ts",
-    "test": "echo 'Integration tests skipped - require Docker containers'",
-    "test:watch": "echo 'Integration tests skipped - require Docker containers'",
+    "test:integration": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

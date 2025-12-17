@@ -5,8 +5,6 @@
   "type": "module",
   "scripts": {
     "dev": "tsx src/client.ts",
-    "test": "echo 'Tests skipped - to be fixed in future PR'",
-    "test:watch": "echo 'Tests skipped - to be fixed in future PR'",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

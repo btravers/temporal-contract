@@ -37,7 +37,6 @@ export default async function setup({ provide }: TestProject) {
       timeout: 1_000,
     })
     .withWaitStrategy(Wait.forHealthCheck())
-    .withStartupTimeout(120_000)
     .start();
 
   console.log("✅ PostgreSQL container started");
