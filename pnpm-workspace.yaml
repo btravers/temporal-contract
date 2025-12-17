@@ -10,9 +10,9 @@ catalog:
   "@changesets/cli": 2.29.8
   "@commitlint/cli": 20.2.0
   "@commitlint/config-conventional": 20.2.0
-  "@nestjs/common": 10.4.20
-  "@nestjs/core": 10.4.20
-  "@nestjs/testing": 10.4.20
+  "@nestjs/common": 11.1.9
+  "@nestjs/core": 11.1.9
+  "@nestjs/testing": 11.1.9
   "@standard-schema/spec": 1.1.0
   "@swan-io/boxed": 3.2.1
   "@temporalio/client": 1.13.2
