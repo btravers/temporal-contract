@@ -23,6 +23,3 @@ export type {
   ActivityHandler,
   WorkflowActivityHandler,
 } from "./types.js";
-
-// Re-export boxed utilities for convenience in activities
-export { Result, Future, Option, AsyncData } from "@swan-io/boxed";

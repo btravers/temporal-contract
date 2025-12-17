@@ -156,7 +156,7 @@ Clean, typed activity implementations with Result/Future pattern:
 
 ```typescript
 import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
-import { Future, Result } from '@swan-io/boxed';
+import { Future, Result } from '@temporal-contract/boxed';
 import { orderContract } from '../contracts/order.contract';
 import { emailService } from '../infrastructure/email.service';
 import { paymentService } from '../infrastructure/payment.service';

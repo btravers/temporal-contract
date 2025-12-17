@@ -1,4 +1,4 @@
-import { Future, Result } from "@swan-io/boxed";
+import { Future, Result } from "@temporal-contract/boxed";
 import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
 import { orderProcessingContract } from "@temporal-contract/sample-order-processing-contract";
 import {

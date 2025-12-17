@@ -5,7 +5,7 @@ Type-safe worker implementation with Result/Future pattern for explicit error ha
 ## Installation
 
 ```bash
-pnpm add @temporal-contract/worker @swan-io/boxed
+pnpm add @temporal-contract/worker @temporal-contract/boxed
 ```
 
 ## Features

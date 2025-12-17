@@ -1,4 +1,4 @@
-import { Future, Result } from "@swan-io/boxed";
+import { Future, Result } from "@temporal-contract/boxed";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import {
   ActivityOptions,
@@ -411,7 +411,7 @@ function createValidatedActivities<
  * @example
  * ```ts
  * import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
- * import { Result, Future } from '@swan-io/boxed';
+ * import { Result, Future } from '@temporal-contract/boxed';
  * import myContract from './contract';
  *
  * export const activitiesHandler = declareActivitiesHandler({

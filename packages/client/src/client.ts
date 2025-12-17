@@ -14,7 +14,7 @@ import type {
   ClientInferWorkflowSignals,
   ClientInferWorkflowUpdates,
 } from "./types.js";
-import { Future, Result } from "@swan-io/boxed";
+import { Future, Result } from "@temporal-contract/boxed";
 import {
   WorkflowNotFoundError,
   WorkflowValidationError,

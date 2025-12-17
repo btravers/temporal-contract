@@ -1,10 +1,8 @@
 {
-  "name": "@temporal-contract/client",
+  "name": "@temporal-contract/boxed",
   "version": "0.0.4",
-  "description": "Client utilities with Result/Future pattern for consuming temporal-contract workflows",
+  "description": "Custom Future and Result implementation for Temporal workflows",
   "keywords": [
-    "client",
-    "contract",
     "future",
     "result",
     "temporal",
@@ -17,10 +15,10 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/btravers/temporal-contract.git",
-    "directory": "packages/client"
+    "directory": "packages/boxed"
   },
   "license": "MIT",
-  "author": "Benoit TRAVERS <benoit.travers.frgmail.com>",
+  "author": "Benoit TRAVERS <benoit.travers@gmail.com>",
   "type": "module",
   "exports": {
     ".": {
@@ -33,6 +31,16 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./interop": {
+      "import": {
+        "types": "./dist/interop.d.mts",
+        "default": "./dist/interop.mjs"
+      },
+      "require": {
+        "types": "./dist/interop.d.cts",
+        "default": "./dist/interop.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",
@@ -42,28 +50,27 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown src/index.ts --format cjs,esm --dts --clean",
-    "dev": "tsdown src/index.ts --format cjs,esm --dts --watch",
+    "build": "tsdown src/index.ts src/interop.ts --format cjs,esm --dts --clean",
+    "dev": "tsdown src/index.ts src/interop.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@standard-schema/spec": "catalog:",
-    "@temporal-contract/boxed": "workspace:*",
-    "@temporal-contract/contract": "workspace:*"
-  },
   "devDependencies": {
+    "@swan-io/boxed": "catalog:",
     "@temporal-contract/tsconfig": "workspace:*",
-    "@temporalio/client": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "zod": "catalog:"
+    "vitest": "catalog:"
   },
   "peerDependencies": {
-    "@temporalio/client": "^1"
+    "@swan-io/boxed": "^3"
+  },
+  "peerDependenciesMeta": {
+    "@swan-io/boxed": {
+      "optional": true
+    }
   }
 }
