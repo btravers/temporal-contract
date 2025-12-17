@@ -94,7 +94,7 @@ export const parentWorkflow = declareWorkflow({
       const childResult = await executeChildWorkflow(testContract, "childWorkflow", {
         workflowId: `child-${i}`,
         args: { id: i },
-      }).toPromise();
+      });
 
       if (childResult.isOk()) {
         results.push(childResult.value.message);
