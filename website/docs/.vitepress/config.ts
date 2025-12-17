@@ -31,6 +31,7 @@ export default defineConfig({
           text: "Implementation",
           items: [
             { text: "Worker Implementation", link: "/guide/worker-implementation" },
+            { text: "NestJS Integration", link: "/guide/nestjs-integration" },
             { text: "Entry Points Architecture", link: "/guide/entry-points" },
             { text: "Activity Handler Types", link: "/guide/activity-handlers" },
           ],
@@ -47,6 +48,7 @@ export default defineConfig({
             { text: "Overview", link: "/api/" },
             { text: "@temporal-contract/contract", link: "/api/contract" },
             { text: "@temporal-contract/worker", link: "/api/worker" },
+            { text: "@temporal-contract/worker-nestjs", link: "/api/worker-nestjs" },
             { text: "@temporal-contract/client", link: "/api/client" },
             { text: "@temporal-contract/testing", link: "/api/testing" },
           ],

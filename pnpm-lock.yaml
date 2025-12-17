@@ -15,6 +15,15 @@ catalogs:
     '@commitlint/config-conventional':
       specifier: 20.2.0
       version: 20.2.0
+    '@nestjs/common':
+      specifier: 10.4.20
+      version: 10.4.20
+    '@nestjs/core':
+      specifier: 10.4.20
+      version: 10.4.20
+    '@nestjs/testing':
+      specifier: 10.4.20
+      version: 10.4.20
     '@standard-schema/spec':
       specifier: 1.1.0
       version: 1.1.0
@@ -57,6 +66,9 @@ catalogs:
     pino-pretty:
       specifier: 13.1.3
       version: 13.1.3
+    reflect-metadata:
+      specifier: 0.2.2
+      version: 0.2.2
     sort-package-json:
       specifier: 3.6.0
       version: 3.6.0
@@ -292,10 +304,10 @@ importers:
   packages/worker-nestjs:
     dependencies:
       '@nestjs/common':
-        specifier: ^10.4.15
+        specifier: 'catalog:'
         version: 10.4.20(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/core':
-        specifier: ^10.4.15
+        specifier: 'catalog:'
         version: 10.4.20(@nestjs/common@10.4.20(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@standard-schema/spec':
         specifier: 'catalog:'
@@ -310,12 +322,18 @@ importers:
         specifier: workspace:*
         version: link:../worker
       reflect-metadata:
-        specifier: ^0.2.2
+        specifier: 'catalog:'
         version: 0.2.2
     devDependencies:
       '@nestjs/testing':
-        specifier: ^10.4.15
+        specifier: 'catalog:'
         version: 10.4.20(@nestjs/common@10.4.20(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.20(@nestjs/common@10.4.20(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))
+      '@temporal-contract/client':
+        specifier: workspace:*
+        version: link:../client
+      '@temporal-contract/testing':
+        specifier: workspace:*
+        version: link:../testing
       '@temporal-contract/tsconfig':
         specifier: workspace:*
         version: link:../../tools/tsconfig
