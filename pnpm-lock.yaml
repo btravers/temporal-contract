@@ -252,9 +252,6 @@ importers:
         specifier: workspace:*
         version: link:../contract
     devDependencies:
-      '@swan-io/boxed':
-        specifier: 'catalog:'
-        version: 3.2.1(typescript@5.9.3)
       '@temporal-contract/client':
         specifier: workspace:*
         version: link:../client

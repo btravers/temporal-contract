@@ -65,7 +65,6 @@
     "@temporal-contract/contract": "workspace:*"
   },
   "devDependencies": {
-    "@swan-io/boxed": "catalog:",
     "@temporal-contract/client": "workspace:*",
     "@temporal-contract/testing": "workspace:*",
     "@temporal-contract/tsconfig": "workspace:*",
