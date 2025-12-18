@@ -70,8 +70,10 @@
   },
   "devDependencies": {
     "@nestjs/testing": "catalog:",
+    "@temporal-contract/client": "workspace:*",
     "@temporal-contract/testing": "workspace:*",
     "@temporal-contract/tsconfig": "workspace:*",
+    "@temporalio/worker": "catalog:",
     "@temporalio/workflow": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",

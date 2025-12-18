@@ -4,11 +4,11 @@ export default defineConfig({
   test: {
     globalSetup: "@temporal-contract/testing/global-setup",
     reporters: ["default"],
+    include: ["src/**/*.integration.spec.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "json-summary", "html"],
       include: ["src/**"],
     },
-    passWithNoTests: true, // fixme add some tests
   },
 });

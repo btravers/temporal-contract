@@ -23,6 +23,5 @@ export default defineConfig({
         },
       },
     ],
-    passWithNoTests: true, // fixme add proper tests later
   },
 });
