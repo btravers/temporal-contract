@@ -9,5 +9,6 @@ export default defineConfig({
       reporter: ["text", "json", "json-summary", "html"],
       include: ["src/**"],
     },
+    passWithNoTests: true, // fixme add some tests
   },
 });
