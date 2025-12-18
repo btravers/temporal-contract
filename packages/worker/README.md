@@ -34,6 +34,26 @@ export const processOrder = declareWorkflow({
     return { success: true };
   }
 });
+
+// worker.ts
+import { createWorker } from '@temporal-contract/worker/worker';
+import { activities } from './activities';
+import myContract from './contract';
+
+async function run() {
+  const worker = await createWorker({
+    contract: myContract,
+    workflowsPath: require.resolve('./workflows'),
+    activities,
+    connectionOptions: {
+      address: 'localhost:7233',
+    },
+  });
+
+  await worker.run();
+}
+
+run().catch(console.error);
 ```
 
 ### Child Workflows
