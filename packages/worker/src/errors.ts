@@ -18,14 +18,8 @@ abstract class WorkerError extends Error {
  * Error thrown when an activity definition is not found in the contract
  */
 export class ActivityDefinitionNotFoundError extends WorkerError {
-  constructor(
-    public readonly activityName: string,
-    public readonly availableDefinitions: readonly string[] = [],
-  ) {
-    const available = availableDefinitions.length > 0 ? availableDefinitions.join(", ") : "none";
-    super(
-      `Activity definition not found for: "${activityName}". Available activities: ${available}`,
-    );
+  constructor(public readonly activityName: string) {
+    super(`Activity definition not found for: "${activityName}"`);
     this.name = "ActivityDefinitionNotFoundError";
   }
 }

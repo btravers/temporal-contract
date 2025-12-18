@@ -138,11 +138,8 @@ export function declareWorkflow<
   ] as TContract["workflows"][TWorkflowName];
 
   return async (args) => {
-    // Extract workflow input (Temporal passes arguments as array)
-    const singleArg = Array.isArray(args) ? args[0] : args;
-
     // Validate workflow input
-    const inputResult = await definition.input["~standard"].validate(singleArg);
+    const inputResult = await definition.input["~standard"].validate(args);
     if (inputResult.issues) {
       throw new WorkflowInputValidationError(String(workflowName), inputResult.issues);
     }

@@ -4,7 +4,7 @@
   "description": "Basic order processing worker using temporal-contract",
   "type": "module",
   "scripts": {
-    "dev:worker": "tsx watch src/application/worker.ts",
+    "dev": "tsx watch src/application/worker.ts",
     "test:integration": "vitest run",
     "typecheck": "tsc --noEmit"
   },

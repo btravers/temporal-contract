@@ -1,9 +1,5 @@
 // Entry point for activities
-import {
-  ActivityDefinition,
-  ContractDefinition,
-  WorkflowDefinition,
-} from "@temporal-contract/contract";
+import { ActivityDefinition, ContractDefinition } from "@temporal-contract/contract";
 import { Future, Result } from "@temporal-contract/boxed";
 import { WorkerInferInput, WorkerInferOutput } from "./types.js";
 import {
@@ -51,53 +47,60 @@ type BoxedActivityImplementation<TActivity extends ActivityDefinition> = (
 /**
  * Map of all activity implementations for a contract (global + all workflow-specific)
  */
-type ActivityImplementations<T extends ContractDefinition> =
+type ContractBoxedActivitiesImplementations<TContract extends ContractDefinition> =
   // Global activities
-  (T["activities"] extends Record<string, ActivityDefinition>
-    ? {
-        [K in keyof T["activities"]]: BoxedActivityImplementation<T["activities"][K]>;
-      }
+  (TContract["activities"] extends Record<string, ActivityDefinition>
+    ? BoxedActivitiesImplementations<TContract["activities"]>
     : {}) &
     // All workflow-specific activities merged
-    UnionToIntersection<
-      {
-        [K in keyof T["workflows"]]: T["workflows"][K]["activities"] extends Record<
-          string,
-          ActivityDefinition
-        >
-          ? {
-              [A in keyof T["workflows"][K]["activities"]]: BoxedActivityImplementation<
-                T["workflows"][K]["activities"][A]
-              >;
-            }
-          : {};
-      }[keyof T["workflows"]]
-    >;
+    {
+      [TWorkflow in keyof TContract["workflows"]]: TContract["workflows"][TWorkflow]["activities"] extends Record<
+        string,
+        ActivityDefinition
+      >
+        ? BoxedActivitiesImplementations<TContract["workflows"][TWorkflow]["activities"]>
+        : {};
+    };
 
-/**
- * Utility type to convert union to intersection
- */
-type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (
-  k: infer I,
-) => void
-  ? I
-  : never;
+type BoxedActivitiesImplementations<TActivities extends Record<string, ActivityDefinition>> = {
+  [K in keyof TActivities]: BoxedActivityImplementation<TActivities[K]>;
+};
 
 /**
  * Options for creating activities handler
  */
-interface DeclareActivitiesHandlerOptions<T extends ContractDefinition> {
-  contract: T;
-  activities: ActivityImplementations<T>;
+interface DeclareActivitiesHandlerOptions<TContract extends ContractDefinition> {
+  contract: TContract;
+  activities: ContractBoxedActivitiesImplementations<TContract>;
 }
+
+type ActivityImplementation<TActivity extends ActivityDefinition> = (
+  args: WorkerInferInput<TActivity>,
+) => Promise<WorkerInferOutput<TActivity>>;
+
+type ActivitiesImplementations<TActivities extends Record<string, ActivityDefinition>> = {
+  [K in keyof TActivities]: ActivityImplementation<TActivities[K]>;
+};
 
 /**
  * Activities handler ready for Temporal Worker
+ *
+ * Flat structure: all activities (global + all workflow-specific) are at the root level
  */
-interface ActivitiesHandler<T extends ContractDefinition> {
-  contract: T;
-  activities: Record<string, (...args: unknown[]) => Promise<unknown>>;
-}
+type ActivitiesHandler<TContract extends ContractDefinition> =
+  // Global activities
+  (TContract["activities"] extends Record<string, ActivityDefinition>
+    ? ActivitiesImplementations<TContract["activities"]>
+    : {}) &
+    // All workflow-specific activities merged at root level (flat)
+    {
+      [TWorkflow in keyof TContract["workflows"]]: TContract["workflows"][TWorkflow]["activities"] extends Record<
+        string,
+        ActivityDefinition
+      >
+        ? ActivitiesImplementations<TContract["workflows"][TWorkflow]["activities"]>
+        : {};
+    }[keyof TContract["workflows"]];
 
 /**
  * Create a typed activities handler with automatic validation and Result pattern
@@ -117,7 +120,7 @@ interface ActivitiesHandler<T extends ContractDefinition> {
  * import { Result, Future } from '@temporal-contract/boxed';
  * import myContract from './contract';
  *
- * export const activitiesHandler = declareActivitiesHandler({
+ * export const activities = declareActivitiesHandler({
  *   contract: myContract,
  *   activities: {
  *     // Activity returns Result instead of throwing
@@ -147,52 +150,26 @@ interface ActivitiesHandler<T extends ContractDefinition> {
  *
  * const worker = await Worker.create({
  *   workflowsPath: require.resolve('./workflows'),
- *   activities: activitiesHandler.activities,
- *   taskQueue: activitiesHandler.contract.taskQueue,
+ *   activities: activities,
+ *   taskQueue: contract.taskQueue,
  * });
  * ```
  */
-export function declareActivitiesHandler<T extends ContractDefinition>(
-  options: DeclareActivitiesHandlerOptions<T>,
-): ActivitiesHandler<T> {
+export function declareActivitiesHandler<TContract extends ContractDefinition>(
+  options: DeclareActivitiesHandlerOptions<TContract>,
+): ActivitiesHandler<TContract> {
   const { contract, activities } = options;
 
   // Prepare Temporal-compatible activities with validation and Result unwrapping
-  const wrappedActivities: Record<string, (...args: unknown[]) => Promise<unknown>> = {};
+  const wrappedActivities = {} as ActivitiesHandler<TContract>;
 
-  // Collect all available activity definitions from contract
-  const allDefinitions: string[] = [];
-  if (contract.activities) {
-    allDefinitions.push(...Object.keys(contract.activities));
-  }
-  for (const workflow of Object.values(contract.workflows) as WorkflowDefinition[]) {
-    if (workflow.activities) {
-      allDefinitions.push(...Object.keys(workflow.activities));
-    }
-  }
-
-  for (const [activityName, activityImpl] of Object.entries(activities)) {
-    // Locate activity definition (global or workflow-specific)
-    let activityDef: ActivityDefinition | undefined;
-
-    // First, check global activities
-    if (contract.activities?.[activityName]) {
-      activityDef = contract.activities[activityName];
-    } else {
-      // Then, check workflow-specific activities
-      for (const workflow of Object.values(contract.workflows) as WorkflowDefinition[]) {
-        if (workflow.activities?.[activityName]) {
-          activityDef = workflow.activities[activityName];
-          break;
-        }
-      }
-    }
-
-    if (!activityDef) {
-      throw new ActivityDefinitionNotFoundError(activityName, allDefinitions);
-    }
-
-    wrappedActivities[activityName] = async (...args: unknown[]) => {
+  // Helper to create a wrapped implementation from a definition and impl
+  function makeWrapped(
+    activityName: string,
+    activityDef: ActivityDefinition,
+    activityImpl: (args: unknown) => Future<Result<unknown, ActivityError>>,
+  ) {
+    return async (...args: unknown[]) => {
       // Extract single parameter (Temporal passes arguments as an array)
       const input = args.length === 1 ? args[0] : args;
 
@@ -203,9 +180,7 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
       }
 
       // Execute boxed activity (returns Future<Result<T, ActivityError>>)
-      const futureResult = (
-        activityImpl as (args: unknown) => Future<Result<unknown, ActivityError>>
-      )(inputResult.value);
+      const futureResult = activityImpl(inputResult.value);
 
       // Await Future and unwrap Result
       const result = await futureResult;
@@ -225,8 +200,56 @@ export function declareActivitiesHandler<T extends ContractDefinition>(
     };
   }
 
-  return {
-    contract,
-    activities: wrappedActivities,
-  };
+  // 1) Wrap global activities defined directly under contract.activities
+  if (contract.activities) {
+    for (const [activityName, impl] of Object.entries(activities)) {
+      // Skip workflow namespaces if present at root
+      if (contract.workflows && activityName in contract.workflows) {
+        continue;
+      }
+
+      const activityDef = contract.activities[activityName];
+      if (!activityDef) {
+        throw new ActivityDefinitionNotFoundError(activityName);
+      }
+
+      // Assign wrapped global activity
+      (wrappedActivities as Record<string, unknown>)[activityName] = makeWrapped(
+        activityName,
+        activityDef,
+        impl as (args: unknown) => Future<Result<unknown, ActivityError>>,
+      );
+    }
+  }
+
+  // 2) Wrap workflow-scoped activities at root level (flat)
+  if (contract.workflows) {
+    for (const [workflowName, workflowDef] of Object.entries(contract.workflows)) {
+      const wfActivitiesImpl = (activities as Record<string, unknown>)[workflowName] as
+        | Record<string, unknown>
+        | undefined;
+      if (!wfActivitiesImpl) {
+        // If no implementations provided for this workflow, skip (TypeScript typing should enforce completeness for declared ones)
+        continue;
+      }
+
+      const wfDefs = workflowDef.activities ?? {};
+
+      for (const [activityName, impl] of Object.entries(wfActivitiesImpl)) {
+        const activityDef = wfDefs[activityName];
+        if (!activityDef) {
+          throw new ActivityDefinitionNotFoundError(`${workflowName}.${activityName}`);
+        }
+
+        // Assign workflow activity directly at root level (flat structure)
+        (wrappedActivities as Record<string, unknown>)[activityName] = makeWrapped(
+          `${workflowName}.${activityName}`,
+          activityDef,
+          impl as (args: unknown) => Future<Result<unknown, ActivityError>>,
+        );
+      }
+    }
+  }
+
+  return wrappedActivities;
 }

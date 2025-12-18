@@ -6,7 +6,7 @@ import {
   orderProcessingContract,
   OrderSchema,
 } from "@temporal-contract/sample-order-processing-contract";
-import { activitiesHandler } from "./application/activities.js";
+import { activities } from "./application/activities.js";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { z } from "zod";
@@ -27,7 +27,7 @@ const it = baseIt.extend<{
         namespace: "default",
         taskQueue: orderProcessingContract.taskQueue,
         workflowsPath: workflowPath("application/workflows"),
-        activities: activitiesHandler.activities,
+        activities,
       });
 
       // Start worker in background

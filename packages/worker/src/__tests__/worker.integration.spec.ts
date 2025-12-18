@@ -25,7 +25,7 @@ const it = baseIt.extend<{
         namespace: "default",
         taskQueue: testContract.taskQueue,
         workflowsPath: workflowPath("test.workflows"),
-        activities: testActivitiesHandler.activities,
+        activities,
       });
 
       // Start worker in background
@@ -61,10 +61,38 @@ const it = baseIt.extend<{
 
 const logMessages: string[] = [];
 
-const testActivitiesHandler = declareActivitiesHandler({
+const activities = declareActivitiesHandler({
   contract: testContract,
   activities: {
-    // Global activities
+    simpleWorkflow: {},
+
+    workflowWithActivities: {
+      processPayment: ({ amount }) => {
+        return Future.value(
+          Result.Ok({
+            transactionId: `TXN-${amount}-${Date.now()}`,
+            success: amount > 0,
+          }),
+        );
+      },
+
+      validateOrder: ({ orderId }) => {
+        return Future.value(
+          Result.Ok({
+            valid: orderId.startsWith("ORD-"),
+          }),
+        );
+      },
+    },
+
+    interactiveWorkflow: {},
+
+    parentWorkflow: {},
+
+    childWorkflow: {},
+
+    workflowWithFailableActivity: {},
+
     logMessage: ({ message }) => {
       logMessages.push(message);
       return Future.value(Result.Ok({}));
@@ -81,24 +109,6 @@ const testActivitiesHandler = declareActivitiesHandler({
         );
       }
       return Future.value(Result.Ok({ success: true }));
-    },
-
-    // Workflow-specific activities
-    processPayment: ({ amount }) => {
-      return Future.value(
-        Result.Ok({
-          transactionId: `TXN-${amount}-${Date.now()}`,
-          success: amount > 0,
-        }),
-      );
-    },
-
-    validateOrder: ({ orderId }) => {
-      return Future.value(
-        Result.Ok({
-          valid: orderId.startsWith("ORD-"),
-        }),
-      );
     },
   },
 });

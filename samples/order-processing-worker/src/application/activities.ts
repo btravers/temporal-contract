@@ -40,10 +40,9 @@ import {
  *
  * Domain errors are wrapped in ActivityError to enable Temporal retry policies.
  */
-export const activitiesHandler = declareActivitiesHandler({
+export const activities = declareActivitiesHandler({
   contract: orderProcessingContract,
   activities: {
-    // Global activities
     log: ({ level, message }) => {
       loggerAdapter.log(level, message);
       return Future.value(Result.Ok(undefined));
@@ -62,60 +61,61 @@ export const activitiesHandler = declareActivitiesHandler({
       );
     },
 
-    // processOrder workflow activities
-    processPayment: ({ customerId, amount }) => {
-      return Future.fromPromise(processPaymentUseCase.execute(customerId, amount)).mapError(
-        (error) =>
-          new ActivityError(
-            "PAYMENT_FAILED",
-            error instanceof Error ? error.message : "Payment processing failed",
-            error,
-          ),
-      );
-    },
+    processOrder: {
+      processPayment: ({ customerId, amount }) => {
+        return Future.fromPromise(processPaymentUseCase.execute(customerId, amount)).mapError(
+          (error) =>
+            new ActivityError(
+              "PAYMENT_FAILED",
+              error instanceof Error ? error.message : "Payment processing failed",
+              error,
+            ),
+        );
+      },
 
-    reserveInventory: (items) => {
-      return Future.fromPromise(reserveInventoryUseCase.execute(items)).mapError(
-        (error) =>
-          new ActivityError(
-            "INVENTORY_RESERVATION_FAILED",
-            error instanceof Error ? error.message : "Inventory reservation failed",
-            error,
-          ),
-      );
-    },
+      reserveInventory: (items) => {
+        return Future.fromPromise(reserveInventoryUseCase.execute(items)).mapError(
+          (error) =>
+            new ActivityError(
+              "INVENTORY_RESERVATION_FAILED",
+              error instanceof Error ? error.message : "Inventory reservation failed",
+              error,
+            ),
+        );
+      },
 
-    releaseInventory: (reservationId) => {
-      return Future.fromPromise(releaseInventoryUseCase.execute(reservationId)).mapError(
-        (error) =>
-          new ActivityError(
-            "INVENTORY_RELEASE_FAILED",
-            error instanceof Error ? error.message : "Inventory release failed",
-            error,
-          ),
-      );
-    },
+      releaseInventory: (reservationId) => {
+        return Future.fromPromise(releaseInventoryUseCase.execute(reservationId)).mapError(
+          (error) =>
+            new ActivityError(
+              "INVENTORY_RELEASE_FAILED",
+              error instanceof Error ? error.message : "Inventory release failed",
+              error,
+            ),
+        );
+      },
 
-    createShipment: ({ orderId, customerId }) => {
-      return Future.fromPromise(createShipmentUseCase.execute(orderId, customerId)).mapError(
-        (error) =>
-          new ActivityError(
-            "SHIPMENT_CREATION_FAILED",
-            error instanceof Error ? error.message : "Shipment creation failed",
-            error,
-          ),
-      );
-    },
+      createShipment: ({ orderId, customerId }) => {
+        return Future.fromPromise(createShipmentUseCase.execute(orderId, customerId)).mapError(
+          (error) =>
+            new ActivityError(
+              "SHIPMENT_CREATION_FAILED",
+              error instanceof Error ? error.message : "Shipment creation failed",
+              error,
+            ),
+        );
+      },
 
-    refundPayment: (transactionId) => {
-      return Future.fromPromise(refundPaymentUseCase.execute(transactionId)).mapError(
-        (error) =>
-          new ActivityError(
-            "REFUND_FAILED",
-            error instanceof Error ? error.message : "Refund failed",
-            error,
-          ),
-      );
+      refundPayment: (transactionId) => {
+        return Future.fromPromise(refundPaymentUseCase.execute(transactionId)).mapError(
+          (error) =>
+            new ActivityError(
+              "REFUND_FAILED",
+              error instanceof Error ? error.message : "Refund failed",
+              error,
+            ),
+        );
+      },
     },
   },
 });
