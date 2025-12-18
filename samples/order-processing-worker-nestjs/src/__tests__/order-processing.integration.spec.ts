@@ -74,8 +74,8 @@ describe("Order Processing Worker NestJS - Integration Tests", () => {
         orderId: "ORD-123",
         customerId: "CUST-456",
         items: [
-          { productId: "PROD-1", quantity: 2 },
-          { productId: "PROD-2", quantity: 1 },
+          { productId: "PROD-1", quantity: 2, price: 50.0 },
+          { productId: "PROD-2", quantity: 1, price: 50.0 },
         ],
         totalAmount: 150.0,
       };
@@ -106,7 +106,7 @@ describe("Order Processing Worker NestJS - Integration Tests", () => {
       const input = {
         orderId: "ORD-789",
         customerId: "CUST-101",
-        items: [{ productId: "PROD-3", quantity: 1 }],
+        items: [{ productId: "PROD-3", quantity: 1, price: 50.0 }],
         totalAmount: 50.0,
       };
 
@@ -125,7 +125,7 @@ describe("Order Processing Worker NestJS - Integration Tests", () => {
       const input = {
         orderId: "ORD-456",
         customerId: "CUST-789",
-        items: [{ productId: "PROD-4", quantity: 3 }],
+        items: [{ productId: "PROD-4", quantity: 3, price: 66.67 }],
         totalAmount: 200.0,
       };
       const workflowId = `order-handle-${Date.now()}`;
@@ -169,8 +169,8 @@ describe("Order Processing Worker NestJS - Integration Tests", () => {
       const execution = await client.executeWorkflow("processOrder", {
         workflowId: `invalid-input-${Date.now()}`,
         args: invalidInput as Parameters<
-          (typeof orderProcessingContract)["workflows"]["processOrder"]["handler"]
-        >[0],
+          (typeof orderProcessingContract)["workflows"]["processOrder"]["implementation"]
+        >[1],
       });
 
       expect(execution).toEqual(
@@ -188,7 +188,7 @@ describe("Order Processing Worker NestJS - Integration Tests", () => {
       const input = {
         orderId: "ORD-VALIDATE",
         customerId: "CUST-VALIDATE",
-        items: [{ productId: "PROD-VALIDATE", quantity: 1 }],
+        items: [{ productId: "PROD-VALIDATE", quantity: 1, price: 75.0 }],
         totalAmount: 75.0,
       };
 
@@ -210,7 +210,7 @@ describe("Order Processing Worker NestJS - Integration Tests", () => {
       const input = {
         orderId: "ORD-DESC",
         customerId: "CUST-DESC",
-        items: [{ productId: "PROD-DESC", quantity: 1 }],
+        items: [{ productId: "PROD-DESC", quantity: 1, price: 100.0 }],
         totalAmount: 100.0,
       };
 
@@ -247,7 +247,7 @@ describe("Order Processing Worker NestJS - Integration Tests", () => {
       const input = {
         orderId: "ORD-HANDLE",
         customerId: "CUST-HANDLE",
-        items: [{ productId: "PROD-HANDLE", quantity: 1 }],
+        items: [{ productId: "PROD-HANDLE", quantity: 1, price: 300.0 }],
         totalAmount: 125.0,
       };
 
@@ -283,7 +283,7 @@ describe("Order Processing Worker NestJS - Integration Tests", () => {
       const input = {
         orderId: "ORD-DI-TEST",
         customerId: "CUST-DI-TEST",
-        items: [{ productId: "PROD-DI", quantity: 2 }],
+        items: [{ productId: "PROD-DI", quantity: 2, price: 225.0 }],
         totalAmount: 180.0,
       };
 

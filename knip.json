@@ -21,7 +21,7 @@
       ]
     },
     "packages/worker-nestjs": {
-      "entry": ["src/activity.ts", "src/workflow.ts"],
+      "entry": ["src/activity.ts", "src/workflow.ts", "src/__tests__/test.workflows.ts"],
       "project": ["src/**/*.ts", "!src/**/*.spec.ts", "!src/**/*.integration.spec.ts"]
     },
     "packages/testing": {
