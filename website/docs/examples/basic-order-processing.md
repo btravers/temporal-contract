@@ -14,6 +14,26 @@ This example demonstrates:
 - Email notifications
 - Clean Architecture structure
 
+## Workflow Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Workflow
+    participant Inventory
+    participant Payment
+    participant Email
+    
+    Client->>Workflow: Process Order
+    Workflow->>Inventory: Validate Inventory
+    Inventory-->>Workflow: Available ✓
+    Workflow->>Payment: Process Payment
+    Payment-->>Workflow: Transaction ID
+    Workflow->>Email: Send Confirmation
+    Email-->>Workflow: Sent ✓
+    Workflow-->>Client: Order Complete
+```
+
 ## Project Structure
 
 The example consists of two packages:

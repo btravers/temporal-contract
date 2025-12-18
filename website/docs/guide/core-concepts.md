@@ -6,6 +6,20 @@ This guide explains the fundamental concepts behind temporal-contract.
 
 temporal-contract uses a **contract-first** approach. You define your workflow interfaces once using Zod schemas, and everything else flows from there:
 
+```mermaid
+graph TB
+    A[Contract Definition<br/>Zod Schemas] --> B[TypeScript Types]
+    A --> C[Runtime Validation]
+    B --> D[Worker Implementation]
+    B --> E[Client Usage]
+    C --> D
+    C --> E
+    
+    style A fill:#3b82f6,stroke:#1e40af,color:#fff
+    style B fill:#10b981,stroke:#059669,color:#fff
+    style C fill:#f59e0b,stroke:#d97706,color:#fff
+```
+
 ```typescript
 const contract = defineContract({
   taskQueue: 'my-queue',
@@ -29,6 +43,26 @@ This single definition provides:
 ## Three Layers of Type Safety
 
 temporal-contract provides type safety at three levels:
+
+```mermaid
+sequenceDiagram
+    participant C as Contract
+    participant W as Worker
+    participant A as Activities
+    participant Cl as Client
+    
+    Note over C: 1. Definition
+    C->>W: Type definitions
+    C->>Cl: Type definitions
+    
+    Note over W,A: 2. Implementation
+    W->>A: Call with types
+    A->>W: Return with types
+    
+    Note over Cl: 3. Usage
+    Cl->>W: Execute workflow (typed)
+    W->>Cl: Return result (typed)
+```
 
 ### 1. Contract Definition
 
@@ -155,6 +189,20 @@ const contract = defineContract({
 ## Automatic Validation
 
 All inputs and outputs are validated automatically using Zod:
+
+```mermaid
+graph LR
+    A[Client Call] -->|Validate Input| B[Workflow Entry]
+    B -->|Validate| C[Activity Call]
+    C -->|Validate Output| D[Activity Result]
+    D --> E[Workflow Logic]
+    E -->|Validate Output| F[Client Result]
+    
+    style A fill:#8b5cf6,stroke:#6d28d9,color:#fff
+    style B fill:#3b82f6,stroke:#1e40af,color:#fff
+    style C fill:#10b981,stroke:#059669,color:#fff
+    style F fill:#8b5cf6,stroke:#6d28d9,color:#fff
+```
 
 ```typescript
 // If validation fails, you get a clear error

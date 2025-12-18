@@ -2,6 +2,29 @@
 
 temporal-contract is organized into focused packages, each serving a specific purpose in building type-safe Temporal workflows.
 
+## Package Architecture
+
+```mermaid
+graph TB
+    C[contract<br/>Core Definitions]
+    W[worker<br/>Implementation]
+    CL[client<br/>Consumption]
+    T[testing<br/>Test Utilities]
+    B[boxed<br/>Result/Future]
+    
+    W --> C
+    W --> B
+    CL --> C
+    CL --> B
+    T --> C
+    
+    style C fill:#3b82f6,stroke:#1e40af,color:#fff
+    style W fill:#10b981,stroke:#059669,color:#fff
+    style CL fill:#8b5cf6,stroke:#6d28d9,color:#fff
+    style B fill:#f59e0b,stroke:#d97706,color:#fff
+    style T fill:#ec4899,stroke:#db2777,color:#fff
+```
+
 ## Packages Overview
 
 ### [@temporal-contract/contract](/api/contract)
@@ -40,6 +63,19 @@ pnpm add @temporal-contract/worker @temporal-contract/boxed
 
 ```bash
 pnpm add @temporal-contract/client @temporal-contract/boxed
+```
+
+### [@temporal-contract/boxed](/api/boxed)
+
+**Result and Future types for explicit error handling**
+
+- `Result<T, E>` - Explicit success/error handling
+- `Future<T>` - Async operations with Results
+- Temporal-compatible implementations
+- Interop with @swan-io/boxed
+
+```bash
+pnpm add @temporal-contract/boxed
 ```
 
 ### [@temporal-contract/testing](/api/testing)

@@ -6,6 +6,19 @@ Learn how to use explicit error handling with the Result/Future pattern.
 
 The `@temporal-contract/worker` and `@temporal-contract/client` packages use the Result/Future pattern from @temporal-contract/boxed for explicit error handling.
 
+```mermaid
+graph LR
+    A[Operation] --> B{Result}
+    B -->|Ok| C[Success Value]
+    B -->|Error| D[Error Value]
+    C --> E[Continue Flow]
+    D --> F[Handle Error]
+    
+    style B fill:#3b82f6,stroke:#1e40af,color:#fff
+    style C fill:#10b981,stroke:#059669,color:#fff
+    style D fill:#ef4444,stroke:#dc2626,color:#fff
+```
+
 ## Why Use Result Pattern?
 
 ### Traditional Exception-Based
@@ -225,6 +238,22 @@ async function processOrder(): Promise<Order> { /* ... */ }
 ### 3. Railway-Oriented Programming
 
 Chain operations that short-circuit on error:
+
+```mermaid
+graph LR
+    A[validateOrder] -->|Ok| B[checkInventory]
+    A -->|Error| E[Error Path]
+    B -->|Ok| C[processPayment]
+    B -->|Error| E
+    C -->|Ok| D[sendConfirmation]
+    C -->|Error| E
+    D -->|Ok| F[Success]
+    D -->|Error| E
+    
+    style A fill:#3b82f6,stroke:#1e40af,color:#fff
+    style F fill:#10b981,stroke:#059669,color:#fff
+    style E fill:#ef4444,stroke:#dc2626,color:#fff
+```
 
 ```typescript
 return await validateOrder({ orderId })
