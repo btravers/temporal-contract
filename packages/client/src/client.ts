@@ -25,15 +25,6 @@ import {
   RuntimeClientError,
 } from "./errors.js";
 
-// Union of all errors returned by the typed client
-export type ClientErrorUnion =
-  | WorkflowNotFoundError
-  | WorkflowValidationError
-  | QueryValidationError
-  | SignalValidationError
-  | UpdateValidationError
-  | RuntimeClientError;
-
 export type TypedWorkflowStartOptions<
   TContract extends ContractDefinition,
   TWorkflowName extends keyof TContract["workflows"],
@@ -55,7 +46,7 @@ export interface TypedWorkflowHandle<TWorkflow extends WorkflowDefinition> {
     [K in keyof ClientInferWorkflowQueries<TWorkflow>]: ClientInferWorkflowQueries<TWorkflow>[K] extends (
       ...args: infer Args
     ) => Future<Result<infer R, Error>>
-      ? (...args: Args) => Future<Result<R, ClientErrorUnion>>
+      ? (...args: Args) => Future<Result<R, QueryValidationError | RuntimeClientError>>
       : never;
   };
 
@@ -67,7 +58,7 @@ export interface TypedWorkflowHandle<TWorkflow extends WorkflowDefinition> {
     [K in keyof ClientInferWorkflowSignals<TWorkflow>]: ClientInferWorkflowSignals<TWorkflow>[K] extends (
       ...args: infer Args
     ) => Future<Result<void, Error>>
-      ? (...args: Args) => Future<Result<void, ClientErrorUnion>>
+      ? (...args: Args) => Future<Result<void, SignalValidationError | RuntimeClientError>>
       : never;
   };
 
@@ -79,7 +70,7 @@ export interface TypedWorkflowHandle<TWorkflow extends WorkflowDefinition> {
     [K in keyof ClientInferWorkflowUpdates<TWorkflow>]: ClientInferWorkflowUpdates<TWorkflow>[K] extends (
       ...args: infer Args
     ) => Future<Result<infer R, Error>>
-      ? (...args: Args) => Future<Result<R, ClientErrorUnion>>
+      ? (...args: Args) => Future<Result<R, UpdateValidationError | RuntimeClientError>>
       : never;
   };
 
@@ -322,7 +313,12 @@ export class TypedClient<TContract extends ContractDefinition> {
   getHandle<TWorkflowName extends keyof TContract["workflows"]>(
     workflowName: TWorkflowName,
     workflowId: string,
-  ): Future<Result<TypedWorkflowHandle<TContract["workflows"][TWorkflowName]>, ClientErrorUnion>> {
+  ): Future<
+    Result<
+      TypedWorkflowHandle<TContract["workflows"][TWorkflowName]>,
+      WorkflowNotFoundError | RuntimeClientError
+    >
+  > {
     return Future.make((resolve) => {
       const definition = this.contract.workflows[workflowName as string];
 
@@ -354,7 +350,7 @@ export class TypedClient<TContract extends ContractDefinition> {
     >) {
       (queries as Record<string, unknown>)[queryName] = (
         args: ClientInferInput<typeof queryDef>,
-      ): Future<Result<unknown, ClientErrorUnion>> => {
+      ): Future<Result<unknown, QueryValidationError | RuntimeClientError>> => {
         return Future.make((resolve) => {
           (async () => {
             const inputResult = await queryDef.input["~standard"].validate(args);
@@ -392,7 +388,7 @@ export class TypedClient<TContract extends ContractDefinition> {
     >) {
       (signals as Record<string, unknown>)[signalName] = (
         args: ClientInferInput<typeof signalDef>,
-      ): Future<Result<void, ClientErrorUnion>> => {
+      ): Future<Result<void, SignalValidationError | RuntimeClientError>> => {
         return Future.make((resolve) => {
           (async () => {
             const inputResult = await signalDef.input["~standard"].validate(args);
@@ -419,7 +415,7 @@ export class TypedClient<TContract extends ContractDefinition> {
     >) {
       (updates as Record<string, unknown>)[updateName] = (
         args: ClientInferInput<typeof updateDef>,
-      ): Future<Result<unknown, ClientErrorUnion>> => {
+      ): Future<Result<unknown, UpdateValidationError | RuntimeClientError>> => {
         return Future.make((resolve) => {
           (async () => {
             const inputResult = await updateDef.input["~standard"].validate(args);
