@@ -156,10 +156,22 @@ importers:
         specifier: workspace:*
         version: link:../contract
     devDependencies:
+      '@temporal-contract/testing':
+        specifier: workspace:*
+        version: link:../testing
       '@temporal-contract/tsconfig':
         specifier: workspace:*
         version: link:../../tools/tsconfig
+      '@temporal-contract/worker':
+        specifier: workspace:*
+        version: link:../worker
       '@temporalio/client':
+        specifier: 'catalog:'
+        version: 1.14.0
+      '@temporalio/worker':
+        specifier: 'catalog:'
+        version: 1.14.0
+      '@temporalio/workflow':
         specifier: 'catalog:'
         version: 1.14.0
       '@types/node':

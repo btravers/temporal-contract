@@ -1,0 +1,55 @@
+import { testContract } from "./test.contract.js";
+import { declareWorkflow } from "@temporal-contract/worker/workflow";
+import { sleep } from "@temporalio/workflow";
+
+export const simpleWorkflow = declareWorkflow({
+  workflowName: "simpleWorkflow",
+  contract: testContract,
+  implementation: async ({ activities }, args) => {
+    await activities.logMessage({ message: `Processing: ${args.value}` });
+    return {
+      result: `Processed: ${args.value}`,
+    };
+  },
+});
+
+export const interactiveWorkflow = declareWorkflow({
+  workflowName: "interactiveWorkflow",
+  contract: testContract,
+  implementation: async ({ defineSignal, defineQuery, defineUpdate }, args) => {
+    let currentValue = args.initialValue;
+
+    // Define signal, query, and update handlers with access to workflow state
+    defineSignal("increment", async (signalArgs) => {
+      currentValue += signalArgs.amount;
+    });
+
+    defineQuery("getCurrentValue", () => {
+      return { value: currentValue };
+    });
+
+    defineUpdate("multiply", async (updateArgs) => {
+      currentValue *= updateArgs.factor;
+      return { newValue: currentValue };
+    });
+
+    // Simulate some processing time to allow signals/queries/updates
+    await sleep(100);
+
+    return {
+      finalValue: currentValue,
+    };
+  },
+});
+
+export const workflowWithActivity = declareWorkflow({
+  workflowName: "workflowWithActivity",
+  contract: testContract,
+  implementation: async ({ activities }, args) => {
+    const processed = await activities.processMessage({ message: args.message });
+    await activities.logMessage({ message: `Activity result: ${processed.processed}` });
+    return {
+      result: processed.processed,
+    };
+  },
+});
