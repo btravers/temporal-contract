@@ -3,15 +3,7 @@ import { ContractDefinition } from "@temporal-contract/contract";
 import { Worker, WorkerOptions } from "@temporalio/worker";
 import { fileURLToPath } from "node:url";
 import { extname } from "node:path";
-
-/**
- * Activities handler ready for Temporal Worker
- *
- * Flat structure: all activities (global + all workflow-specific) are at the root level
- */
-type ActivitiesHandler<TContract extends ContractDefinition> = TContract extends ContractDefinition
-  ? Record<string, (...args: unknown[]) => Promise<unknown>>
-  : never;
+import type { ActivitiesHandler } from "./activity.js";
 
 /**
  * Options for creating a Temporal worker

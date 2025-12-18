@@ -81,12 +81,18 @@ type ActivitiesImplementations<TActivities extends Record<string, ActivityDefini
   [K in keyof TActivities]: ActivityImplementation<TActivities[K]>;
 };
 
+type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (
+  k: infer I,
+) => void
+  ? I
+  : never;
+
 /**
  * Activities handler ready for Temporal Worker
  *
  * Flat structure: all activities (global + all workflow-specific) are at the root level
  */
-type ActivitiesHandler<TContract extends ContractDefinition> =
+export type ActivitiesHandler<TContract extends ContractDefinition> =
   // Global activities
   (TContract["activities"] extends Record<string, ActivityDefinition>
     ? ActivitiesImplementations<TContract["activities"]>
@@ -102,12 +108,6 @@ type ActivitiesHandler<TContract extends ContractDefinition> =
           : {};
       }[keyof TContract["workflows"]]
     >;
-
-type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (
-  k: infer I,
-) => void
-  ? I
-  : never;
 
 /**
  * Create a typed activities handler with automatic validation and Result pattern
