@@ -3,7 +3,7 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 /**
  * Base error class for worker errors
  */
-export abstract class WorkerError extends Error {
+abstract class WorkerError extends Error {
   protected constructor(message: string, cause?: unknown) {
     super(message, { cause });
     this.name = "WorkerError";

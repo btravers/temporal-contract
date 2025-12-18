@@ -50,7 +50,7 @@ export type ClientInferOutput<T extends { output: AnySchema }> = StandardSchemaV
  * Infer workflow function signature from worker perspective
  * Worker receives z.input and returns z.output
  */
-export type WorkerInferWorkflow<TWorkflow extends WorkflowDefinition> = (
+type WorkerInferWorkflow<TWorkflow extends WorkflowDefinition> = (
   args: WorkerInferInput<TWorkflow>,
 ) => Promise<WorkerInferOutput<TWorkflow>>;
 
@@ -58,7 +58,7 @@ export type WorkerInferWorkflow<TWorkflow extends WorkflowDefinition> = (
  * Infer signal handler signature from worker perspective
  * Worker receives z.input
  */
-export type WorkerInferSignal<TSignal extends SignalDefinition> = (
+type WorkerInferSignal<TSignal extends SignalDefinition> = (
   args: WorkerInferInput<TSignal>,
 ) => Promise<void>;
 
@@ -66,7 +66,7 @@ export type WorkerInferSignal<TSignal extends SignalDefinition> = (
  * Infer query handler signature from worker perspective
  * Worker receives z.input and returns z.output
  */
-export type WorkerInferQuery<TQuery extends QueryDefinition> = (
+type WorkerInferQuery<TQuery extends QueryDefinition> = (
   args: WorkerInferInput<TQuery>,
 ) => Promise<WorkerInferOutput<TQuery>>;
 
@@ -74,7 +74,7 @@ export type WorkerInferQuery<TQuery extends QueryDefinition> = (
  * Infer update handler signature from worker perspective
  * Worker receives z.input and returns z.output
  */
-export type WorkerInferUpdate<TUpdate extends UpdateDefinition> = (
+type WorkerInferUpdate<TUpdate extends UpdateDefinition> = (
   args: WorkerInferInput<TUpdate>,
 ) => Promise<WorkerInferOutput<TUpdate>>;
 
@@ -85,14 +85,14 @@ export type WorkerInferUpdate<TUpdate extends UpdateDefinition> = (
 /**
  * Infer all workflows from a contract (worker perspective)
  */
-export type WorkerInferWorkflows<TContract extends ContractDefinition> = {
+type WorkerInferWorkflows<TContract extends ContractDefinition> = {
   [K in keyof TContract["workflows"]]: WorkerInferWorkflow<TContract["workflows"][K]>;
 };
 
 /**
  * Infer signals from a workflow definition (worker perspective)
  */
-export type WorkerInferWorkflowSignals<T extends WorkflowDefinition> =
+type WorkerInferWorkflowSignals<T extends WorkflowDefinition> =
   T["signals"] extends Record<string, SignalDefinition>
     ? {
         [K in keyof T["signals"]]: WorkerInferSignal<T["signals"][K]>;
@@ -102,7 +102,7 @@ export type WorkerInferWorkflowSignals<T extends WorkflowDefinition> =
 /**
  * Infer queries from a workflow definition (worker perspective)
  */
-export type WorkerInferWorkflowQueries<T extends WorkflowDefinition> =
+type WorkerInferWorkflowQueries<T extends WorkflowDefinition> =
   T["queries"] extends Record<string, QueryDefinition>
     ? {
         [K in keyof T["queries"]]: WorkerInferQuery<T["queries"][K]>;
@@ -112,7 +112,7 @@ export type WorkerInferWorkflowQueries<T extends WorkflowDefinition> =
 /**
  * Infer updates from a workflow definition (worker perspective)
  */
-export type WorkerInferWorkflowUpdates<T extends WorkflowDefinition> =
+type WorkerInferWorkflowUpdates<T extends WorkflowDefinition> =
   T["updates"] extends Record<string, UpdateDefinition>
     ? {
         [K in keyof T["updates"]]: WorkerInferUpdate<T["updates"][K]>;
@@ -133,7 +133,7 @@ export type WorkerInferWorkflowUpdates<T extends WorkflowDefinition> =
  * };
  * ```
  */
-export type ActivityHandler<
+type ActivityHandler<
   TContract extends ContractDefinition,
   TActivityName extends keyof TContract["activities"],
 > =
@@ -158,7 +158,7 @@ export type ActivityHandler<
  * };
  * ```
  */
-export type WorkflowActivityHandler<
+type WorkflowActivityHandler<
   TContract extends ContractDefinition,
   TWorkflowName extends keyof TContract["workflows"],
   TActivityName extends keyof TContract["workflows"][TWorkflowName]["activities"],
