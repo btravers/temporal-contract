@@ -9,8 +9,7 @@
 temporal server start-dev
 
 # Run from this directory
-pnpm dev:worker  # Terminal 1
-pnpm dev:client  # Terminal 2
+pnpm dev
 ```
 
 ## What It Demonstrates

@@ -38,14 +38,14 @@ pnpm install && pnpm build
 
 ```bash
 cd ../order-processing-worker
-pnpm dev:worker
+pnpm dev
 ```
 
 **Option B: Boxed Worker**
 
 ```bash
 cd ../order-processing-worker-boxed
-pnpm dev:worker
+pnpm dev
 ```
 
 2. Run the client:

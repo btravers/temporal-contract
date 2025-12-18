@@ -58,7 +58,7 @@ Each example has its own directory with a README:
 cd samples/order-processing-worker
 
 # Start the worker
-pnpm dev:worker
+pnpm dev
 
 # In another terminal, run the client
 cd samples/order-processing-client
