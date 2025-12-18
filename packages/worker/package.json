@@ -34,6 +34,16 @@
       }
     },
     "./package.json": "./package.json",
+    "./worker": {
+      "import": {
+        "types": "./dist/worker.d.mts",
+        "default": "./dist/worker.mjs"
+      },
+      "require": {
+        "types": "./dist/worker.d.cts",
+        "default": "./dist/worker.cjs"
+      }
+    },
     "./workflow": {
       "import": {
         "types": "./dist/workflow.d.mts",
@@ -52,8 +62,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown src/activity.ts src/workflow.ts --format cjs,esm --dts --clean",
-    "dev": "tsdown src/activity.ts src/workflow.ts --format cjs,esm --dts --watch",
+    "build": "tsdown src/activity.ts src/worker.ts src/workflow.ts --format cjs,esm --dts --clean",
+    "dev": "tsdown src/activity.ts src/worker.ts src/workflow.ts --format cjs,esm --dts --watch",
     "test": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "test:watch": "vitest --project unit",
@@ -79,6 +89,7 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
+    "@temporalio/worker": "^1",
     "@temporalio/workflow": "^1"
   }
 }

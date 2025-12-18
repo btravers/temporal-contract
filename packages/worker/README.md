@@ -34,6 +34,29 @@ export const processOrder = declareWorkflow({
     return { success: true };
   }
 });
+
+// worker.ts
+import { NativeConnection } from '@temporalio/worker';
+import { createWorker } from '@temporal-contract/worker/worker';
+import { activities } from './activities';
+import myContract from './contract';
+
+async function run() {
+  const connection = await NativeConnection.connect({
+    address: 'localhost:7233',
+  });
+
+  const worker = await createWorker({
+    contract: myContract,
+    connection,
+    workflowsPath: require.resolve('./workflows'),
+    activities,
+  });
+
+  await worker.run();
+}
+
+run().catch(console.error);
 ```
 
 ### Child Workflows
