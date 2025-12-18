@@ -6,7 +6,7 @@ import { Ok, Error } from "./result.js";
  * This is a custom implementation compatible with Temporal workflows
  */
 export class Future<T> implements Promise<T> {
-  private promise: Promise<T>;
+  private readonly promise: Promise<T>;
 
   // Required for Promise implementation
   readonly [Symbol.toStringTag] = "Future";
@@ -162,19 +162,19 @@ export class Future<T> implements Promise<T> {
   // Note: This is intentional to make Future awaitable
   // eslint-disable-next-line unicorn/no-thenable
   then<TResult1 = T, TResult2 = never>(
-    onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null,
-    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+    onFulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null,
+    onRejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
   ): Promise<TResult1 | TResult2> {
-    return this.promise.then(onfulfilled, onrejected);
+    return this.promise.then(onFulfilled, onRejected);
   }
 
   catch<TResult = never>(
-    onrejected?: ((reason: unknown) => TResult | PromiseLike<TResult>) | null,
+    onRejected?: ((reason: unknown) => TResult | PromiseLike<TResult>) | null,
   ): Promise<T | TResult> {
-    return this.promise.catch(onrejected);
+    return this.promise.catch(onRejected);
   }
 
-  finally(onfinally?: (() => void) | null): Promise<T> {
-    return this.promise.finally(onfinally);
+  finally(onFinally?: (() => void) | null): Promise<T> {
+    return this.promise.finally(onFinally);
   }
 }
