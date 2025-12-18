@@ -62,6 +62,7 @@ export class OrderActivitiesHandler implements ActivityImplementations<typeof or
 ```
 
 This approach provides:
+
 - **Ultimate type safety**: TypeScript ensures all activities are implemented
 - **Single responsibility**: One handler per contract
 - **Easy testing**: Mock the entire handler or individual dependencies
@@ -80,7 +81,7 @@ export class OrderActivitiesHandler {
     private emailService: EmailService,
     private inventoryService: InventoryService,
   ) {}
-  
+
   // Activities can use injected services
 }
 ```
@@ -158,14 +159,14 @@ pnpm dev  # Terminal 2 - Run client
 
 ## Comparison with Standard Worker
 
-| Feature | Standard Worker | NestJS Worker |
-|---------|----------------|---------------|
-| **Dependency Injection** | Manual | NestJS DI container |
-| **Handler Pattern** | Individual functions | Single class with all activities |
-| **Type Safety** | Manual typing | `ActivityImplementations<T>` interface |
-| **Organization** | Function-based | Class-based with decorators |
-| **Testing** | Mock individual functions | Mock class or dependencies |
-| **Best For** | Simple workers | Complex apps with many dependencies |
+| Feature                  | Standard Worker           | NestJS Worker                          |
+| ------------------------ | ------------------------- | -------------------------------------- |
+| **Dependency Injection** | Manual                    | NestJS DI container                    |
+| **Handler Pattern**      | Individual functions      | Single class with all activities       |
+| **Type Safety**          | Manual typing             | `ActivityImplementations<T>` interface |
+| **Organization**         | Function-based            | Class-based with decorators            |
+| **Testing**              | Mock individual functions | Mock class or dependencies             |
+| **Best For**             | Simple workers            | Complex apps with many dependencies    |
 
 ## Benefits
 
@@ -178,12 +179,14 @@ pnpm dev  # Terminal 2 - Run client
 ## When to Use
 
 Use the NestJS worker when:
+
 - You already have a NestJS application
 - Your activities need complex dependency injection
 - You want class-based organization
 - You prefer decorator-based patterns
 
 Use the standard worker when:
+
 - You want simpler, function-based activities
 - You don't need dependency injection
 - You prefer a minimal setup
