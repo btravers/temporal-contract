@@ -130,19 +130,19 @@ export function declareWorkflow<
   implementation,
   activityOptions,
 }: DeclareWorkflowOptions<TContract, TWorkflowName>): (
-  args: WorkerInferInput<TContract["workflows"][TWorkflowName]>,
+  ...args: unknown[]
 ) => Promise<WorkerInferOutput<TContract["workflows"][TWorkflowName]>> {
   // Get the workflow definition from the contract
   const definition = contract.workflows[
     workflowName as string
   ] as TContract["workflows"][TWorkflowName];
 
-  return async (args) => {
-    // Extract workflow input (Temporal passes arguments as array)
-    const singleArg = Array.isArray(args) ? args[0] : args;
+  return async (...args: unknown[]) => {
+    // Extract single parameter (Temporal passes arguments as array)
+    const input = args.length === 1 ? args[0] : args;
 
     // Validate workflow input
-    const inputResult = await definition.input["~standard"].validate(singleArg);
+    const inputResult = await definition.input["~standard"].validate(input);
     if (inputResult.issues) {
       throw new WorkflowInputValidationError(String(workflowName), inputResult.issues);
     }

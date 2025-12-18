@@ -26,9 +26,10 @@ describe("Worker-Boxed Package", () => {
       } satisfies ContractDefinition;
 
       // WHEN
-      const handler = declareActivitiesHandler({
+      const activities = declareActivitiesHandler({
         contract,
         activities: {
+          testWorkflow: {},
           sendEmail: () => {
             return Future.value(Result.Ok({ sent: true }));
           },
@@ -36,12 +37,9 @@ describe("Worker-Boxed Package", () => {
       });
 
       // THEN
-      expect(handler).toEqual(
+      expect(activities).toEqual(
         expect.objectContaining({
-          contract,
-          activities: expect.objectContaining({
-            sendEmail: expect.any(Function),
-          }),
+          sendEmail: expect.any(Function),
         }),
       );
     });
@@ -59,7 +57,7 @@ describe("Worker-Boxed Package", () => {
         },
       } satisfies ContractDefinition;
 
-      const handler = declareActivitiesHandler({
+      const activities = declareActivitiesHandler({
         contract,
         activities: {
           processPayment: (args) => {
@@ -69,7 +67,7 @@ describe("Worker-Boxed Package", () => {
       });
 
       // WHEN - valid input
-      const result = await handler.activities["processPayment"]!({ amount: 100, currency: "USD" });
+      const result = await activities.processPayment({ amount: 100, currency: "USD" });
 
       // THEN - valid input should work
       expect(result).toEqual(expect.objectContaining({ transactionId: "tx-100" }));
@@ -77,7 +75,8 @@ describe("Worker-Boxed Package", () => {
       // WHEN - invalid input
       // THEN - invalid input should throw
       await expect(
-        handler.activities["processPayment"]!({ amount: "invalid", currency: "USD" }),
+        // @ts-expect-error
+        activities.processPayment({ amount: "invalid", currency: "USD" }),
       ).rejects.toThrow();
     });
 
@@ -94,7 +93,7 @@ describe("Worker-Boxed Package", () => {
         },
       } satisfies ContractDefinition;
 
-      const handler = declareActivitiesHandler({
+      const activities = declareActivitiesHandler({
         contract,
         activities: {
           fetchData: (args) => {
@@ -104,13 +103,13 @@ describe("Worker-Boxed Package", () => {
       });
 
       // WHEN
-      const result = await handler.activities["fetchData"]!({ id: "abc" });
+      const result = await activities.fetchData({ id: "abc" });
 
       // THEN
       expect(result).toEqual(expect.objectContaining({ data: "data-abc", timestamp: 123 }));
 
-      // WHEN - bad handler producing invalid output
-      const badHandler = declareActivitiesHandler({
+      // WHEN - bad activities producing invalid output
+      const badActivities = declareActivitiesHandler({
         contract,
         activities: {
           fetchData: (
@@ -123,7 +122,7 @@ describe("Worker-Boxed Package", () => {
       });
 
       // THEN - invalid output should throw
-      await expect(badHandler.activities["fetchData"]!({ id: "abc" })).rejects.toThrow();
+      await expect(badActivities["fetchData"]({ id: "abc" })).rejects.toThrow();
     });
 
     it("should handle Result.Ok by returning value", async () => {
@@ -139,7 +138,7 @@ describe("Worker-Boxed Package", () => {
         },
       } satisfies ContractDefinition;
 
-      const handler = declareActivitiesHandler({
+      const activities = declareActivitiesHandler({
         contract,
         activities: {
           successActivity: (args) => {
@@ -149,7 +148,7 @@ describe("Worker-Boxed Package", () => {
       });
 
       // WHEN
-      const result = await handler.activities["successActivity"]!({ value: "test" });
+      const result = await activities.successActivity({ value: "test" });
 
       // THEN
       expect(result).toEqual(expect.objectContaining({ result: "success-test" }));
@@ -168,7 +167,7 @@ describe("Worker-Boxed Package", () => {
         },
       } satisfies ContractDefinition;
 
-      const handler = declareActivitiesHandler({
+      const activities = declareActivitiesHandler({
         contract,
         activities: {
           failingActivity: (_args) => {
@@ -184,7 +183,7 @@ describe("Worker-Boxed Package", () => {
       });
 
       // WHEN / THEN - should throw
-      await expect(handler.activities["failingActivity"]!({ value: "test" })).rejects.toEqual(
+      await expect(activities.failingActivity({ value: "test" })).rejects.toEqual(
         expect.objectContaining({
           name: "ActivityError",
           message: "Something went wrong",
@@ -207,7 +206,7 @@ describe("Worker-Boxed Package", () => {
         },
       } satisfies ContractDefinition;
 
-      const handler = declareActivitiesHandler({
+      const activities = declareActivitiesHandler({
         contract,
         activities: {
           asyncActivity: (args) => {
@@ -221,7 +220,7 @@ describe("Worker-Boxed Package", () => {
       });
 
       // WHEN
-      const result = await handler.activities["asyncActivity"]!({ delay: 10 });
+      const result = await activities.asyncActivity({ delay: 10 });
 
       // THEN
       expect(result).toEqual(expect.objectContaining({ completed: true }));
@@ -245,17 +244,19 @@ describe("Worker-Boxed Package", () => {
         },
       } satisfies ContractDefinition;
 
-      const handler = declareActivitiesHandler({
+      const activities = declareActivitiesHandler({
         contract,
         activities: {
-          validateOrder: (args) => {
-            return Future.value(Result.Ok({ valid: args.orderId.length > 0 }));
+          orderWorkflow: {
+            validateOrder: (args) => {
+              return Future.value(Result.Ok({ valid: args.orderId.length > 0 }));
+            },
           },
         },
       });
 
       // WHEN
-      const result = await handler.activities["validateOrder"]!({ orderId: "123", amount: 100 });
+      const result = await activities.validateOrder({ orderId: "123" });
 
       // THEN
       expect(result).toEqual(expect.objectContaining({ valid: true }));
@@ -274,16 +275,15 @@ describe("Worker-Boxed Package", () => {
         },
       } satisfies ContractDefinition;
 
-      const testActivities = {
-        validActivity: (_args: unknown) => Future.value(Result.Ok({ result: "test" })),
-        unknownActivity: (_args: unknown) => Future.value(Result.Ok({ result: "test" })),
-      };
-
       // WHEN / THEN
       expect(() => {
         declareActivitiesHandler({
           contract,
-          activities: testActivities,
+          activities: {
+            validActivity: (_args: unknown) => Future.value(Result.Ok({ result: "test" })),
+            // @ts-expect-error - intentionally missing activity definition
+            unknownActivity: (_args: unknown) => Future.value(Result.Ok({ result: "test" })),
+          },
         });
       }).toThrowError(new ActivityDefinitionNotFoundError("unknownActivity", ["validActivity"]));
     });
@@ -303,7 +303,7 @@ describe("Worker-Boxed Package", () => {
         },
       } satisfies ContractDefinition;
 
-      const handler = declareActivitiesHandler({
+      const activities = declareActivitiesHandler({
         contract,
         activities: {
           strictActivity: (_args) => {
@@ -313,9 +313,7 @@ describe("Worker-Boxed Package", () => {
       });
 
       // WHEN / THEN
-      await expect(
-        handler.activities["strictActivity"]!({ amount: -10, email: "invalid" }),
-      ).rejects.toEqual(
+      await expect(activities.strictActivity({ amount: -10, email: "invalid" })).rejects.toEqual(
         expect.objectContaining({
           name: "ActivityInputValidationError",
           activityName: "strictActivity",
@@ -337,7 +335,7 @@ describe("Worker-Boxed Package", () => {
         },
       } satisfies ContractDefinition;
 
-      const handler = declareActivitiesHandler({
+      const activities = declareActivitiesHandler({
         contract,
         activities: {
           // @ts-expect-error - intentionally returning invalid output
@@ -348,7 +346,7 @@ describe("Worker-Boxed Package", () => {
       });
 
       // WHEN / THEN
-      await expect(handler.activities["strictOutputActivity"]!({ id: "123" })).rejects.toEqual(
+      await expect(activities.strictOutputActivity({ id: "123" })).rejects.toEqual(
         expect.objectContaining({
           name: "ActivityOutputValidationError",
           activityName: "strictOutputActivity",

@@ -92,7 +92,7 @@ pnpm build
 
 # Run the worker
 cd ../order-processing-worker
-pnpm dev:worker  # Terminal 1 - Start worker
+pnpm dev  # Terminal 1 - Start worker
 
 # In another terminal, run the client
 cd ../order-processing-client

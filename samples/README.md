@@ -30,7 +30,7 @@ pnpm install && pnpm build
 
 # Run a worker (choose one)
 cd samples/order-processing-worker
-pnpm dev:worker  # Terminal 1
+pnpm dev  # Terminal 1
 
 # Run the client (in another terminal)
 cd samples/order-processing-client

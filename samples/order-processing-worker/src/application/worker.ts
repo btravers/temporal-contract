@@ -1,7 +1,7 @@
 import { NativeConnection, Worker } from "@temporalio/worker";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { activitiesHandler } from "./activities.js";
+import { activities } from "./activities.js";
 import { logger } from "../logger.js";
 
 function workflowPath(filename: string): string {
@@ -34,7 +34,7 @@ async function run() {
     workflowsPath: workflowPath("workflows"),
 
     // Register activities from the handler
-    activities: activitiesHandler.activities,
+    activities,
   });
 
   logger.info("✅ Worker registered successfully");
