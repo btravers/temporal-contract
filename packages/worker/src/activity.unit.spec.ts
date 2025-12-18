@@ -29,6 +29,7 @@ describe("Worker-Boxed Package", () => {
       const activities = declareActivitiesHandler({
         contract,
         activities: {
+          testWorkflow: {},
           sendEmail: () => {
             return Future.value(Result.Ok({ sent: true }));
           },

@@ -45,26 +45,20 @@ type BoxedActivityImplementation<TActivity extends ActivityDefinition> = (
 
 /**
  * Map of all activity implementations for a contract (global + all workflow-specific)
- * Workflows without activities are not required in the type
  */
 type ContractBoxedActivitiesImplementations<TContract extends ContractDefinition> =
   // Global activities
   (TContract["activities"] extends Record<string, ActivityDefinition>
     ? BoxedActivitiesImplementations<TContract["activities"]>
     : {}) &
-    // Only workflow-specific activities for workflows that have activities
+    // All workflow-specific activities merged
     {
-      [TWorkflow in keyof TContract["workflows"] as TContract["workflows"][TWorkflow]["activities"] extends Record<
-        string,
-        ActivityDefinition
-      >
-        ? TWorkflow
-        : never]: TContract["workflows"][TWorkflow]["activities"] extends Record<
+      [TWorkflow in keyof TContract["workflows"]]: TContract["workflows"][TWorkflow]["activities"] extends Record<
         string,
         ActivityDefinition
       >
         ? BoxedActivitiesImplementations<TContract["workflows"][TWorkflow]["activities"]>
-        : never;
+        : {};
     };
 
 type BoxedActivitiesImplementations<TActivities extends Record<string, ActivityDefinition>> = {
