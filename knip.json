@@ -4,12 +4,22 @@
     ".": {
       "entry": ["lefthook.yml"]
     },
-    "packages/*": {
-      "entry": ["src/index.ts"],
-      "project": ["src/**/*.ts", "!src/**/*.spec.ts", "!src/**/*.integration.spec.ts"]
-    },
     "packages/boxed": {
       "ignoreDependencies": ["@swan-io/boxed"]
+    },
+    "packages/client": {
+      "entry": ["src/index.ts"],
+      "project": [
+        "src/**/*.ts",
+        "!src/**/*.spec.ts",
+        "!src/**/*.integration.spec.ts",
+        "!src/__tests__/**"
+      ],
+      "ignoreDependencies": ["@temporalio/workflow"]
+    },
+    "packages/contract": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts", "!src/**/*.spec.ts", "!src/**/*.integration.spec.ts"]
     },
     "packages/worker": {
       "entry": ["src/activity.ts", "src/workflow.ts"],
