@@ -16,8 +16,12 @@ describe("Helper Functions", () => {
         output: z.object({ result: z.string() }),
       });
 
-      expect(activity.input).toBeDefined();
-      expect(activity.output).toBeDefined();
+      expect(activity).toEqual(
+        expect.objectContaining({
+          input: expect.any(Object),
+          output: expect.any(Object),
+        }),
+      );
     });
   });
 
@@ -27,7 +31,11 @@ describe("Helper Functions", () => {
         input: z.object({ message: z.string() }),
       });
 
-      expect(signal.input).toBeDefined();
+      expect(signal).toEqual(
+        expect.objectContaining({
+          input: expect.any(Object),
+        }),
+      );
     });
 
     it("should work with primitive types", () => {
@@ -35,7 +43,11 @@ describe("Helper Functions", () => {
         input: z.string(),
       });
 
-      expect(signal.input).toBeDefined();
+      expect(signal).toEqual(
+        expect.objectContaining({
+          input: expect.any(Object),
+        }),
+      );
     });
   });
 
@@ -46,8 +58,12 @@ describe("Helper Functions", () => {
         output: z.object({ status: z.string() }),
       });
 
-      expect(query.input).toBeDefined();
-      expect(query.output).toBeDefined();
+      expect(query).toEqual(
+        expect.objectContaining({
+          input: expect.any(Object),
+          output: expect.any(Object),
+        }),
+      );
     });
 
     it("should work with void input", () => {
@@ -56,8 +72,12 @@ describe("Helper Functions", () => {
         output: z.object({ count: z.number() }),
       });
 
-      expect(query.input).toBeDefined();
-      expect(query.output).toBeDefined();
+      expect(query).toEqual(
+        expect.objectContaining({
+          input: expect.any(Object),
+          output: expect.any(Object),
+        }),
+      );
     });
   });
 
@@ -68,8 +88,12 @@ describe("Helper Functions", () => {
         output: z.object({ newValue: z.number() }),
       });
 
-      expect(update.input).toBeDefined();
-      expect(update.output).toBeDefined();
+      expect(update).toEqual(
+        expect.objectContaining({
+          input: expect.any(Object),
+          output: expect.any(Object),
+        }),
+      );
     });
   });
 
@@ -80,8 +104,12 @@ describe("Helper Functions", () => {
         output: z.object({ status: z.string() }),
       });
 
-      expect(workflow.input).toBeDefined();
-      expect(workflow.output).toBeDefined();
+      expect(workflow).toEqual(
+        expect.objectContaining({
+          input: expect.any(Object),
+          output: expect.any(Object),
+        }),
+      );
     });
 
     it("should support all interaction types", () => {
@@ -113,10 +141,31 @@ describe("Helper Functions", () => {
         },
       });
 
-      expect(workflow.activities).toBeDefined();
-      expect(workflow.signals).toBeDefined();
-      expect(workflow.queries).toBeDefined();
-      expect(workflow.updates).toBeDefined();
+      expect(workflow).toEqual(
+        expect.objectContaining({
+          activities: expect.objectContaining({
+            processPayment: expect.objectContaining({
+              input: expect.any(Object),
+              output: expect.any(Object),
+            }),
+          }),
+          signals: expect.objectContaining({
+            cancelOrder: expect.objectContaining({ input: expect.any(Object) }),
+          }),
+          queries: expect.objectContaining({
+            getStatus: expect.objectContaining({
+              input: expect.any(Object),
+              output: expect.any(Object),
+            }),
+          }),
+          updates: expect.objectContaining({
+            updateAmount: expect.objectContaining({
+              input: expect.any(Object),
+              output: expect.any(Object),
+            }),
+          }),
+        }),
+      );
     });
   });
 });
