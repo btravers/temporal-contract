@@ -285,7 +285,7 @@ describe("Worker-Boxed Package", () => {
             unknownActivity: (_args: unknown) => Future.value(Result.Ok({ result: "test" })),
           },
         });
-      }).toThrowError(new ActivityDefinitionNotFoundError("unknownActivity"));
+      }).toThrowError(new ActivityDefinitionNotFoundError("unknownActivity", ["validActivity"]));
     });
   });
 
