@@ -487,8 +487,8 @@ export class TypedClient<TContract extends ContractDefinition> {
       },
       cancel: (): Future<Result<void, RuntimeClientError>> => {
         return Future.fromPromise(workflowHandle.cancel())
-            .mapError((error) => createRuntimeClientError("cancel", error))
-            .mapOk(() => undefined);
+          .mapError((error) => createRuntimeClientError("cancel", error))
+          .mapOk(() => undefined);
       },
       describe: (): Future<
         Result<Awaited<ReturnType<WorkflowHandle["describe"]>>, RuntimeClientError>
