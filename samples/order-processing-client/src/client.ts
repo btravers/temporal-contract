@@ -1,4 +1,4 @@
-import { Connection } from "@temporalio/client";
+import { Client, Connection } from "@temporalio/client";
 import { TypedClient } from "@temporal-contract/client";
 import {
   orderProcessingContract,
@@ -29,11 +29,13 @@ async function run() {
     address: "localhost:7233",
   });
 
-  // Create type-safe client with Result/Future pattern
-  const contractClient = TypedClient.create(orderProcessingContract, {
+  const rawClient = new Client({
     connection,
     namespace: "default",
   });
+
+  // Create type-safe client with Result/Future pattern
+  const contractClient = TypedClient.create(orderProcessingContract, rawClient);
 
   // Example orders to process
   const orders: Order[] = [

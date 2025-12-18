@@ -7,6 +7,7 @@ import { declareActivitiesHandler, ActivityError } from "../handler.js";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { testContract } from "./test.contract.js";
+import { Client } from "@temporalio/client";
 
 // ============================================================================
 // Test Setup
@@ -44,10 +45,11 @@ const it = baseIt.extend<{
   ],
   client: async ({ clientConnection }, use) => {
     // Create typed client
-    const client = TypedClient.create(testContract, {
+    const rawClient = new Client({
       connection: clientConnection,
       namespace: "default",
     });
+    const client = TypedClient.create(testContract, rawClient);
 
     await use(client);
   },
