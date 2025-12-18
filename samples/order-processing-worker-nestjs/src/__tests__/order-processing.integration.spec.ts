@@ -1,4 +1,4 @@
-import { describe, expect, vi, beforeEach } from "vitest";
+import { describe, expect, vi } from "vitest";
 import { Worker } from "@temporalio/worker";
 import { TypedClient } from "@temporal-contract/client";
 import { it as baseIt } from "@temporal-contract/testing/extension";
