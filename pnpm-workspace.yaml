@@ -10,13 +10,13 @@ catalog:
   "@commitlint/config-conventional": 20.2.0
   "@standard-schema/spec": 1.1.0
   "@swan-io/boxed": 3.2.1
-  "@temporalio/client": 1.13.2
-  "@temporalio/worker": 1.13.2
-  "@temporalio/workflow": 1.13.2
-  "@types/node": 25.0.2
+  "@temporalio/client": 1.14.0
+  "@temporalio/worker": 1.14.0
+  "@temporalio/workflow": 1.14.0
+  "@types/node": 25.0.3
   "@vitest/coverage-v8": 4.0.16
   arktype: 2.1.29
-  knip: 5.74.0
+  knip: 5.75.1
   lefthook: 2.0.12
   oxfmt: 0.18.0
   oxlint: 1.33.0
@@ -25,7 +25,7 @@ catalog:
   sort-package-json: 3.6.0
   testcontainers: 11.10.0
   ts-pattern: 5.9.0
-  tsdown: 0.18.0
+  tsdown: 0.18.1
   tsx: 4.21.0
   turbo: 2.6.3
   typescript: 5.9.3
