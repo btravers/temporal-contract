@@ -92,7 +92,37 @@ export class OrderActivitiesHandler implements ActivityImplementations<typeof or
 
 ### 2. Create Activities Module
 
-Use `createActivitiesModule()` to create a NestJS dynamic module:
+Use `ActivitiesModule.forRoot()` (recommended) or `createActivitiesModule()` to create a NestJS dynamic module:
+
+**Recommended approach using ConfigurableModuleBuilder:**
+
+```typescript
+// app.module.ts
+import { Module } from '@nestjs/common';
+import { ActivitiesModule } from '@temporal-contract/worker-nestjs/activity';
+import { orderContract } from '../contract';
+import { OrderActivitiesHandler } from './activities/order-activities.handler';
+import { PaymentGateway } from './services/payment-gateway';
+import { InventoryRepository } from './services/inventory-repository';
+import { EmailService } from './services/email.service';
+
+@Module({
+  imports: [
+    ActivitiesModule.forRoot({
+      contract: orderContract,
+      handler: OrderActivitiesHandler,
+      providers: [
+        PaymentGateway,
+        InventoryRepository,
+        EmailService,
+      ],
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+**Alternative approach (backwards compatible):**
 
 ```typescript
 // activities/activities.module.ts
@@ -114,9 +144,9 @@ export const ActivitiesModule = createActivitiesModule({
 });
 ```
 
-### 3. Import in App Module
+### 3. Import in App Module (if using createActivitiesModule)
 
-Add the activities module to your application:
+If you used `createActivitiesModule()`, add the activities module to your application:
 
 ```typescript
 // app.module.ts
@@ -213,9 +243,36 @@ export class MyActivitiesHandler implements ActivityImplementations<typeof myCon
 }
 ```
 
+### `ActivitiesModule.forRoot(options)`
+
+**Recommended** - Standard NestJS ConfigurableModuleBuilder pattern for creating a dynamic module for activities.
+
+**Parameters:**
+
+- `options.contract` - Contract definition
+- `options.handler` - Handler class decorated with `@ActivitiesHandler`
+- `options.providers` - Optional additional providers needed by the handler
+
+**Returns:** `DynamicModule`
+
+**Example:**
+
+```typescript
+@Module({
+  imports: [
+    ActivitiesModule.forRoot({
+      contract: myContract,
+      handler: MyActivitiesHandler,
+      providers: [MyService, MyRepository],
+    }),
+  ],
+})
+export class AppModule {}
+```
+
 ### `createActivitiesModule(options)`
 
-Factory function that creates a NestJS dynamic module for activities.
+Factory function that creates a NestJS dynamic module for activities. This is a backwards-compatible alternative to `ActivitiesModule.forRoot()`.
 
 **Parameters:**
 

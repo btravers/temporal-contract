@@ -2,7 +2,11 @@
 export { ActivitiesHandler } from "./activity-handler.js";
 export { extractActivitiesFromHandler, getContractFromHandler } from "./activity-handler.js";
 
-export { createActivitiesModule, ACTIVITIES_HANDLER_TOKEN } from "./activity-module.js";
+export {
+  createActivitiesModule,
+  ActivitiesModule,
+  ACTIVITIES_HANDLER_TOKEN,
+} from "./activity-module.js";
 export type { ActivitiesModuleOptions } from "./activity-module.js";
 
 // Re-export types from worker package for convenience

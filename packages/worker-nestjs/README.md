@@ -36,7 +36,22 @@ export class OrderActivitiesHandler implements ActivityImplementations<typeof or
   // ... implement all other activities
 }
 
-// activities.module.ts
+// app.module.ts (recommended - uses ConfigurableModuleBuilder)
+import { Module } from '@nestjs/common';
+import { ActivitiesModule } from '@temporal-contract/worker-nestjs/activity';
+
+@Module({
+  imports: [
+    ActivitiesModule.forRoot({
+      contract: orderContract,
+      handler: OrderActivitiesHandler,
+      providers: [PaymentGateway],
+    }),
+  ],
+})
+export class AppModule {}
+
+// Or using createActivitiesModule (backwards compatible)
 import { createActivitiesModule } from '@temporal-contract/worker-nestjs/activity';
 
 export const ActivitiesModule = createActivitiesModule({
@@ -62,7 +77,8 @@ const worker = await Worker.create({
 ## Features
 
 - **`@ActivitiesHandler` decorator**: Multi-handler approach for ultimate type safety (inspired by ts-rest)
-- **`createActivitiesModule()`**: Create NestJS modules with full DI support
+- **`ActivitiesModule.forRoot()`**: Standard NestJS ConfigurableModuleBuilder pattern
+- **`createActivitiesModule()`**: Alternative function-based API (backwards compatible)
 - **Type Safety**: One handler implements all activities from a contract
 - **Automatic Validation**: Input/output validation at network boundaries
 

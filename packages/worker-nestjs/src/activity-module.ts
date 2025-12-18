@@ -1,4 +1,4 @@
-import { Module, DynamicModule, Provider, Type } from "@nestjs/common";
+import { Module, DynamicModule, Provider, Type, ConfigurableModuleBuilder } from "@nestjs/common";
 import type { ContractDefinition } from "@temporal-contract/contract";
 import {
   declareActivitiesHandler,
@@ -33,11 +33,11 @@ export interface ActivitiesModuleOptions<TContract extends ContractDefinition> {
 }
 
 /**
- * Create a NestJS module for Temporal activities
+ * Create a NestJS module for Temporal activities using ConfigurableModuleBuilder
  *
- * This function creates a dynamic NestJS module using the multi-handler approach
- * inspired by ts-rest for ultimate type safety. One handler class implements all
- * activities from the contract.
+ * This uses NestJS ConfigurableModuleBuilder pattern to provide a cleaner way to create
+ * dynamic modules with the multi-handler approach inspired by ts-rest for ultimate type safety.
+ * One handler class implements all activities from the contract.
  *
  * @example
  * ```ts
@@ -118,42 +118,92 @@ export interface ActivitiesModuleOptions<TContract extends ContractDefinition> {
  * }
  * ```
  */
+
+// Build the ConfigurableModule using NestJS builder pattern
+const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } =
+  new ConfigurableModuleBuilder<ActivitiesModuleOptions<ContractDefinition>>()
+    .setClassMethodName("forRoot")
+    .build();
+
+/**
+ * Base activities module that uses ConfigurableModuleBuilder
+ * This provides a standard NestJS pattern for creating dynamic modules
+ */
+@Module({})
+export class ActivitiesModule extends ConfigurableModuleClass {
+  static forRoot<TContract extends ContractDefinition>(
+    options: ActivitiesModuleOptions<TContract>,
+  ): DynamicModule {
+    const { contract, handler, providers = [] } = options;
+
+    // Verify handler has the decorator
+    const handlerContract = Reflect.getMetadata(ACTIVITIES_HANDLER_METADATA, handler);
+    if (!handlerContract) {
+      throw new Error(`Handler class must be decorated with @ActivitiesHandler decorator`);
+    }
+
+    // Create a factory provider that builds the activities handler
+    const activitiesHandlerProvider: Provider = {
+      provide: ACTIVITIES_HANDLER_TOKEN,
+      useFactory: (handlerInstance: ActivityImplementations<TContract>) => {
+        // Extract implementations from the handler
+        const implementations = extractActivitiesFromHandler<TContract>(handlerInstance);
+
+        // Create the activities handler
+        return declareActivitiesHandler({
+          contract,
+          activities: implementations,
+        });
+      },
+      inject: [handler],
+    };
+
+    return {
+      module: ActivitiesModule,
+      providers: [
+        {
+          provide: MODULE_OPTIONS_TOKEN,
+          useValue: options,
+        },
+        ...providers,
+        handler,
+        activitiesHandlerProvider,
+      ],
+      exports: [ACTIVITIES_HANDLER_TOKEN],
+    };
+  }
+}
+
+/**
+ * Create a NestJS module for Temporal activities
+ *
+ * @deprecated Use ActivitiesModule.forRoot() instead for better NestJS integration
+ * This function is kept for backwards compatibility
+ *
+ * @example
+ * ```ts
+ * // Old way (still supported)
+ * export const ActivitiesModule = createActivitiesModule({
+ *   contract: orderContract,
+ *   handler: OrderActivitiesHandler,
+ *   providers: [PaymentGateway, EmailService],
+ * });
+ *
+ * // New way (recommended)
+ * @Module({
+ *   imports: [
+ *     ActivitiesModule.forRoot({
+ *       contract: orderContract,
+ *       handler: OrderActivitiesHandler,
+ *       providers: [PaymentGateway, EmailService],
+ *     }),
+ *   ],
+ * })
+ * export class AppModule {}
+ * ```
+ */
 export function createActivitiesModule<TContract extends ContractDefinition>(
   options: ActivitiesModuleOptions<TContract>,
 ): DynamicModule {
-  const { contract, handler, providers = [] } = options;
-
-  // Verify handler has the decorator
-  const handlerContract = Reflect.getMetadata(ACTIVITIES_HANDLER_METADATA, handler);
-  if (!handlerContract) {
-    throw new Error(`Handler class must be decorated with @ActivitiesHandler decorator`);
-  }
-
-  // Create a factory provider that builds the activities handler
-  const activitiesHandlerProvider: Provider = {
-    provide: ACTIVITIES_HANDLER_TOKEN,
-    useFactory: (handlerInstance: ActivityImplementations<TContract>) => {
-      // Extract implementations from the handler
-      const implementations = extractActivitiesFromHandler<TContract>(handlerInstance);
-
-      // Create the activities handler
-      return declareActivitiesHandler({
-        contract,
-        activities: implementations,
-      });
-    },
-    inject: [handler],
-  };
-
-  @Module({
-    providers: [...providers, handler, activitiesHandlerProvider],
-    exports: [ACTIVITIES_HANDLER_TOKEN],
-  })
-  class ActivitiesModuleClass {}
-
-  return {
-    module: ActivitiesModuleClass,
-    providers: [...providers, handler, activitiesHandlerProvider],
-    exports: [ACTIVITIES_HANDLER_TOKEN],
-  };
+  return ActivitiesModule.forRoot(options);
 }
