@@ -86,22 +86,26 @@ export interface TypedWorkflowHandle<TWorkflow extends WorkflowDefinition> {
   /**
    * Get workflow result with Result pattern
    */
-  result: () => Future<Result<ClientInferOutput<TWorkflow>, ClientErrorUnion>>;
+  result: () => Future<
+    Result<ClientInferOutput<TWorkflow>, WorkflowValidationError | RuntimeClientError>
+  >;
 
   /**
    * Terminate workflow with Result pattern
    */
-  terminate: (reason?: string) => Future<Result<void, ClientErrorUnion>>;
+  terminate: (reason?: string) => Future<Result<void, RuntimeClientError>>;
 
   /**
    * Cancel workflow with Result pattern
    */
-  cancel: () => Future<Result<void, ClientErrorUnion>>;
+  cancel: () => Future<Result<void, RuntimeClientError>>;
 
   /**
    * Get workflow execution description including status and metadata
    */
-  describe: () => Future<Result<Awaited<ReturnType<WorkflowHandle["describe"]>>, ClientErrorUnion>>;
+  describe: () => Future<
+    Result<Awaited<ReturnType<WorkflowHandle["describe"]>>, RuntimeClientError>
+  >;
 
   /**
    * Fetch the workflow execution history
@@ -455,7 +459,9 @@ export class TypedClient<TContract extends ContractDefinition> {
       queries,
       signals,
       updates,
-      result: (): Future<Result<ClientInferOutput<TWorkflow>, ClientErrorUnion>> => {
+      result: (): Future<
+        Result<ClientInferOutput<TWorkflow>, WorkflowValidationError | RuntimeClientError>
+      > => {
         return Future.make((resolve) => {
           (async () => {
             try {
