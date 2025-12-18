@@ -6,6 +6,8 @@ import {
   Worker,
   WorkerOptions,
 } from "@temporalio/worker";
+import { fileURLToPath } from "node:url";
+import { extname } from "node:path";
 
 /**
  * Options for creating a Temporal worker
@@ -115,8 +117,5 @@ export async function createWorker<TContract extends ContractDefinition>(
  * ```
  */
 export function workflowsPathFromURL(baseURL: string, relativePath: string): string {
-  const { fileURLToPath } = require("node:url");
-  const { extname } = require("node:path");
-
   return fileURLToPath(new URL(`${relativePath}${extname(baseURL)}`, baseURL));
 }
