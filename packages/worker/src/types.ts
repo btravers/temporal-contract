@@ -33,6 +33,6 @@ export type ClientInferOutput<T extends { output: AnySchema }> = StandardSchemaV
   T["output"]
 >;
 
-export type Entries<T> = {
+type Entries<T> = {
   [K in keyof T]: [K, T[K]];
 }[keyof T][];
