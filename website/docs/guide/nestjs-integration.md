@@ -267,7 +267,7 @@ This integration is inspired by [ts-rest's multi-handler approach](https://ts-re
 
 ## Examples
 
-See the [order-processing-worker-nestjs sample](/examples/basic-order-processing) for a complete example.
+See the [order-processing-worker-nestjs sample](/examples/nestjs-order-processing) for a complete example.
 
 ## Next Steps
 

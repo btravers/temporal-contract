@@ -60,6 +60,7 @@ export default defineConfig({
           items: [
             { text: "Overview", link: "/examples/" },
             { text: "Basic Order Processing", link: "/examples/basic-order-processing" },
+            { text: "Order Processing with NestJS", link: "/examples/nestjs-order-processing" },
           ],
         },
       ],
