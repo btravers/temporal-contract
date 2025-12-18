@@ -64,8 +64,6 @@ const logMessages: string[] = [];
 const activities = declareActivitiesHandler({
   contract: testContract,
   activities: {
-    simpleWorkflow: {},
-
     workflowWithActivities: {
       processPayment: ({ amount }) => {
         return Future.value(
@@ -85,20 +83,12 @@ const activities = declareActivitiesHandler({
       },
     },
 
-    interactiveWorkflow: {},
-
-    parentWorkflow: {},
-
-    childWorkflow: {},
-
-    workflowWithFailableActivity: {},
-
-    logMessage: ({ message }) => {
+    logMessage: ({ message }: { message: string }) => {
       logMessages.push(message);
       return Future.value(Result.Ok({}));
     },
 
-    failableActivity: ({ shouldFail }) => {
+    failableActivity: ({ shouldFail }: { shouldFail: boolean }) => {
       if (shouldFail) {
         return Future.value(
           Result.Error(
