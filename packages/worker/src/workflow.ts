@@ -169,7 +169,7 @@ export function declareWorkflow<
       childDefinition: TChildWorkflow,
       result: unknown,
       childWorkflowName: string,
-    ): Promise<Result<WorkerInferOutput<TChildWorkflow>, ChildWorkflowError>> {
+    ): Promise<Result<ClientInferOutput<TChildWorkflow>, ChildWorkflowError>> {
       const outputResult = await childDefinition.output["~standard"].validate(result);
       if (outputResult.issues) {
         return Result.Error(
@@ -239,7 +239,7 @@ export function declareWorkflow<
     ): TypedChildWorkflowHandle<TChildWorkflow> {
       return {
         workflowId: handle.workflowId,
-        result: (): Future<Result<WorkerInferOutput<TChildWorkflow>, ChildWorkflowError>> => {
+        result: (): Future<Result<ClientInferOutput<TChildWorkflow>, ChildWorkflowError>> => {
           return Future.make((resolve) => {
             (async () => {
               try {
@@ -335,7 +335,7 @@ export function declareWorkflow<
       childWorkflowName: TChildWorkflowName,
       options: TypedChildWorkflowOptions<TChildContract, TChildWorkflowName>,
     ): Future<
-      Result<WorkerInferOutput<TChildContract["workflows"][TChildWorkflowName]>, ChildWorkflowError>
+      Result<ClientInferOutput<TChildContract["workflows"][TChildWorkflowName]>, ChildWorkflowError>
     > {
       return Future.make((resolve) => {
         (async () => {
@@ -376,7 +376,7 @@ export function declareWorkflow<
 
             resolve(
               Result.Ok(
-                outputValidationResult.value as WorkerInferOutput<
+                outputValidationResult.value as ClientInferOutput<
                   TChildContract["workflows"][TChildWorkflowName]
                 >,
               ),
@@ -811,7 +811,7 @@ interface WorkflowContext<
     workflowName: TChildWorkflowName,
     options: TypedChildWorkflowOptions<TChildContract, TChildWorkflowName>,
   ) => Future<
-    Result<WorkerInferOutput<TChildContract["workflows"][TChildWorkflowName]>, ChildWorkflowError>
+    Result<ClientInferOutput<TChildContract["workflows"][TChildWorkflowName]>, ChildWorkflowError>
   >;
 }
 
@@ -822,7 +822,7 @@ type TypedChildWorkflowOptions<
   TChildContract extends ContractDefinition,
   TChildWorkflowName extends keyof TChildContract["workflows"],
 > = Omit<ChildWorkflowOptions, "taskQueue" | "args"> & {
-  args: WorkerInferInput<TChildContract["workflows"][TChildWorkflowName]>;
+  args: ClientInferInput<TChildContract["workflows"][TChildWorkflowName]>;
 };
 
 /**
@@ -917,7 +917,8 @@ function createValidatedActivities<
     }
 
     // Wrap activity with input/output validation
-    const wrappedActivity = async (input: unknown) => {
+    // Register the wrapped activity
+    (validatedActivities as Record<string, unknown>)[activityName] = async (input: unknown) => {
       // Validate input before sending over the network
       const inputResult = await activityDef.input["~standard"].validate(input);
       if (inputResult.issues) {
@@ -935,9 +936,6 @@ function createValidatedActivities<
 
       return outputResult.value;
     };
-
-    // Register the wrapped activity
-    (validatedActivities as Record<string, unknown>)[activityName] = wrappedActivity;
   }
 
   return validatedActivities;
