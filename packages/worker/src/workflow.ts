@@ -605,7 +605,6 @@ interface DeclareWorkflowOptions<
   implementation: WorkflowImplementation<TContract, TWorkflowName>;
   /**
    * Default activity options applied to all activities in this workflow.
-   * These will be merged with the default startToCloseTimeout of 60 seconds.
    * For more control, you can override specific Temporal ActivityOptions like:
    * - startToCloseTimeout: Maximum time for activity execution
    * - scheduleToCloseTimeout: End-to-end timeout including queuing
