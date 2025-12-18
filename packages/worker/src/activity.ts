@@ -25,7 +25,6 @@ export class ActivityError extends Error {
     cause?: unknown,
   ) {
     super(message, { cause });
-    this.cause = cause;
     this.name = "ActivityError";
     // Maintains proper stack trace for where our error was thrown (only available on V8)
     if (Error.captureStackTrace) {
@@ -93,14 +92,22 @@ type ActivitiesHandler<TContract extends ContractDefinition> =
     ? ActivitiesImplementations<TContract["activities"]>
     : {}) &
     // All workflow-specific activities merged at root level (flat)
-    {
-      [TWorkflow in keyof TContract["workflows"]]: TContract["workflows"][TWorkflow]["activities"] extends Record<
-        string,
-        ActivityDefinition
-      >
-        ? ActivitiesImplementations<TContract["workflows"][TWorkflow]["activities"]>
-        : {};
-    }[keyof TContract["workflows"]];
+    UnionToIntersection<
+      {
+        [TWorkflow in keyof TContract["workflows"]]: TContract["workflows"][TWorkflow]["activities"] extends Record<
+          string,
+          ActivityDefinition
+        >
+          ? ActivitiesImplementations<TContract["workflows"][TWorkflow]["activities"]>
+          : {};
+      }[keyof TContract["workflows"]]
+    >;
+
+type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (
+  k: infer I,
+) => void
+  ? I
+  : never;
 
 /**
  * Create a typed activities handler with automatic validation and Result pattern

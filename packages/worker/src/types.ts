@@ -32,7 +32,3 @@ export type ClientInferInput<T extends { input: AnySchema }> = StandardSchemaV1.
 export type ClientInferOutput<T extends { output: AnySchema }> = StandardSchemaV1.InferOutput<
   T["output"]
 >;
-
-type Entries<T> = {
-  [K in keyof T]: [K, T[K]];
-}[keyof T][];
