@@ -25,7 +25,7 @@ import {
   RuntimeClientError,
 } from "./errors.js";
 
-// Union de toutes les erreurs retournées par le client typé
+// Union of all errors returned by the typed client
 export type ClientErrorUnion =
   | WorkflowNotFoundError
   | WorkflowValidationError
