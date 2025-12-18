@@ -3,33 +3,13 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 /**
  * Base error class for worker errors
  */
-export class WorkerError extends Error {
-  constructor(message: string, cause?: unknown) {
+abstract class WorkerError extends Error {
+  protected constructor(message: string, cause?: unknown) {
     super(message, { cause });
     this.name = "WorkerError";
     // Maintains proper stack trace for where our error was thrown (only available on V8)
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, this.constructor);
-    }
-  }
-}
-
-/**
- * Activity error class that should be used to wrap all technical exceptions
- * Forces proper error handling and enables retry policies
- */
-export class ActivityError extends Error {
-  public readonly code: string;
-  public override readonly cause?: unknown;
-
-  constructor(code: string, message: string, cause?: unknown) {
-    super(message, { cause });
-    this.code = code;
-    this.cause = cause;
-    this.name = "ActivityError";
-    // Maintains proper stack trace for where our error was thrown (only available on V8)
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, ActivityError);
     }
   }
 }

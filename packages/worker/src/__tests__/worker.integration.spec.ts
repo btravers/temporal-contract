@@ -3,11 +3,11 @@ import { Worker } from "@temporalio/worker";
 import { TypedClient } from "@temporal-contract/client";
 import { it as baseIt } from "@temporal-contract/testing/extension";
 import { Future, Result } from "@temporal-contract/boxed";
-import { declareActivitiesHandler, ActivityError } from "../handler.js";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { testContract } from "./test.contract.js";
 import { Client } from "@temporalio/client";
+import { ActivityError, declareActivitiesHandler } from "../activity.js";
 
 // ============================================================================
 // Test Setup
@@ -289,7 +289,8 @@ describe("Worker Package - Integration Tests", () => {
       // WHEN/THEN - Use type assertion to bypass compile-time check for runtime validation test
       const execution = await client.executeWorkflow("simpleWorkflow", {
         workflowId: `invalid-input-${Date.now()}`,
-        args: invalidInput as { value: string },
+        // @ts-expect-error Testing invalid input
+        args: invalidInput,
       });
 
       expect(execution).toEqual(

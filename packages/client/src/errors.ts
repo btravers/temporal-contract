@@ -3,8 +3,8 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 /**
  * Base class for all typed client errors with boxed pattern
  */
-export abstract class TypedClientError extends Error {
-  constructor(message: string) {
+abstract class TypedClientError extends Error {
+  protected constructor(message: string) {
     super(message);
     this.name = this.constructor.name;
     if (Error.captureStackTrace) {

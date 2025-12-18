@@ -153,4 +153,7 @@ export const processOrder = declareWorkflow({
       trackingNumber: shippingResult.trackingNumber,
     };
   },
+  activityOptions: {
+    startToCloseTimeout: "1 minute",
+  },
 });
