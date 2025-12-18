@@ -20,8 +20,12 @@ describe("Core Types", () => {
         output: z.object({ success: z.boolean() }),
       };
 
-      expect(activityDef.input).toBeDefined();
-      expect(activityDef.output).toBeDefined();
+      expect(activityDef).toEqual(
+        expect.objectContaining({
+          input: expect.any(Object),
+          output: expect.any(Object),
+        }),
+      );
     });
   });
 
@@ -31,7 +35,11 @@ describe("Core Types", () => {
         input: z.object({ reason: z.string() }),
       };
 
-      expect(signalDef.input).toBeDefined();
+      expect(signalDef).toEqual(
+        expect.objectContaining({
+          input: expect.any(Object),
+        }),
+      );
     });
   });
 
@@ -42,8 +50,12 @@ describe("Core Types", () => {
         output: z.object({ status: z.string() }),
       };
 
-      expect(queryDef.input).toBeDefined();
-      expect(queryDef.output).toBeDefined();
+      expect(queryDef).toEqual(
+        expect.objectContaining({
+          input: expect.any(Object),
+          output: expect.any(Object),
+        }),
+      );
     });
   });
 
@@ -54,8 +66,12 @@ describe("Core Types", () => {
         output: z.object({ updated: z.boolean() }),
       };
 
-      expect(updateDef.input).toBeDefined();
-      expect(updateDef.output).toBeDefined();
+      expect(updateDef).toEqual(
+        expect.objectContaining({
+          input: expect.any(Object),
+          output: expect.any(Object),
+        }),
+      );
     });
   });
 
@@ -72,9 +88,18 @@ describe("Core Types", () => {
         },
       };
 
-      expect(workflowDef.input).toBeDefined();
-      expect(workflowDef.output).toBeDefined();
-      expect(workflowDef.activities).toBeDefined();
+      expect(workflowDef).toEqual(
+        expect.objectContaining({
+          input: expect.any(Object),
+          output: expect.any(Object),
+          activities: expect.objectContaining({
+            processPayment: expect.objectContaining({
+              input: expect.any(Object),
+              output: expect.any(Object),
+            }),
+          }),
+        }),
+      );
     });
 
     it("should correctly define a workflow with signals", () => {
@@ -88,7 +113,13 @@ describe("Core Types", () => {
         },
       };
 
-      expect(workflowDef.signals).toBeDefined();
+      expect(workflowDef).toEqual(
+        expect.objectContaining({
+          signals: expect.objectContaining({
+            cancel: expect.objectContaining({ input: expect.any(Object) }),
+          }),
+        }),
+      );
     });
 
     it("should correctly define a workflow with queries", () => {
@@ -103,7 +134,16 @@ describe("Core Types", () => {
         },
       };
 
-      expect(workflowDef.queries).toBeDefined();
+      expect(workflowDef).toEqual(
+        expect.objectContaining({
+          queries: expect.objectContaining({
+            getStatus: expect.objectContaining({
+              input: expect.any(Object),
+              output: expect.any(Object),
+            }),
+          }),
+        }),
+      );
     });
 
     it("should correctly define a workflow with updates", () => {
@@ -118,7 +158,16 @@ describe("Core Types", () => {
         },
       };
 
-      expect(workflowDef.updates).toBeDefined();
+      expect(workflowDef).toEqual(
+        expect.objectContaining({
+          updates: expect.objectContaining({
+            changeQuantity: expect.objectContaining({
+              input: expect.any(Object),
+              output: expect.any(Object),
+            }),
+          }),
+        }),
+      );
     });
   });
 
@@ -134,8 +183,17 @@ describe("Core Types", () => {
         },
       };
 
-      expect(contract.taskQueue).toBe("test-queue");
-      expect(contract.workflows).toBeDefined();
+      expect(contract).toEqual(
+        expect.objectContaining({
+          taskQueue: "test-queue",
+          workflows: expect.objectContaining({
+            processOrder: expect.objectContaining({
+              input: expect.any(Object),
+              output: expect.any(Object),
+            }),
+          }),
+        }),
+      );
     });
 
     it("should correctly define a contract with global activities", () => {
@@ -155,7 +213,13 @@ describe("Core Types", () => {
         },
       };
 
-      expect(contract.activities).toBeDefined();
+      expect(contract).toEqual(
+        expect.objectContaining({
+          activities: expect.objectContaining({
+            log: expect.objectContaining({ input: expect.any(Object), output: expect.any(Object) }),
+          }),
+        }),
+      );
     });
   });
 
@@ -221,7 +285,14 @@ describe("Core Types", () => {
       type Workflows = InferContractWorkflows<typeof contract>;
       const workflows: Workflows = contract.workflows;
 
-      expect(workflows.processOrder).toBeDefined();
+      expect(workflows).toEqual(
+        expect.objectContaining({
+          processOrder: expect.objectContaining({
+            input: expect.any(Object),
+            output: expect.any(Object),
+          }),
+        }),
+      );
     });
   });
 });

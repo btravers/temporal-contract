@@ -15,10 +15,17 @@ describe("Contract Builder", () => {
         },
       });
 
-      expect(contract.taskQueue).toBe("test-queue");
-      expect(contract.workflows.processOrder).toBeDefined();
-      expect(contract.workflows.processOrder.input).toBeDefined();
-      expect(contract.workflows.processOrder.output).toBeDefined();
+      expect(contract).toEqual(
+        expect.objectContaining({
+          taskQueue: "test-queue",
+          workflows: expect.objectContaining({
+            processOrder: expect.objectContaining({
+              input: expect.any(Object),
+              output: expect.any(Object),
+            }),
+          }),
+        }),
+      );
     });
 
     it("should create a contract with global activities", () => {
@@ -38,8 +45,16 @@ describe("Contract Builder", () => {
         },
       });
 
-      expect(contract.activities).toBeDefined();
-      expect(contract.activities?.sendEmail).toBeDefined();
+      expect(contract).toEqual(
+        expect.objectContaining({
+          activities: expect.objectContaining({
+            sendEmail: expect.objectContaining({
+              input: expect.any(Object),
+              output: expect.any(Object),
+            }),
+          }),
+        }),
+      );
     });
 
     it("should create a contract with workflow-specific activities", () => {
@@ -63,9 +78,24 @@ describe("Contract Builder", () => {
         },
       });
 
-      expect(contract.workflows.processOrder.activities).toBeDefined();
-      expect(contract.workflows.processOrder.activities?.validateInventory).toBeDefined();
-      expect(contract.workflows.processOrder.activities?.processPayment).toBeDefined();
+      expect(contract).toEqual(
+        expect.objectContaining({
+          workflows: expect.objectContaining({
+            processOrder: expect.objectContaining({
+              activities: expect.objectContaining({
+                validateInventory: expect.objectContaining({
+                  input: expect.any(Object),
+                  output: expect.any(Object),
+                }),
+                processPayment: expect.objectContaining({
+                  input: expect.any(Object),
+                  output: expect.any(Object),
+                }),
+              }),
+            }),
+          }),
+        }),
+      );
     });
 
     it("should support signals in workflow definitions", () => {
@@ -87,9 +117,22 @@ describe("Contract Builder", () => {
         },
       });
 
-      expect(contract.workflows.processOrder.signals).toBeDefined();
-      expect(contract.workflows.processOrder.signals?.cancel).toBeDefined();
-      expect(contract.workflows.processOrder.signals?.addItem).toBeDefined();
+      expect(contract).toEqual(
+        expect.objectContaining({
+          workflows: expect.objectContaining({
+            processOrder: expect.objectContaining({
+              signals: expect.objectContaining({
+                cancel: expect.objectContaining({
+                  input: expect.any(Object),
+                }),
+                addItem: expect.objectContaining({
+                  input: expect.any(Object),
+                }),
+              }),
+            }),
+          }),
+        }),
+      );
     });
 
     it("should support queries in workflow definitions", () => {
@@ -113,9 +156,24 @@ describe("Contract Builder", () => {
         },
       });
 
-      expect(contract.workflows.processOrder.queries).toBeDefined();
-      expect(contract.workflows.processOrder.queries?.getStatus).toBeDefined();
-      expect(contract.workflows.processOrder.queries?.getTotal).toBeDefined();
+      expect(contract).toEqual(
+        expect.objectContaining({
+          workflows: expect.objectContaining({
+            processOrder: expect.objectContaining({
+              queries: expect.objectContaining({
+                getStatus: expect.objectContaining({
+                  input: expect.any(Object),
+                  output: expect.any(Object),
+                }),
+                getTotal: expect.objectContaining({
+                  input: expect.any(Object),
+                  output: expect.any(Object),
+                }),
+              }),
+            }),
+          }),
+        }),
+      );
     });
 
     it("should support updates in workflow definitions", () => {
@@ -139,9 +197,24 @@ describe("Contract Builder", () => {
         },
       });
 
-      expect(contract.workflows.processOrder.updates).toBeDefined();
-      expect(contract.workflows.processOrder.updates?.updateDiscount).toBeDefined();
-      expect(contract.workflows.processOrder.updates?.updateShippingAddress).toBeDefined();
+      expect(contract).toEqual(
+        expect.objectContaining({
+          workflows: expect.objectContaining({
+            processOrder: expect.objectContaining({
+              updates: expect.objectContaining({
+                updateDiscount: expect.objectContaining({
+                  input: expect.any(Object),
+                  output: expect.any(Object),
+                }),
+                updateShippingAddress: expect.objectContaining({
+                  input: expect.any(Object),
+                  output: expect.any(Object),
+                }),
+              }),
+            }),
+          }),
+        }),
+      );
     });
 
     it("should support multiple workflows", () => {
@@ -163,10 +236,15 @@ describe("Contract Builder", () => {
         },
       });
 
-      expect(Object.keys(contract.workflows)).toHaveLength(3);
-      expect(contract.workflows.processOrder).toBeDefined();
-      expect(contract.workflows.cancelOrder).toBeDefined();
-      expect(contract.workflows.refundOrder).toBeDefined();
+      expect(contract).toEqual(
+        expect.objectContaining({
+          workflows: expect.objectContaining({
+            processOrder: expect.any(Object),
+            cancelOrder: expect.any(Object),
+            refundOrder: expect.any(Object),
+          }),
+        }),
+      );
     });
 
     it("should validate single parameter pattern", () => {
@@ -199,9 +277,15 @@ describe("Contract Builder", () => {
         },
       });
 
-      expect(contract.workflows.simpleWorkflow.input).toBeDefined();
-      expect(contract.workflows.complexWorkflow.input).toBeDefined();
-      expect(contract.workflows.arrayWorkflow.input).toBeDefined();
+      expect(contract).toEqual(
+        expect.objectContaining({
+          workflows: expect.objectContaining({
+            simpleWorkflow: expect.objectContaining({ input: expect.anything() }),
+            complexWorkflow: expect.objectContaining({ input: expect.anything() }),
+            arrayWorkflow: expect.objectContaining({ input: expect.anything() }),
+          }),
+        }),
+      );
     });
 
     it("should preserve type information", () => {
@@ -215,9 +299,11 @@ describe("Contract Builder", () => {
         },
       });
 
-      // Type assertions to verify inference works
-      const taskQueue: string = contract.taskQueue;
-      expect(taskQueue).toBe("my-queue");
+      expect(contract).toEqual(
+        expect.objectContaining({
+          taskQueue: "my-queue",
+        }),
+      );
     });
   });
 
@@ -457,8 +543,16 @@ describe("Contract Builder", () => {
           },
         },
       });
-      expect(contract).toBeDefined();
-      expect(contract.workflows.empty.input).toBeDefined();
+      expect(contract).toEqual(
+        expect.objectContaining({
+          workflows: expect.objectContaining({
+            empty: expect.objectContaining({
+              input: expect.any(Object),
+              output: expect.any(Object),
+            }),
+          }),
+        }),
+      );
     });
 
     it("should handle void input", () => {
@@ -471,7 +565,16 @@ describe("Contract Builder", () => {
           },
         },
       });
-      expect(contract).toBeDefined();
+      expect(contract).toEqual(
+        expect.objectContaining({
+          workflows: expect.objectContaining({
+            noInput: expect.objectContaining({
+              input: expect.any(Object),
+              output: expect.any(Object),
+            }),
+          }),
+        }),
+      );
     });
 
     it("should handle workflows without activities, signals, queries, or updates", () => {
@@ -485,6 +588,9 @@ describe("Contract Builder", () => {
         },
       });
       const workflow = contract.workflows.simple;
+      expect(workflow).toEqual(
+        expect.objectContaining({ input: expect.anything(), output: expect.anything() }),
+      );
       expect("activities" in workflow).toBe(false);
       expect("signals" in workflow).toBe(false);
       expect("queries" in workflow).toBe(false);
@@ -501,6 +607,7 @@ describe("Contract Builder", () => {
           },
         },
       });
+      expect(contract).toEqual(expect.objectContaining({ workflows: expect.any(Object) }));
       expect("activities" in contract).toBe(false);
     });
 
@@ -643,9 +750,13 @@ describe("Contract Builder", () => {
         },
       });
 
-      expect(contract.taskQueue).toBe("test-queue");
-      expect(contract.workflows.processOrder).toBeDefined();
-      expect(contract.activities?.sendEmail).toBeDefined();
+      expect(contract).toEqual(
+        expect.objectContaining({
+          taskQueue: "test-queue",
+          workflows: expect.objectContaining({ processOrder: expect.any(Object) }),
+          activities: expect.objectContaining({ sendEmail: expect.any(Object) }),
+        }),
+      );
 
       // Verify Standard Schema properties exist
       expect(contract.workflows.processOrder.input["~standard"]).toBeDefined();
@@ -672,9 +783,13 @@ describe("Contract Builder", () => {
         },
       });
 
-      expect(contract.taskQueue).toBe("test-queue");
-      expect(contract.workflows.processOrder).toBeDefined();
-      expect(contract.activities?.validatePayment).toBeDefined();
+      expect(contract).toEqual(
+        expect.objectContaining({
+          taskQueue: "test-queue",
+          workflows: expect.objectContaining({ processOrder: expect.any(Object) }),
+          activities: expect.objectContaining({ validatePayment: expect.any(Object) }),
+        }),
+      );
 
       // Verify Standard Schema properties exist
       expect(contract.workflows.processOrder.input["~standard"]).toBeDefined();
@@ -704,9 +819,15 @@ describe("Contract Builder", () => {
         },
       });
 
-      expect(contract.workflows.processZod).toBeDefined();
-      expect(contract.workflows.processValibot).toBeDefined();
-      expect(contract.workflows.processArkType).toBeDefined();
+      expect(contract).toEqual(
+        expect.objectContaining({
+          workflows: expect.objectContaining({
+            processZod: expect.any(Object),
+            processValibot: expect.any(Object),
+            processArkType: expect.any(Object),
+          }),
+        }),
+      );
 
       // Verify each has correct vendor
       expect(contract.workflows.processZod.input["~standard"].vendor).toBe("zod");

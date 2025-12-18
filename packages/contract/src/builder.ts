@@ -9,6 +9,45 @@ import type {
   WorkflowDefinition,
 } from "./types.js";
 
+// Exported builders first (classic functions for hoisting)
+export function defineActivity<TActivity extends ActivityDefinition>(
+  definition: TActivity,
+): TActivity {
+  return definition;
+}
+
+export function defineSignal<TSignal extends SignalDefinition>(definition: TSignal): TSignal {
+  return definition;
+}
+
+export function defineQuery<TQuery extends QueryDefinition>(definition: TQuery): TQuery {
+  return definition;
+}
+
+export function defineUpdate<TUpdate extends UpdateDefinition>(definition: TUpdate): TUpdate {
+  return definition;
+}
+
+export function defineWorkflow<TWorkflow extends WorkflowDefinition>(
+  definition: TWorkflow,
+): TWorkflow {
+  return definition;
+}
+
+export function defineContract<TContract extends ContractDefinition>(
+  definition: TContract,
+): TContract {
+  // Validate entire contract structure with Zod (including activity conflicts)
+  const validationResult = contractValidationSchema.safeParse(definition);
+
+  if (!validationResult.success) {
+    const cleanMessage = getCleanErrorMessage(validationResult.error);
+    throw new Error(`Contract error: ${cleanMessage}`);
+  }
+
+  return definition;
+}
+
 /**
  * Check if a value is a Standard Schema compatible schema
  */
@@ -45,7 +84,7 @@ const identifierSchema = z
 /**
  * Extract clean error message from Zod validation error
  */
-const getCleanErrorMessage = (error: z.ZodError): string => {
+function getCleanErrorMessage(error: z.ZodError): string {
   try {
     const parsed = JSON.parse(error.message);
     if (Array.isArray(parsed) && parsed.length > 0) {
@@ -72,7 +111,7 @@ const getCleanErrorMessage = (error: z.ZodError): string => {
     // If parsing fails, return the raw message
   }
   return error.message;
-};
+}
 
 /**
  * Schema for validating activity definitions
@@ -169,118 +208,3 @@ const contractValidationSchema = z
       }
     }
   });
-
-/**
- * Builder for creating activity definitions
- *
- * @example
- * ```ts
- * const myActivity = defineActivity({
- *   input: z.tuple([z.object({ name: z.string() })]),
- *   output: z.object({ greeting: z.string() }),
- * });
- * ```
- */
-export const defineActivity = <TActivity extends ActivityDefinition>(
-  definition: TActivity,
-): TActivity => {
-  return definition;
-};
-
-/**
- * Builder for creating signal definitions
- *
- * @example
- * ```ts
- * const mySignal = defineSignal({
- *   input: z.object({ message: z.string() }),
- * });
- * ```
- */
-export const defineSignal = <TSignal extends SignalDefinition>(definition: TSignal): TSignal => {
-  return definition;
-};
-
-/**
- * Builder for creating query definitions
- *
- * @example
- * ```ts
- * const myQuery = defineQuery({
- *   input: z.object({ id: z.string() }),
- *   output: z.object({ status: z.string() }),
- * });
- * ```
- */
-export const defineQuery = <TQuery extends QueryDefinition>(definition: TQuery): TQuery => {
-  return definition;
-};
-
-/**
- * Builder for creating update definitions
- *
- * @example
- * ```ts
- * const myUpdate = defineUpdate({
- *   input: z.object({ value: z.number() }),
- *   output: z.object({ newValue: z.number() }),
- * });
- * ```
- */
-export const defineUpdate = <TUpdate extends UpdateDefinition>(definition: TUpdate): TUpdate => {
-  return definition;
-};
-
-/**
- * Builder for creating workflow definitions
- *
- * @example
- * ```ts
- * const myWorkflow = defineWorkflow({
- *   input: z.tuple([z.object({ orderId: z.string() })]),
- *   output: z.object({ status: z.string() }),
- *   activities: {
- *     processPayment: defineActivity({
- *       input: z.tuple([z.object({ amount: z.number() })]),
- *       output: z.object({ success: z.boolean() }),
- *     }),
- *   },
- * });
- * ```
- */
-export const defineWorkflow = <TWorkflow extends WorkflowDefinition>(
-  definition: TWorkflow,
-): TWorkflow => {
-  return definition;
-};
-
-/**
- * Builder for creating a complete contract
- *
- * @example
- * ```ts
- * const myContract = defineContract({
- *   taskQueue: 'my-service',
- *   workflows: {
- *     processOrder: defineWorkflow({ ... }),
- *     sendNotification: defineWorkflow({ ... }),
- *   },
- *   activities: {
- *     sendEmail: defineActivity({ ... }),
- *   },
- * });
- * ```
- */
-export const defineContract = <TContract extends ContractDefinition>(
-  definition: TContract,
-): TContract => {
-  // Validate entire contract structure with Zod (including activity conflicts)
-  const validationResult = contractValidationSchema.safeParse(definition);
-
-  if (!validationResult.success) {
-    const cleanMessage = getCleanErrorMessage(validationResult.error);
-    throw new Error(`Contract error: ${cleanMessage}`);
-  }
-
-  return definition;
-};
