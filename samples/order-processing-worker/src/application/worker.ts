@@ -1,4 +1,6 @@
-import { NativeConnection, Worker } from "@temporalio/worker";
+import { NativeConnection } from "@temporalio/worker";
+import { createWorker } from "@temporal-contract/worker/worker";
+import { orderProcessingContract } from "@temporal-contract/sample-order-processing-contract";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { activities } from "./activities.js";
@@ -14,7 +16,7 @@ function workflowPath(filename: string): string {
  * The worker:
  * - Loads workflows from the workflows directory using workflowsPath
  * - Registers activities from the activities handler
- * - Listens on the 'order-processing' task queue
+ * - Listens on the 'order-processing' task queue (from contract)
  */
 async function run() {
   logger.info("🚀 Starting Order Processing Worker...");
@@ -24,16 +26,12 @@ async function run() {
     address: "localhost:7233",
   });
 
-  // Create and run the worker
-  const worker = await Worker.create({
+  // Create and run the worker using createWorker
+  const worker = await createWorker({
+    contract: orderProcessingContract,
     connection,
     namespace: "default",
-    taskQueue: "order-processing",
-
-    // Load workflows from the file system
     workflowsPath: workflowPath("workflows"),
-
-    // Register activities from the handler
     activities,
   });
 

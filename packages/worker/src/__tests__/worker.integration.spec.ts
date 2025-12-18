@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { testContract } from "./test.contract.js";
 import { Client } from "@temporalio/client";
 import { ActivityError, declareActivitiesHandler } from "../activity.js";
+import { createWorker } from "../worker.js";
 
 // ============================================================================
 // Test Setup
@@ -19,11 +20,11 @@ const it = baseIt.extend<{
 }>({
   worker: [
     async ({ workerConnection }, use) => {
-      // Create and start worker
-      const worker = await Worker.create({
+      // Create and start worker using createWorker
+      const worker = await createWorker({
+        contract: testContract,
         connection: workerConnection,
         namespace: "default",
-        taskQueue: testContract.taskQueue,
         workflowsPath: workflowPath("test.workflows"),
         activities,
       });

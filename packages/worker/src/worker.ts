@@ -1,20 +1,24 @@
 // Entry point for worker creation utilities
 import { ContractDefinition } from "@temporal-contract/contract";
-import {
-  NativeConnection,
-  NativeConnectionOptions,
-  Worker,
-  WorkerOptions,
-} from "@temporalio/worker";
+import { Worker, WorkerOptions } from "@temporalio/worker";
 import { fileURLToPath } from "node:url";
 import { extname } from "node:path";
+
+/**
+ * Activities handler ready for Temporal Worker
+ *
+ * Flat structure: all activities (global + all workflow-specific) are at the root level
+ */
+type ActivitiesHandler<TContract extends ContractDefinition> = TContract extends ContractDefinition
+  ? Record<string, (...args: unknown[]) => Promise<unknown>>
+  : never;
 
 /**
  * Options for creating a Temporal worker
  */
 export interface CreateWorkerOptions<TContract extends ContractDefinition> extends Omit<
   WorkerOptions,
-  "connection" | "taskQueue"
+  "activities" | "taskQueue"
 > {
   /**
    * The contract definition for this worker
@@ -22,16 +26,9 @@ export interface CreateWorkerOptions<TContract extends ContractDefinition> exten
   contract: TContract;
 
   /**
-   * Optional connection to Temporal server
-   * If not provided, a new connection will be created using the provided connectionOptions
+   * Activities handler for this worker
    */
-  connection?: NativeConnection;
-
-  /**
-   * Options for creating a connection to Temporal server
-   * Only used if connection is not provided
-   */
-  connectionOptions?: NativeConnectionOptions;
+  activities: ActivitiesHandler<TContract>;
 }
 
 /**
@@ -39,31 +36,14 @@ export interface CreateWorkerOptions<TContract extends ContractDefinition> exten
  *
  * This helper simplifies worker creation by:
  * - Using the contract's task queue automatically
- * - Managing connection lifecycle
  * - Providing type-safe configuration
  *
  * @example
  * ```ts
+ * import { NativeConnection } from '@temporalio/worker';
  * import { createWorker } from '@temporal-contract/worker/worker';
  * import { activities } from './activities';
  * import myContract from './contract';
- *
- * const worker = await createWorker({
- *   contract: myContract,
- *   workflowsPath: require.resolve('./workflows'),
- *   activities,
- *   connectionOptions: {
- *     address: 'localhost:7233',
- *   },
- * });
- *
- * await worker.run();
- * ```
- *
- * @example With existing connection
- * ```ts
- * import { NativeConnection } from '@temporalio/worker';
- * import { createWorker } from '@temporal-contract/worker/worker';
  *
  * const connection = await NativeConnection.connect({
  *   address: 'localhost:7233',
@@ -82,17 +62,12 @@ export interface CreateWorkerOptions<TContract extends ContractDefinition> exten
 export async function createWorker<TContract extends ContractDefinition>(
   options: CreateWorkerOptions<TContract>,
 ): Promise<Worker> {
-  const { contract, connection, connectionOptions, ...workerOptions } = options;
-
-  // Use provided connection or create a new one
-  const workerConnection =
-    connection ||
-    (await NativeConnection.connect(connectionOptions || { address: "localhost:7233" }));
+  const { contract, activities, ...workerOptions } = options;
 
   // Create the worker with contract's task queue
   const worker = await Worker.create({
     ...workerOptions,
-    connection: workerConnection,
+    activities,
     taskQueue: contract.taskQueue,
   });
 
@@ -106,11 +81,11 @@ export async function createWorker<TContract extends ContractDefinition>(
  *
  * @example
  * ```ts
- * import { fileURLToPath } from 'node:url';
  * import { workflowsPathFromURL } from '@temporal-contract/worker/worker';
  *
  * const worker = await createWorker({
  *   contract: myContract,
+ *   connection,
  *   workflowsPath: workflowsPathFromURL(import.meta.url, './workflows'),
  *   activities,
  * });

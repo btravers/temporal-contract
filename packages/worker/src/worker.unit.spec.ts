@@ -35,20 +35,17 @@ describe("Worker Entry Point", () => {
       const mockConnection = { close: vi.fn() } as unknown as NativeConnection;
       const mockWorker = { run: vi.fn() } as unknown as Worker;
 
-      vi.mocked(NativeConnection.connect).mockResolvedValue(mockConnection);
       vi.mocked(Worker.create).mockResolvedValue(mockWorker);
 
       // WHEN
       const worker = await createWorker({
         contract,
+        connection: mockConnection,
         workflowsPath: "/path/to/workflows",
         activities: {},
       });
 
       // THEN
-      expect(NativeConnection.connect).toHaveBeenCalledWith({
-        address: "localhost:7233",
-      });
       expect(Worker.create).toHaveBeenCalledWith({
         connection: mockConnection,
         taskQueue: "test-queue",
@@ -58,7 +55,7 @@ describe("Worker Entry Point", () => {
       expect(worker).toBe(mockWorker);
     });
 
-    it("should use provided connection if available", async () => {
+    it("should use provided connection", async () => {
       // GIVEN
       const contract = {
         taskQueue: "my-queue",
@@ -84,7 +81,6 @@ describe("Worker Entry Point", () => {
       });
 
       // THEN
-      expect(NativeConnection.connect).not.toHaveBeenCalled();
       expect(Worker.create).toHaveBeenCalledWith({
         connection: existingConnection,
         taskQueue: "my-queue",
@@ -94,7 +90,7 @@ describe("Worker Entry Point", () => {
       expect(worker).toBe(mockWorker);
     });
 
-    it("should use custom connection options if provided", async () => {
+    it("should pass through other worker options", async () => {
       // GIVEN
       const contract = {
         taskQueue: "test-queue",
@@ -109,22 +105,24 @@ describe("Worker Entry Point", () => {
       const mockConnection = { close: vi.fn() } as unknown as NativeConnection;
       const mockWorker = { run: vi.fn() } as unknown as Worker;
 
-      vi.mocked(NativeConnection.connect).mockResolvedValue(mockConnection);
       vi.mocked(Worker.create).mockResolvedValue(mockWorker);
 
       // WHEN
       await createWorker({
         contract,
+        connection: mockConnection,
         workflowsPath: "/path/to/workflows",
         activities: {},
-        connectionOptions: {
-          address: "custom-host:7234",
-        },
+        namespace: "custom-namespace",
       });
 
       // THEN
-      expect(NativeConnection.connect).toHaveBeenCalledWith({
-        address: "custom-host:7234",
+      expect(Worker.create).toHaveBeenCalledWith({
+        connection: mockConnection,
+        taskQueue: "test-queue",
+        workflowsPath: "/path/to/workflows",
+        activities: {},
+        namespace: "custom-namespace",
       });
     });
   });
