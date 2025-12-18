@@ -217,7 +217,7 @@ export function declareActivitiesHandler<TContract extends ContractDefinition>(
 
       const activityDef = contract.activities[activityName];
       if (!activityDef) {
-        throw new ActivityDefinitionNotFoundError(activityName);
+        throw new ActivityDefinitionNotFoundError(activityName, Object.keys(contract.activities));
       }
 
       // Assign wrapped global activity
@@ -245,7 +245,10 @@ export function declareActivitiesHandler<TContract extends ContractDefinition>(
       for (const [activityName, impl] of Object.entries(wfActivitiesImpl)) {
         const activityDef = wfDefs[activityName];
         if (!activityDef) {
-          throw new ActivityDefinitionNotFoundError(`${workflowName}.${activityName}`);
+          throw new ActivityDefinitionNotFoundError(
+            `${workflowName}.${activityName}`,
+            Object.keys(wfDefs),
+          );
         }
 
         // Assign workflow activity directly at root level (flat structure)
