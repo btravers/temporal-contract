@@ -3,6 +3,7 @@ import { z } from "zod";
 import { defineContract } from "@temporal-contract/contract";
 import { TypedClient } from "./client.js";
 import { WorkflowNotFoundError, WorkflowValidationError } from "./errors.js";
+import { Client } from "@temporalio/client";
 
 // Create mock workflow object
 const createMockWorkflow = () => ({
@@ -15,9 +16,6 @@ const createMockWorkflow = () => ({
 const mockWorkflow = createMockWorkflow();
 
 vi.mock("@temporalio/client", () => ({
-  Client: class {
-    workflow = mockWorkflow;
-  },
   WorkflowHandle: vi.fn(),
 }));
 
@@ -57,7 +55,8 @@ describe("TypedClient", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    typedClient = TypedClient.create(testContract, { namespace: "default" });
+    const rawClient = { workflow: mockWorkflow } as unknown as Client;
+    typedClient = TypedClient.create(testContract, rawClient);
   });
 
   describe("TypedClient.create", () => {
@@ -87,16 +86,20 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      expect(result.isOk()).toBe(true);
+      expect(result).toEqual(
+        expect.objectContaining({
+          tag: "Ok",
+          value: expect.objectContaining({
+            workflowId: "test-123",
+          }),
+        }),
+      );
+
       expect(mockWorkflow.start).toHaveBeenCalledWith("testWorkflow", {
         workflowId: "test-123",
         taskQueue: "test-queue",
         args: [{ name: "hello", value: 42 }],
       });
-
-      if (result.isOk()) {
-        expect(result.value.workflowId).toBe("test-123");
-      }
     });
 
     it("should return Error result for invalid input", async () => {
@@ -105,10 +108,12 @@ describe("TypedClient", () => {
         args: { name: "hello", value: "not-a-number" as unknown as number },
       });
 
-      expect(result.isError()).toBe(true);
-      if (result.isError()) {
-        expect(result.error).toBeInstanceOf(WorkflowValidationError);
-      }
+      expect(result).toEqual(
+        expect.objectContaining({
+          tag: "Error",
+          error: expect.any(WorkflowValidationError),
+        }),
+      );
     });
 
     it("should return Error result for non-existent workflow", async () => {
@@ -120,10 +125,12 @@ describe("TypedClient", () => {
         },
       );
 
-      expect(result.isError()).toBe(true);
-      if (result.isError()) {
-        expect(result.error).toBeInstanceOf(WorkflowNotFoundError);
-      }
+      expect(result).toEqual(
+        expect.objectContaining({
+          tag: "Error",
+          error: expect.any(WorkflowNotFoundError),
+        }),
+      );
     });
   });
 
@@ -136,16 +143,18 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      expect(result.isOk()).toBe(true);
+      expect(result).toEqual(
+        expect.objectContaining({
+          tag: "Ok",
+          value: { result: "success" },
+        }),
+      );
+
       expect(mockWorkflow.execute).toHaveBeenCalledWith("testWorkflow", {
         workflowId: "test-123",
         taskQueue: "test-queue",
         args: [{ name: "hello", value: 42 }],
       });
-
-      if (result.isOk()) {
-        expect(result.value).toEqual({ result: "success" });
-      }
     });
 
     it("should return Error result for invalid output", async () => {
@@ -156,10 +165,12 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      expect(result.isError()).toBe(true);
-      if (result.isError()) {
-        expect(result.error).toBeInstanceOf(WorkflowValidationError);
-      }
+      expect(result).toEqual(
+        expect.objectContaining({
+          tag: "Error",
+          error: expect.any(WorkflowValidationError),
+        }),
+      );
     });
 
     it("should return Error result when workflow execution throws", async () => {
@@ -170,7 +181,7 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      expect(result.isError()).toBe(true);
+      expect(result).toEqual(expect.objectContaining({ tag: "Error" }));
     });
   });
 
@@ -192,10 +203,12 @@ describe("TypedClient", () => {
 
       const result = await typedClient.getHandle("testWorkflow", "test-123");
 
-      expect(result.isOk()).toBe(true);
-      if (result.isOk()) {
-        expect(result.value.workflowId).toBe("test-123");
-      }
+      expect(result).toEqual(
+        expect.objectContaining({
+          tag: "Ok",
+          value: expect.objectContaining({ workflowId: "test-123" }),
+        }),
+      );
     });
 
     it("should return Error result for non-existent workflow", async () => {
@@ -204,10 +217,12 @@ describe("TypedClient", () => {
         "test-123",
       );
 
-      expect(result.isError()).toBe(true);
-      if (result.isError()) {
-        expect(result.error).toBeInstanceOf(WorkflowNotFoundError);
-      }
+      expect(result).toEqual(
+        expect.objectContaining({
+          tag: "Error",
+          error: expect.any(WorkflowNotFoundError),
+        }),
+      );
     });
   });
 
@@ -252,15 +267,17 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      expect(handleResult.isOk()).toBe(true);
+      expect(handleResult).toEqual(expect.objectContaining({ tag: "Ok" }));
 
       if (handleResult.isOk()) {
         const result = await handleResult.value.result();
 
-        expect(result.isOk()).toBe(true);
-        if (result.isOk()) {
-          expect(result.value).toEqual({ result: "success" });
-        }
+        expect(result).toEqual(
+          expect.objectContaining({
+            tag: "Ok",
+            value: { result: "success" },
+          }),
+        );
       }
     });
 
@@ -272,15 +289,12 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      expect(handleResult.isOk()).toBe(true);
+      expect(handleResult).toEqual(expect.objectContaining({ tag: "Ok" }));
 
       if (handleResult.isOk()) {
         const result = await handleResult.value.queries.getStatus([]);
 
-        expect(result.isOk()).toBe(true);
-        if (result.isOk()) {
-          expect(result.value).toBe("running");
-        }
+        expect(result).toEqual(expect.objectContaining({ tag: "Ok", value: "running" }));
       }
     });
 
@@ -290,12 +304,12 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      expect(handleResult.isOk()).toBe(true);
+      expect(handleResult).toEqual(expect.objectContaining({ tag: "Ok" }));
 
       if (handleResult.isOk()) {
         const result = await handleResult.value.signals.updateProgress([50]);
 
-        expect(result.isOk()).toBe(true);
+        expect(result).toEqual(expect.objectContaining({ tag: "Ok" }));
         expect(mockHandle.signal).toHaveBeenCalledWith("updateProgress", [50]);
       }
     });
@@ -308,15 +322,12 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      expect(handleResult.isOk()).toBe(true);
+      expect(handleResult).toEqual(expect.objectContaining({ tag: "Ok" }));
 
       if (handleResult.isOk()) {
         const result = await handleResult.value.updates.setConfig([{ value: "new-config" }]);
 
-        expect(result.isOk()).toBe(true);
-        if (result.isOk()) {
-          expect(result.value).toBe(true);
-        }
+        expect(result).toEqual(expect.objectContaining({ tag: "Ok", value: true }));
       }
     });
 
@@ -326,12 +337,12 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      expect(handleResult.isOk()).toBe(true);
+      expect(handleResult).toEqual(expect.objectContaining({ tag: "Ok" }));
 
       if (handleResult.isOk()) {
         const result = await handleResult.value.terminate("test reason");
 
-        expect(result.isOk()).toBe(true);
+        expect(result).toEqual(expect.objectContaining({ tag: "Ok" }));
         expect(mockHandle.terminate).toHaveBeenCalledWith("test reason");
       }
     });
@@ -342,12 +353,12 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      expect(handleResult.isOk()).toBe(true);
+      expect(handleResult).toEqual(expect.objectContaining({ tag: "Ok" }));
 
       if (handleResult.isOk()) {
         const result = await handleResult.value.cancel();
 
-        expect(result.isOk()).toBe(true);
+        expect(result).toEqual(expect.objectContaining({ tag: "Ok" }));
         expect(mockHandle.cancel).toHaveBeenCalled();
       }
     });
@@ -358,15 +369,17 @@ describe("TypedClient", () => {
         args: { name: "hello", value: 42 },
       });
 
-      expect(handleResult.isOk()).toBe(true);
+      expect(handleResult).toEqual(expect.objectContaining({ tag: "Ok" }));
 
       if (handleResult.isOk()) {
         const result = await handleResult.value.describe();
 
-        expect(result.isOk()).toBe(true);
-        if (result.isOk()) {
-          expect(result.value.workflowId).toBe("test-123");
-        }
+        expect(result).toEqual(
+          expect.objectContaining({
+            tag: "Ok",
+            value: expect.objectContaining({ workflowId: "test-123" }),
+          }),
+        );
       }
     });
   });
@@ -404,10 +417,7 @@ describe("TypedClient", () => {
 
       const mapped = result.map((value) => value.result.toUpperCase());
 
-      expect(mapped.isOk()).toBe(true);
-      if (mapped.isOk()) {
-        expect(mapped.value).toBe("SUCCESS");
-      }
+      expect(mapped).toEqual(expect.objectContaining({ tag: "Ok", value: "SUCCESS" }));
     });
   });
 });

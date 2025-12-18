@@ -3,13 +3,29 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 /**
  * Base class for all typed client errors with boxed pattern
  */
-export class TypedClientError extends Error {
+export abstract class TypedClientError extends Error {
   constructor(message: string) {
     super(message);
     this.name = this.constructor.name;
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, this.constructor);
     }
+  }
+}
+
+/**
+ * Generic runtime failure wrapper when no specific error type applies
+ */
+export class RuntimeClientError extends TypedClientError {
+  constructor(
+    public readonly operation: string,
+    public override readonly cause?: unknown,
+  ) {
+    super(
+      `Operation "${operation}" failed: ${
+        cause instanceof Error ? cause.message : String(cause ?? "unknown error")
+      }`,
+    );
   }
 }
 

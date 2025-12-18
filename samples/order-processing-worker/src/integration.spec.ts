@@ -11,6 +11,7 @@ import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { z } from "zod";
 import { paymentAdapter } from "./dependencies.js";
+import { Client } from "@temporalio/client";
 
 type Order = z.infer<typeof OrderSchema>;
 
@@ -46,10 +47,11 @@ const it = baseIt.extend<{
   ],
   client: async ({ clientConnection }, use) => {
     // Create typed client
-    const client = TypedClient.create(orderProcessingContract, {
+    const rawClient = new Client({
       connection: clientConnection,
       namespace: "default",
     });
+    const client = TypedClient.create(orderProcessingContract, rawClient);
 
     await use(client);
   },
