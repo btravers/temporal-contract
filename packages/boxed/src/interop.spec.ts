@@ -14,10 +14,14 @@ import { Result as SwanIoResult, Future as SwanIoFuture } from "@swan-io/boxed";
 describe("Interoperability with @swan-io/boxed", () => {
   describe("Result interoperability", () => {
     it("should convert from swan Ok result to temporal Ok result", () => {
+      // GIVEN
       // Create an actual swan-io Result
       const swanResult = SwanIoResult.Ok(42);
 
+      // WHEN
       const temporalResult = fromSwanResult(swanResult);
+
+      // THEN
       expect(temporalResult.isOk()).toBe(true);
       if (temporalResult.isOk()) {
         expect(temporalResult.value).toBe(42);
@@ -25,9 +29,13 @@ describe("Interoperability with @swan-io/boxed", () => {
     });
 
     it("should convert from swan Error result to temporal Error result", () => {
+      // GIVEN
       const swanResult = SwanIoResult.Error("error");
 
+      // WHEN
       const temporalResult = fromSwanResult(swanResult);
+
+      // THEN
       expect(temporalResult.isError()).toBe(true);
       if (temporalResult.isError()) {
         expect(temporalResult.error).toBe("error");
@@ -35,9 +43,13 @@ describe("Interoperability with @swan-io/boxed", () => {
     });
 
     it("should convert from temporal Ok result to swan-compatible result", () => {
+      // GIVEN
       const temporalResult = Result.Ok(42);
+
+      // WHEN
       const swanResult = toSwanResult(temporalResult);
 
+      // THEN
       expect(swanResult.isOk()).toBe(true);
       const value = swanResult.match({
         Ok: (v) => v,
@@ -47,9 +59,13 @@ describe("Interoperability with @swan-io/boxed", () => {
     });
 
     it("should convert from temporal Error result to swan-compatible result", () => {
+      // GIVEN
       const temporalResult = Result.Error("error");
+
+      // WHEN
       const swanResult = toSwanResult(temporalResult);
 
+      // THEN
       expect(swanResult.isError()).toBe(true);
       const error = swanResult.match({
         Ok: () => "",
@@ -59,9 +75,13 @@ describe("Interoperability with @swan-io/boxed", () => {
     });
 
     it("should maintain Result API compatibility", () => {
+      // GIVEN
       const temporalResult = Result.Ok(42);
+
+      // WHEN
       const swanResult = toSwanResult(temporalResult);
 
+      // THEN
       // Test map
       const mapped = swanResult.map((x) => x * 2);
       expect(mapped.match({ Ok: (v) => v, Error: () => 0 })).toBe(84);
@@ -73,48 +93,66 @@ describe("Interoperability with @swan-io/boxed", () => {
 
   describe("Future interoperability", () => {
     it("should convert from swan Future to temporal Future", async () => {
+      // GIVEN
       // Create an actual swan-io Future
       const swanFuture = SwanIoFuture.value(42);
 
+      // WHEN
       const temporalFuture = await fromSwanFuture(swanFuture);
       const value = await temporalFuture;
+
+      // THEN
       expect(value).toBe(42);
     });
 
     it("should convert from temporal Future to swan-compatible Future", async () => {
+      // GIVEN
       const temporalFuture = Future.value(42);
-      const swanFuture = toSwanFuture(temporalFuture);
 
+      // WHEN
+      const swanFuture = toSwanFuture(temporalFuture);
       const value = await swanFuture;
+
+      // THEN
       expect(value).toBe(42);
     });
 
     it("should maintain Future API compatibility", async () => {
+      // GIVEN
       const temporalFuture = Future.value(42);
+
+      // WHEN
       const swanFuture = toSwanFuture(temporalFuture);
 
+      // THEN
       // Test map (the correct way to transform Future values)
       const mapped = swanFuture.map((x) => x * 2);
       const value = await mapped;
       expect(value).toBe(84);
 
+      // WHEN
       // Test that the future can be awaited directly
       const temporalFuture2 = Future.value(42);
       const swanFuture2 = toSwanFuture(temporalFuture2);
       const directValue = await swanFuture2;
+
+      // THEN
       expect(directValue).toBe(42);
     });
   });
 
   describe("Future<Result> interoperability", () => {
     it("should convert from swan Future<Result> to temporal Future<Result>", async () => {
+      // GIVEN
       // Create an actual swan-io Future<Result>
       const swanResult = SwanIoResult.Ok(42);
       const swanFutureResult = SwanIoFuture.value(swanResult);
 
+      // WHEN
       const temporalFutureResult = await fromSwanFutureResult(swanFutureResult);
       const result = await temporalFutureResult;
 
+      // THEN
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(result.value).toBe(42);
@@ -122,10 +160,14 @@ describe("Interoperability with @swan-io/boxed", () => {
     });
 
     it("should convert from temporal Future<Result> to swan-compatible Future<Result>", async () => {
+      // GIVEN
       const temporalFutureResult = Future.value(Result.Ok(42));
-      const swanFutureResult = toSwanFutureResult(temporalFutureResult);
 
+      // WHEN
+      const swanFutureResult = toSwanFutureResult(temporalFutureResult);
       const result = await swanFutureResult;
+
+      // THEN
       expect(result.isOk()).toBe(true);
       const value = result.match({
         Ok: (v) => v,
@@ -135,9 +177,13 @@ describe("Interoperability with @swan-io/boxed", () => {
     });
 
     it("should maintain Future<Result> API compatibility", async () => {
+      // GIVEN
       const temporalFutureResult = Future.value(Result.Ok(42));
+
+      // WHEN
       const swanFutureResult = toSwanFutureResult(temporalFutureResult);
 
+      // THEN
       // Test mapOk with type transformation (number -> string)
       const mapped = swanFutureResult.mapOk((x) => `value: ${x}`);
       const result = await mapped;
@@ -147,9 +193,11 @@ describe("Interoperability with @swan-io/boxed", () => {
 
   describe("Type compatibility", () => {
     it("should demonstrate that our types implement swan-io/boxed interface", () => {
+      // GIVEN
       // This test verifies that our Result type is structurally compatible
       const temporalResult = Result.Ok(42);
 
+      // WHEN
       // These should compile without errors, proving structural compatibility
       const isOk: boolean = temporalResult.isOk();
       const isError: boolean = temporalResult.isError();
@@ -158,19 +206,23 @@ describe("Interoperability with @swan-io/boxed", () => {
         Error: () => 0,
       });
 
+      // THEN
       expect(isOk).toBe(true);
       expect(isError).toBe(false);
       expect(matched).toBe(42);
     });
 
     it("should demonstrate that our Future implements swan-io/boxed interface", async () => {
+      // GIVEN
       // This test verifies that our Future type is structurally compatible
       const temporalFuture = Future.value(42);
 
+      // WHEN
       // These should compile without errors, proving structural compatibility
       const mapped = temporalFuture.map((x) => x * 2);
       const value = await mapped;
 
+      // THEN
       expect(value).toBe(84);
     });
   });
