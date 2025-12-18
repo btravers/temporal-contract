@@ -162,9 +162,6 @@ importers:
       '@temporal-contract/tsconfig':
         specifier: workspace:*
         version: link:../../tools/tsconfig
-      '@temporal-contract/worker':
-        specifier: workspace:*
-        version: link:../worker
       '@temporalio/client':
         specifier: 'catalog:'
         version: 1.14.0

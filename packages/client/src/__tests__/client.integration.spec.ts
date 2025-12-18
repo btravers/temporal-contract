@@ -2,8 +2,6 @@ import { describe, expect, vi, beforeEach } from "vitest";
 import { Worker } from "@temporalio/worker";
 import { TypedClient } from "../client.js";
 import { it as baseIt } from "@temporal-contract/testing/extension";
-import { Future, Result } from "@temporal-contract/boxed";
-import { declareActivitiesHandler } from "@temporal-contract/worker/activity";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { testContract } from "./test.contract.js";
@@ -25,7 +23,19 @@ const it = baseIt.extend<{
         namespace: "default",
         taskQueue: testContract.taskQueue,
         workflowsPath: workflowPath("test.workflows"),
-        activities: testActivitiesHandler.activities,
+        activities: {
+          // Global activities
+          logMessage: async ({ message }: { message: string }) => {
+            logMessages.push(message);
+            return {};
+          },
+          // Workflow-specific activities
+          processMessage: async ({ message }: { message: string }) => {
+            return {
+              processed: message.toUpperCase(),
+            };
+          },
+        },
       });
 
       // Start worker in background
@@ -60,26 +70,6 @@ const it = baseIt.extend<{
 // ============================================================================
 
 const logMessages: string[] = [];
-
-const testActivitiesHandler = declareActivitiesHandler({
-  contract: testContract,
-  activities: {
-    // Global activities
-    logMessage: ({ message }) => {
-      logMessages.push(message);
-      return Future.value(Result.Ok({}));
-    },
-
-    // Workflow-specific activities
-    processMessage: ({ message }) => {
-      return Future.value(
-        Result.Ok({
-          processed: message.toUpperCase(),
-        }),
-      );
-    },
-  },
-});
 
 // ============================================================================
 // Integration Tests

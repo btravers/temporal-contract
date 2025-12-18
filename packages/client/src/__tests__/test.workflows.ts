@@ -1,55 +1,65 @@
-import { testContract } from "./test.contract.js";
-import { declareWorkflow } from "@temporal-contract/worker/workflow";
-import { sleep } from "@temporalio/workflow";
+import {
+  proxyActivities,
+  sleep,
+  setHandler,
+  defineSignal,
+  defineQuery,
+  defineUpdate,
+} from "@temporalio/workflow";
 
-export const simpleWorkflow = declareWorkflow({
-  workflowName: "simpleWorkflow",
-  contract: testContract,
-  implementation: async ({ activities }, args) => {
-    await activities.logMessage({ message: `Processing: ${args.value}` });
-    return {
-      result: `Processed: ${args.value}`,
-    };
-  },
+// Define activity types manually based on the contract
+type Activities = {
+  logMessage(args: { message: string }): Promise<{}>;
+  processMessage(args: { message: string }): Promise<{ processed: string }>;
+};
+
+// Create activity proxies
+const activities = proxyActivities<Activities>({
+  startToCloseTimeout: "1 minute",
 });
 
-export const interactiveWorkflow = declareWorkflow({
-  workflowName: "interactiveWorkflow",
-  contract: testContract,
-  implementation: async ({ defineSignal, defineQuery, defineUpdate }, args) => {
-    let currentValue = args.initialValue;
+export async function simpleWorkflow(args: { value: string }) {
+  await activities.logMessage({ message: `Processing: ${args.value}` });
+  return {
+    result: `Processed: ${args.value}`,
+  };
+}
 
-    // Define signal, query, and update handlers with access to workflow state
-    defineSignal("increment", async (signalArgs) => {
-      currentValue += signalArgs.amount;
-    });
+const incrementSignal = defineSignal<[{ amount: number }]>("increment");
+const getCurrentValueQuery = defineQuery<{ value: number }, []>("getCurrentValue");
+const multiplyUpdate = defineUpdate<{ newValue: number }, [{ factor: number }]>("multiply");
 
-    defineQuery("getCurrentValue", () => {
-      return { value: currentValue };
-    });
+export async function interactiveWorkflow(args: { initialValue: number }) {
+  let currentValue = args.initialValue;
 
-    defineUpdate("multiply", async (updateArgs) => {
-      currentValue *= updateArgs.factor;
-      return { newValue: currentValue };
-    });
+  // Define signal handler
+  setHandler(incrementSignal, async ({ amount }) => {
+    currentValue += amount;
+  });
 
-    // Simulate some processing time to allow signals/queries/updates
-    await sleep(100);
+  // Define query handler
+  setHandler(getCurrentValueQuery, () => {
+    return { value: currentValue };
+  });
 
-    return {
-      finalValue: currentValue,
-    };
-  },
-});
+  // Define update handler
+  setHandler(multiplyUpdate, async ({ factor }) => {
+    currentValue *= factor;
+    return { newValue: currentValue };
+  });
 
-export const workflowWithActivity = declareWorkflow({
-  workflowName: "workflowWithActivity",
-  contract: testContract,
-  implementation: async ({ activities }, args) => {
-    const processed = await activities.processMessage({ message: args.message });
-    await activities.logMessage({ message: `Activity result: ${processed.processed}` });
-    return {
-      result: processed.processed,
-    };
-  },
-});
+  // Simulate some processing time to allow signals/queries/updates
+  await sleep(100);
+
+  return {
+    finalValue: currentValue,
+  };
+}
+
+export async function workflowWithActivity(args: { message: string }) {
+  const processed = await activities.processMessage({ message: args.message });
+  await activities.logMessage({ message: `Activity result: ${processed.processed}` });
+  return {
+    result: processed.processed,
+  };
+}

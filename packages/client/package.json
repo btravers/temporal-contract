@@ -57,7 +57,6 @@
   "devDependencies": {
     "@temporal-contract/testing": "workspace:*",
     "@temporal-contract/tsconfig": "workspace:*",
-    "@temporal-contract/worker": "workspace:*",
     "@temporalio/client": "catalog:",
     "@temporalio/worker": "catalog:",
     "@temporalio/workflow": "catalog:",
