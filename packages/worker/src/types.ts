@@ -26,6 +26,22 @@ export type WorkerInferOutput<T extends { output: AnySchema }> = StandardSchemaV
 >;
 
 /**
+ * Infer input type from a definition (client perspective)
+ * Client sends the input type (before input schema parsing/transformation)
+ */
+export type ClientInferInput<T extends { input: AnySchema }> = StandardSchemaV1.InferInput<
+  T["input"]
+>;
+
+/**
+ * Infer output type from a definition (client perspective)
+ * Client receives the output type (after output schema parsing/transformation)
+ */
+export type ClientInferOutput<T extends { output: AnySchema }> = StandardSchemaV1.InferOutput<
+  T["output"]
+>;
+
+/**
  * WORKER PERSPECTIVE
  * Worker receives z.output of input (parsed data) and returns z.input of output (raw data)
  */
@@ -37,14 +53,6 @@ export type WorkerInferOutput<T extends { output: AnySchema }> = StandardSchemaV
 export type WorkerInferWorkflow<TWorkflow extends WorkflowDefinition> = (
   args: WorkerInferInput<TWorkflow>,
 ) => Promise<WorkerInferOutput<TWorkflow>>;
-
-/**
- * Infer activity function signature from worker perspective
- * Worker receives z.input and returns z.output
- */
-export type WorkerInferActivity<TActivity extends ActivityDefinition> = (
-  args: WorkerInferInput<TActivity>,
-) => Promise<WorkerInferOutput<TActivity>>;
 
 /**
  * Infer signal handler signature from worker perspective
@@ -82,26 +90,6 @@ export type WorkerInferWorkflows<TContract extends ContractDefinition> = {
 };
 
 /**
- * Infer all activities from a contract (worker perspective)
- */
-export type WorkerInferActivities<TContract extends ContractDefinition> =
-  TContract["activities"] extends Record<string, ActivityDefinition>
-    ? {
-        [K in keyof TContract["activities"]]: WorkerInferActivity<TContract["activities"][K]>;
-      }
-    : {};
-
-/**
- * Infer activities from a workflow definition (worker perspective)
- */
-export type WorkerInferWorkflowActivities<T extends WorkflowDefinition> =
-  T["activities"] extends Record<string, ActivityDefinition>
-    ? {
-        [K in keyof T["activities"]]: WorkerInferActivity<T["activities"][K]>;
-      }
-    : {};
-
-/**
  * Infer signals from a workflow definition (worker perspective)
  */
 export type WorkerInferWorkflowSignals<T extends WorkflowDefinition> =
@@ -130,16 +118,6 @@ export type WorkerInferWorkflowUpdates<T extends WorkflowDefinition> =
         [K in keyof T["updates"]]: WorkerInferUpdate<T["updates"][K]>;
       }
     : {};
-
-/**
- * Infer all activities available in a workflow context (worker perspective)
- * Combines workflow-specific activities with global activities
- */
-export type WorkerInferWorkflowContextActivities<
-  TContract extends ContractDefinition,
-  TWorkflowName extends keyof TContract["workflows"],
-> = WorkerInferWorkflowActivities<TContract["workflows"][TWorkflowName]> &
-  WorkerInferActivities<TContract>;
 
 /**
  * UTILITY TYPES FOR ACTIVITY HANDLERS

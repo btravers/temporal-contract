@@ -11,6 +11,9 @@ export const simpleWorkflow = declareWorkflow({
       result: `Processed: ${args.value}`,
     };
   },
+  activityOptions: {
+    startToCloseTimeout: "1 minute",
+  },
 });
 
 export const workflowWithActivities = declareWorkflow({
@@ -50,6 +53,9 @@ export const workflowWithActivities = declareWorkflow({
       transactionId: paymentResult.transactionId,
     };
   },
+  activityOptions: {
+    startToCloseTimeout: "1 minute",
+  },
 });
 
 export const interactiveWorkflow = declareWorkflow({
@@ -81,6 +87,9 @@ export const interactiveWorkflow = declareWorkflow({
       finalValue: currentValue,
     };
   },
+  activityOptions: {
+    startToCloseTimeout: "1 minute",
+  },
 });
 
 // Parent workflow that starts child workflows
@@ -105,6 +114,9 @@ export const parentWorkflow = declareWorkflow({
 
     return { results };
   },
+  activityOptions: {
+    startToCloseTimeout: "1 minute",
+  },
 });
 
 // Child workflow
@@ -117,6 +129,9 @@ export const childWorkflow = declareWorkflow({
       message: `Child ${args.id} completed`,
     };
   },
+  activityOptions: {
+    startToCloseTimeout: "1 minute",
+  },
 });
 
 // Workflow that calls failable activity
@@ -128,5 +143,8 @@ export const workflowWithFailableActivity = declareWorkflow({
     return {
       success: result.success,
     };
+  },
+  activityOptions: {
+    startToCloseTimeout: "1 minute",
   },
 });
