@@ -333,7 +333,7 @@ describe("Contract Builder", () => {
             },
           },
         }),
-      ).toThrow("Contract error");
+      ).toThrow("Contract validation failed");
     });
 
     it("should throw when no workflows are defined", () => {
@@ -622,7 +622,7 @@ describe("Contract Builder", () => {
             },
           },
         }),
-      ).toThrow("Contract error");
+      ).toThrow("Contract validation failed");
     });
 
     it("should throw when workflow is missing output", () => {
@@ -636,7 +636,7 @@ describe("Contract Builder", () => {
             },
           },
         }),
-      ).toThrow("Contract error");
+      ).toThrow("Contract validation failed");
     });
 
     it("should throw when activity is missing input", () => {
@@ -656,7 +656,7 @@ describe("Contract Builder", () => {
             },
           },
         }),
-      ).toThrow("Contract error");
+      ).toThrow("Contract validation failed");
     });
 
     it("should throw when activity is missing output", () => {
@@ -676,7 +676,7 @@ describe("Contract Builder", () => {
             },
           },
         }),
-      ).toThrow("Contract error");
+      ).toThrow("Contract validation failed");
     });
 
     it("should throw when workflow activity name is invalid", () => {
@@ -711,7 +711,7 @@ describe("Contract Builder", () => {
             },
           },
         }),
-      ).toThrow("Contract error");
+      ).toThrow("Contract validation failed");
     });
 
     it("should throw when output is not a Zod schema", () => {
@@ -726,7 +726,7 @@ describe("Contract Builder", () => {
             },
           },
         }),
-      ).toThrow("Contract error");
+      ).toThrow("Contract validation failed");
     });
   });
 

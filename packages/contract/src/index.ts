@@ -21,6 +21,17 @@ export type {
   InferContractWorkflows,
 } from "./types.js";
 
+export {
+  getAllActivityNames,
+  getWorkflowActivities,
+  hasWorkflow,
+  hasGlobalActivity,
+  getWorkflowNames,
+  getContractStats,
+  mergeContracts,
+  isContract,
+} from "./helpers.js";
+
 export { defineNexusOperation, defineNexusService } from "./nexus-types.js";
 
 export type {
