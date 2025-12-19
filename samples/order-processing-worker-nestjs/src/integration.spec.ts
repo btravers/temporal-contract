@@ -10,7 +10,7 @@ import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { z } from "zod";
 import { Client } from "@temporalio/client";
-import { Test } from "@nestjs/testing";
+import { Test, TestingModule } from "@nestjs/testing";
 import { ActivitiesProvider } from "./activities.provider.js";
 import { DependenciesModule } from "./dependencies.module.js";
 import { MockPaymentAdapter } from "./infrastructure/adapters/payment.adapter.js";
@@ -21,15 +21,32 @@ const it = baseIt.extend<{
   worker: Worker;
   client: TypedClient<typeof orderProcessingContract>;
   paymentAdapter: MockPaymentAdapter;
+  moduleRef: TestingModule;
 }>({
-  worker: [
-    async ({ workerConnection }, use) => {
-      // Create NestJS testing module
+  moduleRef: [
+    async (_context, use) => {
+      // Create a single NestJS testing module to be shared across fixtures
       const moduleRef = await Test.createTestingModule({
         imports: [DependenciesModule],
         providers: [ActivitiesProvider],
       }).compile();
 
+      await use(moduleRef);
+      await moduleRef.close();
+    },
+    { auto: true },
+  ],
+  paymentAdapter: [
+    async ({ moduleRef }, use) => {
+      // Get the payment adapter from the shared module
+      const adapter = moduleRef.get<MockPaymentAdapter>("PaymentAdapter");
+      await use(adapter);
+    },
+    { auto: true },
+  ],
+  worker: [
+    async ({ workerConnection, moduleRef }, use) => {
+      // Use the shared module for activities
       const activitiesProvider = moduleRef.get(ActivitiesProvider);
       const activities = activitiesProvider.createActivities();
 
@@ -54,22 +71,6 @@ const it = baseIt.extend<{
       await worker.shutdown();
 
       await vi.waitFor(() => worker.getState() === "STOPPED", { interval: 100, timeout: 5000 });
-
-      await moduleRef.close();
-    },
-    { auto: true },
-  ],
-  paymentAdapter: [
-    // oxlint-disable-next-line no-empty-pattern
-    async ({}, use) => {
-      // Create a module to get the payment adapter
-      const moduleRef = await Test.createTestingModule({
-        imports: [DependenciesModule],
-      }).compile();
-
-      const adapter = moduleRef.get<MockPaymentAdapter>("PaymentAdapter");
-      await use(adapter);
-      await moduleRef.close();
     },
     { auto: true },
   ],
