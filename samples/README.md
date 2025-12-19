@@ -20,13 +20,11 @@ Standalone client demonstrating interaction with the unified contract
 
 ### 📄 [contract-utilities-example.ts](./contract-utilities-example.ts)
 
-Demonstrates the new helper and debugging utilities:
+Demonstrates the debugging utilities:
 
-- **Contract Introspection**: `getContractStats`, `getAllActivityNames`, `getWorkflowActivities`
-- **Contract Validation**: `validateContractNaming`, `hasWorkflow`, `hasGlobalActivity`
 - **Contract Debugging**: `debugContract`, `debugContractJSON`
+- **Contract Validation**: `validateContractNaming`
 - **Contract Comparison**: `compareContracts` for version migration analysis
-- **Contract Composition**: `mergeContracts` for modular contract definitions
 
 Run with: `npx tsx samples/contract-utilities-example.ts`
 

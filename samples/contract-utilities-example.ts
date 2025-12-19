@@ -1,14 +1,12 @@
 /**
- * Example demonstrating the new contract helper utilities
+ * Example demonstrating the contract debugging utilities
  *
- * This example shows how to use the introspection and debugging utilities
+ * This example shows how to use the debugging utilities
  * to analyze and compare contracts.
  */
 
 import { defineContract } from "@temporal-contract/contract";
 import {
-  getContractStats,
-  getAllActivityNames,
   debugContract,
   validateContractNaming,
   compareContracts,
@@ -142,29 +140,12 @@ const ecommerceContract = defineContract({
   },
 });
 
-// Example 1: Get contract statistics
-console.log("=== Contract Statistics ===");
-const stats = getContractStats(ecommerceContract);
-console.log(`Workflows: ${stats.workflowCount}`);
-console.log(`Total Activities: ${stats.totalActivityCount}`);
-console.log(`Global Activities: ${stats.globalActivityCount}`);
-console.log(`Signals: ${stats.signalCount}`);
-console.log(`Queries: ${stats.queryCount}`);
-console.log(`Updates: ${stats.updateCount}`);
-console.log();
-
-// Example 2: Get all activity names
-console.log("=== All Activity Names ===");
-const activityNames = getAllActivityNames(ecommerceContract);
-console.log(activityNames.join(", "));
-console.log();
-
-// Example 3: Debug contract structure
+// Example 1: Debug contract structure
 console.log("=== Contract Structure ===");
 console.log(debugContract(ecommerceContract));
 console.log();
 
-// Example 4: Validate naming conventions
+// Example 2: Validate naming conventions
 console.log("=== Naming Validation ===");
 const namingIssues = validateContractNaming(ecommerceContract);
 if (namingIssues.length === 0) {
@@ -175,7 +156,7 @@ if (namingIssues.length === 0) {
 }
 console.log();
 
-// Example 5: Compare contract versions
+// Example 3: Compare contract versions
 console.log("=== Contract Version Comparison ===");
 
 // Simulate an updated contract with new features
@@ -220,17 +201,6 @@ console.log(`Added Global Activities: ${diff.addedGlobalActivities.join(", ") ||
 console.log(`Removed Global Activities: ${diff.removedGlobalActivities.join(", ") || "None"}`);
 
 // Example output:
-// === Contract Statistics ===
-// Workflows: 2
-// Total Activities: 5
-// Global Activities: 1
-// Signals: 1
-// Queries: 1
-// Updates: 1
-//
-// === All Activity Names ===
-// createShipment, logEvent, processPayment, reserveInventory, validateInventory
-//
 // === Contract Structure ===
 // Contract: ecommerce
 //   Workflows: 2

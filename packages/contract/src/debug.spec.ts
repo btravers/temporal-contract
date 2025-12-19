@@ -53,13 +53,13 @@ describe("Debug Utilities", () => {
   describe("debugContract", () => {
     it("should generate a readable summary", () => {
       const summary = debugContract(sampleContract);
-      expect(summary).toContain("Contract: test-queue");
-      expect(summary).toContain("Workflows: 2");
-      expect(summary).toContain("processOrder");
-      expect(summary).toContain("activities: 2");
-      expect(summary).toContain("signals: 1");
-      expect(summary).toContain("queries: 1");
-      expect(summary).toContain("Global Activities: 1");
+      expect(summary).toMatchInlineSnapshot(`
+        "Contract: test-queue
+          Workflows: 2
+            - processOrder (activities: 2, signals: 1, queries: 1)
+            - sendNotification
+          Global Activities: 1"
+      `);
     });
 
     it("should handle contract with minimal workflows", () => {
@@ -74,10 +74,11 @@ describe("Debug Utilities", () => {
       });
 
       const summary = debugContract(minimalContract);
-      expect(summary).toContain("Contract: minimal");
-      expect(summary).toContain("Workflows: 1");
-      expect(summary).toContain("simple");
-      expect(summary).not.toContain("Global Activities");
+      expect(summary).toMatchInlineSnapshot(`
+        "Contract: minimal
+          Workflows: 1
+            - simple"
+      `);
     });
   });
 

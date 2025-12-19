@@ -22,17 +22,6 @@ export type {
 } from "./types.js";
 
 export {
-  getAllActivityNames,
-  getWorkflowActivities,
-  hasWorkflow,
-  hasGlobalActivity,
-  getWorkflowNames,
-  getContractStats,
-  mergeContracts,
-  isContract,
-} from "./helpers.js";
-
-export {
   debugContract,
   debugContractJSON,
   validateContractNaming,
