@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/main.ts",
+    "test:integration": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@nestjs/common": "^11.1.9",
-    "@nestjs/core": "^11.1.9",
+    "@nestjs/common": "11.1.9",
+    "@nestjs/core": "11.1.9",
     "@temporal-contract/boxed": "workspace:*",
     "@temporal-contract/sample-order-processing-contract": "workspace:*",
     "@temporal-contract/worker": "workspace:*",
@@ -18,13 +19,19 @@
     "@temporalio/workflow": "catalog:",
     "pino": "catalog:",
     "pino-pretty": "catalog:",
-    "reflect-metadata": "^0.2.2",
+    "reflect-metadata": "0.2.2",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@nestjs/testing": "11.1.9",
+    "@temporal-contract/client": "workspace:*",
+    "@temporal-contract/testing": "workspace:*",
     "@temporal-contract/tsconfig": "workspace:*",
+    "@temporalio/client": "catalog:",
     "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "tsx": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

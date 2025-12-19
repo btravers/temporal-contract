@@ -22,12 +22,15 @@ import type { PinoLoggerAdapter } from "./infrastructure/adapters/logger.adapter
 export class ActivitiesProvider {
   constructor(
     @Inject("LoggerAdapter") private readonly loggerAdapter: PinoLoggerAdapter,
-    private readonly processPaymentUseCase: ProcessPaymentUseCase,
+    @Inject(ProcessPaymentUseCase) private readonly processPaymentUseCase: ProcessPaymentUseCase,
+    @Inject(ReserveInventoryUseCase)
     private readonly reserveInventoryUseCase: ReserveInventoryUseCase,
+    @Inject(ReleaseInventoryUseCase)
     private readonly releaseInventoryUseCase: ReleaseInventoryUseCase,
-    private readonly createShipmentUseCase: CreateShipmentUseCase,
+    @Inject(CreateShipmentUseCase) private readonly createShipmentUseCase: CreateShipmentUseCase,
+    @Inject(SendNotificationUseCase)
     private readonly sendNotificationUseCase: SendNotificationUseCase,
-    private readonly refundPaymentUseCase: RefundPaymentUseCase,
+    @Inject(RefundPaymentUseCase) private readonly refundPaymentUseCase: RefundPaymentUseCase,
   ) {}
 
   /**

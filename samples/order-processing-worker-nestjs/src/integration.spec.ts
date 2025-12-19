@@ -1,0 +1,296 @@
+import { describe, expect, vi } from "vitest";
+import { Worker } from "@temporalio/worker";
+import { TypedClient } from "@temporal-contract/client";
+import { it as baseIt } from "@temporal-contract/testing/extension";
+import {
+  orderProcessingContract,
+  OrderSchema,
+} from "@temporal-contract/sample-order-processing-contract";
+import { extname } from "node:path";
+import { fileURLToPath } from "node:url";
+import type { z } from "zod";
+import { Client } from "@temporalio/client";
+import { Test } from "@nestjs/testing";
+import { ActivitiesProvider } from "./activities.provider.js";
+import { DependenciesModule } from "./dependencies.module.js";
+
+type Order = z.infer<typeof OrderSchema>;
+
+const it = baseIt.extend<{
+  worker: Worker;
+  client: TypedClient<typeof orderProcessingContract>;
+}>({
+  worker: [
+    async ({ workerConnection }, use) => {
+      // Create NestJS testing module
+      const moduleRef = await Test.createTestingModule({
+        imports: [DependenciesModule],
+        providers: [ActivitiesProvider],
+      }).compile();
+
+      const activitiesProvider = moduleRef.get(ActivitiesProvider);
+      const activities = activitiesProvider.createActivities();
+
+      // Create and start worker
+      const worker = await Worker.create({
+        connection: workerConnection,
+        namespace: "default",
+        taskQueue: orderProcessingContract.taskQueue,
+        workflowsPath: workflowPath("workflows"),
+        activities,
+      });
+
+      // Start worker in background
+      worker.run().catch((err) => {
+        console.error("Worker failed:", err);
+      });
+
+      await vi.waitFor(() => worker.getState() === "RUNNING", { interval: 100 });
+
+      await use(worker);
+
+      worker.shutdown();
+
+      await vi.waitFor(() => worker.getState() === "STOPPED", { interval: 100 });
+
+      await moduleRef.close();
+    },
+    { auto: true },
+  ],
+  client: async ({ clientConnection }, use) => {
+    // Create typed client
+    const rawClient = new Client({
+      connection: clientConnection,
+      namespace: "default",
+    });
+    const client = TypedClient.create(orderProcessingContract, rawClient);
+
+    await use(client);
+  },
+});
+
+describe("Order Processing Workflow - Integration Tests (NestJS)", () => {
+  it("should process an order successfully", async ({ client }) => {
+    // GIVEN
+    const order: Order = {
+      orderId: `ORD-TEST-${Date.now()}`,
+      customerId: "CUST-TEST-001",
+      items: [
+        {
+          productId: "PROD-001",
+          quantity: 2,
+          price: 29.99,
+        },
+        {
+          productId: "PROD-002",
+          quantity: 1,
+          price: 49.99,
+        },
+      ],
+      totalAmount: 109.97,
+    };
+
+    // WHEN
+    const result = await client.executeWorkflow("processOrder", {
+      workflowId: order.orderId,
+      args: order,
+    });
+
+    // THEN
+    expect(result).toEqual(
+      expect.objectContaining({
+        tag: "Ok",
+        value: {
+          orderId: order.orderId,
+          status: "completed",
+          transactionId: expect.any(String),
+          trackingNumber: expect.any(String),
+        },
+      }),
+    );
+  });
+
+  it("should handle workflow with startWorkflow and result", async ({ client }) => {
+    // GIVEN
+    const order: Order = {
+      orderId: `ORD-TEST-${Date.now()}`,
+      customerId: "CUST-TEST-002",
+      items: [
+        {
+          productId: "PROD-003",
+          quantity: 1,
+          price: 99.99,
+        },
+      ],
+      totalAmount: 99.99,
+    };
+
+    // WHEN
+    const handleResult = await client.startWorkflow("processOrder", {
+      workflowId: order.orderId,
+      args: order,
+    });
+
+    // THEN
+    expect(handleResult).toEqual(
+      expect.objectContaining({
+        tag: "Ok",
+      }),
+    );
+    if (!handleResult.isOk()) throw new Error("Expected Ok result");
+    const handle = handleResult.value;
+    expect(handle.workflowId).toBe(order.orderId);
+
+    const result = await handle.result();
+    expect(result).toEqual(
+      expect.objectContaining({
+        tag: "Ok",
+        value: {
+          orderId: order.orderId,
+          status: "completed",
+          transactionId: expect.any(String),
+          trackingNumber: expect.any(String),
+        },
+      }),
+    );
+  });
+
+  it("should be able to get workflow handle after start", async ({ client }) => {
+    // GIVEN
+    const order: Order = {
+      orderId: `ORD-TEST-${Date.now()}`,
+      customerId: "CUST-TEST-003",
+      items: [
+        {
+          productId: "PROD-004",
+          quantity: 3,
+          price: 19.99,
+        },
+      ],
+      totalAmount: 59.97,
+    };
+
+    // WHEN
+    await client.startWorkflow("processOrder", {
+      workflowId: order.orderId,
+      args: order,
+    });
+
+    // THEN
+    const handleResult = await client.getHandle("processOrder", order.orderId);
+
+    expect(handleResult).toEqual(
+      expect.objectContaining({
+        tag: "Ok",
+      }),
+    );
+    if (!handleResult.isOk()) throw new Error("Expected Ok result");
+    const handle = handleResult.value;
+    expect(handle.workflowId).toBe(order.orderId);
+
+    const result = await handle.result();
+    expect(result).toEqual(
+      expect.objectContaining({
+        tag: "Ok",
+        value: {
+          orderId: order.orderId,
+          status: "completed",
+          transactionId: expect.any(String),
+          trackingNumber: expect.any(String),
+        },
+      }),
+    );
+  });
+
+  it("should handle describe and terminate operations", async ({ client }) => {
+    // GIVEN
+    const order: Order = {
+      orderId: `ORD-TEST-${Date.now()}`,
+      customerId: "CUST-TEST-004",
+      items: [
+        {
+          productId: "PROD-005",
+          quantity: 1,
+          price: 149.99,
+        },
+      ],
+      totalAmount: 149.99,
+    };
+
+    // WHEN
+    const handleResult = await client.startWorkflow("processOrder", {
+      workflowId: order.orderId,
+      args: order,
+    });
+
+    // THEN
+    expect(handleResult).toEqual(
+      expect.objectContaining({
+        tag: "Ok",
+      }),
+    );
+    if (!handleResult.isOk()) throw new Error("Expected Ok result");
+    const handle = handleResult.value;
+
+    const describeResult = await handle.describe();
+    expect(describeResult).toEqual(
+      expect.objectContaining({
+        tag: "Ok",
+        value: expect.objectContaining({
+          workflowId: order.orderId,
+          type: "processOrder",
+        }),
+      }),
+    );
+
+    await handle.result();
+  });
+
+  it("should validate input data with Zod", async ({ client }) => {
+    // GIVEN
+    const invalidOrder = {
+      orderId: `ORD-TEST-${Date.now()}`,
+      customerId: "CUST-TEST-005",
+      items: [
+        {
+          productId: "PROD-006",
+          quantity: -1, // Invalid: negative quantity
+          price: 29.99,
+        },
+      ],
+      totalAmount: 29.99,
+    };
+
+    // WHEN
+    const execution = await client.executeWorkflow("processOrder", {
+      workflowId: invalidOrder.orderId,
+      args: invalidOrder as Order,
+    });
+
+    // THEN
+    expect(execution).toEqual(
+      expect.objectContaining({
+        tag: "Error",
+        error: expect.objectContaining({
+          name: "WorkflowValidationError",
+          workflowName: "processOrder",
+          direction: "input",
+          issues: [
+            {
+              origin: "number",
+              code: "too_small",
+              minimum: 0,
+              inclusive: false,
+              path: ["items", 0, "quantity"],
+              message: "Too small: expected number to be >0",
+            },
+          ],
+        }),
+      }),
+    );
+  });
+});
+
+function workflowPath(filename: string): string {
+  return fileURLToPath(new URL(`./${filename}${extname(import.meta.url)}`, import.meta.url));
+}

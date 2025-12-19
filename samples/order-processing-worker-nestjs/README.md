@@ -46,7 +46,7 @@ This sample does the same thing as `order-processing-worker` but uses NestJS:
 1. **Temporal server running**:
 
    ```bash
-   temporal server start-dev
+   docker run --rm -p 7233:7233 temporalio/auto-setup:latest
    ```
 
 2. **Dependencies installed** (from repository root):
