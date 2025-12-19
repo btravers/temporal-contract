@@ -76,11 +76,11 @@ export class TemporalService implements OnModuleInit, OnModuleDestroy {
 
     // Create the worker
     this.worker = await Worker.create({
+      ...this.options,
       connection: this.options.connection,
       workflowsPath: this.options.workflowsPath,
       taskQueue: this.options.contract.taskQueue,
       activities,
-      ...this.options,
     });
   }
 }
