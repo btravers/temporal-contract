@@ -23,7 +23,6 @@ function workflowPath(filename: string): string {
   imports: [
     DependenciesModule,
     TemporalModule.forRootAsync({
-      imports: [DependenciesModule],
       inject: [ActivitiesProvider],
       useFactory: async (activitiesProvider: ActivitiesProvider) => {
         // Create connection to Temporal server

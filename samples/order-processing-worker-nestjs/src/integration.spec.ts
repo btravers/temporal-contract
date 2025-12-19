@@ -60,7 +60,8 @@ const it = baseIt.extend<{
     { auto: true },
   ],
   paymentAdapter: [
-    async (_context, use) => {
+    // oxlint-disable-next-line no-empty-pattern
+    async ({}, use) => {
       // Create a module to get the payment adapter
       const moduleRef = await Test.createTestingModule({
         imports: [DependenciesModule],
