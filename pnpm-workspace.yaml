@@ -32,3 +32,12 @@ catalog:
   valibot: 1.2.0
   vitest: 4.0.16
   zod: 4.2.1
+
+onlyBuiltDependencies:
+  - "@swc/core"
+  - "@temporalio/core-bridge"
+  - cpu-features
+  - esbuild
+  - lefthook
+  - protobufjs
+  - ssh2
