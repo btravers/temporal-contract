@@ -1,11 +1,9 @@
 import { Injectable, Inject, OnModuleInit, OnModuleDestroy, Logger } from "@nestjs/common";
-import { DiscoveryService } from "@nestjs/core";
 import { Worker, NativeConnection } from "@temporalio/worker";
 import { ContractDefinition } from "@temporal-contract/contract";
 import { declareActivitiesHandler, ActivitiesHandler } from "@temporal-contract/worker/activity";
 import { TEMPORAL_MODULE_OPTIONS } from "./constants.js";
 import type { TemporalModuleOptions } from "./interfaces.js";
-import { getActivityHandlers } from "./decorators.js";
 
 /**
  * Service managing the Temporal worker lifecycle and activity registration
@@ -20,7 +18,6 @@ export class TemporalService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(TEMPORAL_MODULE_OPTIONS)
     private readonly options: TemporalModuleOptions,
-    private readonly discoveryService: DiscoveryService,
   ) {}
 
   /**
@@ -76,7 +73,7 @@ export class TemporalService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Initialize the Temporal worker with discovered activities
+   * Initialize the Temporal worker with provided activities
    */
   private async initializeWorker(): Promise<void> {
     // Get or create connection
@@ -87,8 +84,11 @@ export class TemporalService implements OnModuleInit, OnModuleDestroy {
       this.shouldCloseConnection = true;
     }
 
-    // Discover and build activities from providers
-    const activities = await this.discoverActivities();
+    // Use declareActivitiesHandler to wrap activities with validation
+    const activities = declareActivitiesHandler({
+      contract: this.options.contract,
+      activities: this.options.activities as never,
+    });
 
     // Create the worker
     this.worker = await Worker.create({
@@ -98,95 +98,5 @@ export class TemporalService implements OnModuleInit, OnModuleDestroy {
       activities,
       ...this.options.workerOptions,
     });
-  }
-
-  /**
-   * Discover activities from NestJS providers and build activity handler
-   */
-  private async discoverActivities(): Promise<ActivitiesHandler<ContractDefinition>> {
-    const providers = this.discoveryService.getProviders();
-    const activityHandlers: Record<string, Record<string, unknown>> = {};
-
-    // Scan all providers for activity handlers
-    for (const wrapper of providers) {
-      const { instance } = wrapper;
-      if (!instance || typeof instance !== "object") {
-        continue;
-      }
-
-      const handlers = getActivityHandlers(instance);
-      if (handlers.length === 0) {
-        continue;
-      }
-
-      this.logger.debug(
-        `Found ${handlers.length} activity handlers in ${instance.constructor.name}`,
-      );
-
-      // Process each handler
-      for (const handler of handlers) {
-        const { workflowName, activityName, methodName } = handler;
-
-        // Initialize workflow namespace if needed
-        if (!activityHandlers[workflowName]) {
-          activityHandlers[workflowName] = {};
-        }
-
-        // Get the method from the instance
-        const method = (instance as Record<string | symbol, unknown>)[methodName];
-        if (typeof method !== "function") {
-          this.logger.warn(
-            `Activity handler ${workflowName}.${activityName} method ${String(methodName)} is not a function`,
-          );
-          continue;
-        }
-
-        // Bind the method to the instance to preserve 'this' context
-        activityHandlers[workflowName][activityName] = method.bind(instance);
-
-        this.logger.debug(`Registered activity: ${workflowName}.${activityName}`);
-      }
-    }
-
-    // Convert to format expected by declareActivitiesHandler
-    const activitiesImplementation = this.buildActivitiesImplementation(activityHandlers);
-
-    // Use declareActivitiesHandler to wrap with validation
-    return declareActivitiesHandler({
-      contract: this.options.contract,
-      activities: activitiesImplementation as never,
-    });
-  }
-
-  /**
-   * Build activities implementation in the format expected by declareActivitiesHandler
-   */
-  private buildActivitiesImplementation(
-    handlers: Record<string, Record<string, unknown>>,
-  ): Record<string, unknown> {
-    const result: Record<string, unknown> = {};
-
-    for (const [workflowName, activities] of Object.entries(handlers)) {
-      // Check if this workflow exists in the contract
-      const workflowDef = (this.options.contract.workflows as Record<string, unknown>)?.[
-        workflowName
-      ];
-
-      if (!workflowDef) {
-        this.logger.warn(`Workflow "${workflowName}" not found in contract, skipping activities`);
-        continue;
-      }
-
-      // Add workflow activities under workflow namespace
-      if (!result[workflowName]) {
-        result[workflowName] = {};
-      }
-
-      for (const [activityName, handler] of Object.entries(activities)) {
-        (result[workflowName] as Record<string, unknown>)[activityName] = handler;
-      }
-    }
-
-    return result;
   }
 }

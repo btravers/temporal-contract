@@ -1,3 +1,0 @@
-// Constants for metadata storage
-export const TEMPORAL_ACTIVITY_METADATA = Symbol("TEMPORAL_ACTIVITY_METADATA");
-export const TEMPORAL_MODULE_OPTIONS = "TEMPORAL_MODULE_OPTIONS";

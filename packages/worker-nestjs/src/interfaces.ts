@@ -1,5 +1,40 @@
 import { ContractDefinition } from "@temporal-contract/contract";
 import type { NativeConnection, WorkerOptions } from "@temporalio/worker";
+import type { Future, Result } from "@temporal-contract/boxed";
+import type { ActivityError } from "@temporal-contract/worker/activity";
+import type { WorkerInferInput, WorkerInferOutput } from "@temporal-contract/worker/activity";
+import type { ActivityDefinition } from "@temporal-contract/contract";
+
+/**
+ * Activity implementation using Future/Result pattern
+ */
+type BoxedActivityImplementation<TActivity extends ActivityDefinition> = (
+  args: WorkerInferInput<TActivity>,
+) => Future<Result<WorkerInferOutput<TActivity>, ActivityError>>;
+
+/**
+ * Map of all activity implementations for a contract (global + all workflow-specific)
+ */
+export type ContractActivitiesImplementation<TContract extends ContractDefinition> =
+  // Global activities
+  (TContract["activities"] extends Record<string, ActivityDefinition>
+    ? {
+        [K in keyof TContract["activities"]]: BoxedActivityImplementation<TContract["activities"][K]>;
+      }
+    : {}) &
+    // All workflow-specific activities merged
+    {
+      [TWorkflow in keyof TContract["workflows"]]: TContract["workflows"][TWorkflow]["activities"] extends Record<
+        string,
+        ActivityDefinition
+      >
+        ? {
+            [K in keyof TContract["workflows"][TWorkflow]["activities"]]: BoxedActivityImplementation<
+              TContract["workflows"][TWorkflow]["activities"][K]
+            >;
+          }
+        : {};
+    };
 
 /**
  * Options for configuring the Temporal module
@@ -9,6 +44,12 @@ export interface TemporalModuleOptions<TContract extends ContractDefinition = Co
    * The contract definition for this worker
    */
   contract: TContract;
+
+  /**
+   * Activities implementation for the contract
+   * All activities (global + workflow-specific) must be implemented
+   */
+  activities: ContractActivitiesImplementation<TContract>;
 
   /**
    * Connection to Temporal server (can be a NativeConnection instance or connection options)
@@ -55,12 +96,4 @@ export interface TemporalModuleAsyncOptions<
   inject?: unknown[];
   useClass?: new (...args: unknown[]) => TemporalModuleOptionsFactory<TContract>;
   useExisting?: new (...args: unknown[]) => TemporalModuleOptionsFactory<TContract>;
-}
-
-/**
- * Metadata stored for each activity handler
- */
-export interface ActivityHandlerMetadata {
-  workflowName: string;
-  activityName: string;
 }

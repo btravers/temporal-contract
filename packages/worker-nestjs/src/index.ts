@@ -6,10 +6,9 @@
 
 export { TemporalModule } from "./temporal.module.js";
 export { TemporalService } from "./temporal.service.js";
-export { TemporalActivity, getActivityHandlers } from "./decorators.js";
 export type {
   TemporalModuleOptions,
   TemporalModuleOptionsFactory,
   TemporalModuleAsyncOptions,
-  ActivityHandlerMetadata,
+  ContractActivitiesImplementation,
 } from "./interfaces.js";
