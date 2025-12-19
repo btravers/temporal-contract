@@ -102,6 +102,7 @@ async ({}, use) => { }
 ```
 
 **When to use:**
+
 - Empty object patterns in Vitest fixture function parameters that don't need context
 - Cases where the linter flags valid patterns that can't be easily refactored
 
