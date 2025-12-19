@@ -34,42 +34,20 @@ export class TemporalService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Start the Temporal worker
-   *
-   * This method starts the worker and returns immediately without blocking.
-   * The worker runs in the background until stop() is called or the process terminates.
-   *
-   * @example
-   * ```ts
-   * const app = await NestFactory.createApplicationContext(AppModule);
-   * const temporalService = app.get(TemporalService);
-   *
-   * // Start worker (non-blocking)
-   * temporalService.start();
-   *
-   * // Handle graceful shutdown
-   * process.on('SIGTERM', async () => {
-   *   await app.close();
-   * });
-   * ```
+   * Get the worker instance
+   * @throws {Error} If the worker is not initialized
    */
-  start(): void {
+  getWorker(): Worker {
     if (!this.worker) {
-      throw new Error("Worker not initialized. Call initializeWorker first.");
+      throw new Error("Worker not initialized");
     }
-
-    this.logger.log(`Starting Temporal worker on task queue: ${this.options.contract.taskQueue}`);
-
-    // Run worker in background without blocking
-    this.worker.run().catch((error) => {
-      this.logger.error(`Temporal worker encountered an error: ${error.message}`, error.stack);
-    });
+    return this.worker;
   }
 
   /**
    * Stop the Temporal worker
    */
-  async stop(): Promise<void> {
+  private async stop(): Promise<void> {
     if (this.worker) {
       this.logger.log("Shutting down Temporal worker...");
       await this.worker.shutdown();
@@ -79,14 +57,7 @@ export class TemporalService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Get the worker instance
-   */
-  getWorker(): Worker | undefined {
-    return this.worker;
-  }
-
-  /**
-   * Initialize the Temporal worker with provided activities
+   * Initialize the Temporal worker with provided activities and start it
    */
   private async initializeWorker(): Promise<void> {
     // Create the worker - activities are already properly typed and validated
@@ -96,6 +67,12 @@ export class TemporalService implements OnModuleInit, OnModuleDestroy {
       workflowsPath: this.options.workflowsPath,
       taskQueue: this.options.contract.taskQueue,
       activities: this.options.activities,
+    });
+
+    // Start the worker in the background
+    this.logger.log(`Starting Temporal worker on task queue: ${this.options.contract.taskQueue}`);
+    this.worker.run().catch((error) => {
+      this.logger.error(`Temporal worker encountered an error: ${error.message}`, error.stack);
     });
   }
 }

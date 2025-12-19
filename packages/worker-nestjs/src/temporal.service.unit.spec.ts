@@ -74,7 +74,7 @@ describe("TemporalService", () => {
   });
 
   describe("onModuleInit", () => {
-    it("should initialize worker on module init", async () => {
+    it("should initialize and start worker on module init", async () => {
       // WHEN
       await service.onModuleInit();
 
@@ -86,7 +86,9 @@ describe("TemporalService", () => {
         taskQueue: "test-queue",
         activities: {},
       });
+      expect(mockWorker.run).toHaveBeenCalled();
       expect(service["logger"].log).toHaveBeenCalledWith("Initializing Temporal worker...");
+      expect(service["logger"].log).toHaveBeenCalledWith("Starting Temporal worker on task queue: test-queue");
       expect(service["logger"].log).toHaveBeenCalledWith("Temporal worker initialized");
     });
 
@@ -129,55 +131,14 @@ describe("TemporalService", () => {
       // WHEN / THEN
       await expect(service.onModuleInit()).rejects.toThrow("Worker creation failed");
     });
-  });
 
-  describe("onModuleDestroy", () => {
-    it("should stop worker on module destroy", async () => {
+    it("should catch and log worker runtime errors", async () => {
       // GIVEN
-      await service.onModuleInit();
-
-      // WHEN
-      await service.onModuleDestroy();
-
-      // THEN
-      expect(mockWorker.shutdown).toHaveBeenCalled();
-      expect(service.getWorker()).toBeUndefined();
-    });
-
-    it("should not throw if worker is not initialized", async () => {
-      // WHEN / THEN
-      await expect(service.onModuleDestroy()).resolves.not.toThrow();
-    });
-  });
-
-  describe("start", () => {
-    it("should start worker without blocking", async () => {
-      // GIVEN
-      await service.onModuleInit();
-
-      // WHEN
-      service.start();
-
-      // THEN
-      expect(mockWorker.run).toHaveBeenCalled();
-      expect(service["logger"].log).toHaveBeenCalledWith(
-        "Starting Temporal worker on task queue: test-queue",
-      );
-    });
-
-    it("should throw error if worker not initialized", () => {
-      // WHEN / THEN
-      expect(() => service.start()).toThrow("Worker not initialized. Call initializeWorker first.");
-    });
-
-    it("should catch and log worker errors", async () => {
-      // GIVEN
-      await service.onModuleInit();
       const error = new Error("Worker runtime error");
       vi.mocked(mockWorker.run).mockRejectedValueOnce(error);
 
       // WHEN
-      service.start();
+      await service.onModuleInit();
 
       // Wait for promise to resolve
       await new Promise((resolve) => setTimeout(resolve, 10));
@@ -190,48 +151,29 @@ describe("TemporalService", () => {
     });
   });
 
-  describe("stop", () => {
-    it("should shutdown worker and clear instance", async () => {
+  describe("onModuleDestroy", () => {
+    it("should stop worker on module destroy", async () => {
       // GIVEN
       await service.onModuleInit();
 
       // WHEN
-      await service.stop();
+      await service.onModuleDestroy();
 
       // THEN
       expect(mockWorker.shutdown).toHaveBeenCalled();
-      expect(service.getWorker()).toBeUndefined();
-      expect(service["logger"].log).toHaveBeenCalledWith("Shutting down Temporal worker...");
-      expect(service["logger"].log).toHaveBeenCalledWith("Temporal worker shut down");
+      expect(() => service.getWorker()).toThrow("Worker not initialized");
     });
 
-    it("should not throw if worker is already stopped", async () => {
-      // GIVEN
-      await service.onModuleInit();
-      await service.stop();
-
+    it("should not throw if worker is not initialized", async () => {
       // WHEN / THEN
-      await expect(service.stop()).resolves.not.toThrow();
-    });
-
-    it("should handle shutdown errors", async () => {
-      // GIVEN
-      await service.onModuleInit();
-      const error = new Error("Shutdown failed");
-      vi.mocked(mockWorker.shutdown).mockRejectedValueOnce(error);
-
-      // WHEN / THEN
-      await expect(service.stop()).rejects.toThrow("Shutdown failed");
+      await expect(service.onModuleDestroy()).resolves.not.toThrow();
     });
   });
 
   describe("getWorker", () => {
-    it("should return undefined before initialization", () => {
-      // WHEN
-      const worker = service.getWorker();
-
-      // THEN
-      expect(worker).toBeUndefined();
+    it("should throw before initialization", () => {
+      // WHEN / THEN
+      expect(() => service.getWorker()).toThrow("Worker not initialized");
     });
 
     it("should return worker after initialization", async () => {
@@ -245,16 +187,13 @@ describe("TemporalService", () => {
       expect(worker).toBe(mockWorker);
     });
 
-    it("should return undefined after stop", async () => {
+    it("should throw after stop", async () => {
       // GIVEN
       await service.onModuleInit();
-      await service.stop();
+      await service.onModuleDestroy();
 
-      // WHEN
-      const worker = service.getWorker();
-
-      // THEN
-      expect(worker).toBeUndefined();
+      // WHEN / THEN
+      expect(() => service.getWorker()).toThrow("Worker not initialized");
     });
   });
 

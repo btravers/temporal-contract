@@ -74,30 +74,55 @@ import { orderProcessingContract } from './contract';
 export class AppModule {}
 ```
 
-### 3. Start the Worker
+### 3. Start Your Application
+
+The worker starts automatically when the NestJS application initializes and shuts down gracefully when the application closes.
 
 ```typescript
 // main.ts
 import { NestFactory } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { TemporalService } from '@temporal-contract/worker-nestjs';
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
-  const temporalService = app.get(TemporalService);
-
-  // Start worker (non-blocking)
-  temporalService.start();
+  
+  // Worker starts automatically during module initialization
 
   // Handle graceful shutdown
   process.on('SIGTERM', async () => {
-    await app.close();
+    await app.close(); // Worker shuts down automatically
   });
 
   process.on('SIGINT', async () => {
     await app.close();
   });
 }
+
+bootstrap();
+```
+
+## API Reference
+
+### TemporalModule
+
+Dynamic NestJS module for configuring Temporal workers.
+
+#### Methods
+
+- `forRoot(options)`: Synchronous configuration
+- `forRootAsync(options)`: Asynchronous configuration with factory pattern
+
+### TemporalService
+
+Service managing the Temporal worker lifecycle.
+
+#### Methods
+
+- `getWorker()`: Get the worker instance (throws if not initialized)
+
+The service automatically:
+- Initializes and starts the worker when the module initializes (`onModuleInit`)
+- Shuts down the worker when the module is destroyed (`onModuleDestroy`)
 
 bootstrap();
 ```
