@@ -22,6 +22,7 @@ This document provides AI-assisted code review rules and coding guidelines for t
 **temporal-contract** is a type-safe contract system for Temporal.io workflows and activities, built as a TypeScript monorepo using pnpm workspaces and Turborepo.
 
 **Core Packages:**
+
 - `@temporal-contract/contract` - Contract builder and type definitions
 - `@temporal-contract/worker` - Type-safe worker with automatic validation
 - `@temporal-contract/client` - Type-safe client for consuming workflows
@@ -38,10 +39,11 @@ This document provides AI-assisted code review rules and coding guidelines for t
    - Never use `any` type (enforced by oxlint rule `@typescript-eslint/no-explicit-any`)
    - Use `unknown` instead of `any` when type is truly unknown
    - Always provide explicit return types for exported functions
+
    ```typescript
    // ❌ Bad
    export function processData(data: any) { }
-   
+
    // ✅ Good
    export function processData<T>(data: unknown): Result<T, Error> { }
    ```
@@ -49,10 +51,11 @@ This document provides AI-assisted code review rules and coding guidelines for t
 2. **Generic Type Parameters**
    - Use descriptive generic names (not just `T`, `U`)
    - Document generic constraints clearly
+
    ```typescript
    // ❌ Bad
    function process<T>(item: T) { }
-   
+
    // ✅ Good
    function processWorkflow<TWorkflow extends WorkflowDefinition>(
      workflow: TWorkflow
@@ -62,10 +65,11 @@ This document provides AI-assisted code review rules and coding guidelines for t
 3. **Type Inference**
    - Leverage TypeScript's type inference where possible
    - Don't repeat types that can be inferred
+
    ```typescript
    // ❌ Bad
    const contract: ContractDefinition = defineContract({ ... });
-   
+
    // ✅ Good
    const contract = defineContract({ ... });
    ```
@@ -88,10 +92,11 @@ This document provides AI-assisted code review rules and coding guidelines for t
 
 1. **File Extensions**
    - Always use `.js` extensions in imports (even for TypeScript files)
+
    ```typescript
    // ❌ Bad
    import { defineContract } from "./builder";
-   
+
    // ✅ Good
    import { defineContract } from "./builder.js";
    ```
@@ -104,13 +109,14 @@ This document provides AI-assisted code review rules and coding guidelines for t
 3. **Documentation Comments**
    - Use JSDoc comments for all exported APIs
    - Include `@param`, `@returns`, and examples where helpful
-   ```typescript
+
+   ````typescript
    /**
     * Defines a contract with type-safe workflows and activities
-    * 
+    *
     * @param definition - The contract definition
     * @returns A fully typed contract
-    * 
+    *
     * @example
     * ```typescript
     * const contract = defineContract({
@@ -122,7 +128,7 @@ This document provides AI-assisted code review rules and coding guidelines for t
    export function defineContract<TContract extends ContractDefinition>(
      definition: TContract
    ): TContract { }
-   ```
+   ````
 
 4. **Naming Conventions**
    - Use `camelCase` for functions, variables, and methods
@@ -173,6 +179,7 @@ This document provides AI-assisted code review rules and coding guidelines for t
    - Always validate contracts at definition time
    - Use Zod schemas for input/output validation
    - Group related workflows in a single contract
+
    ```typescript
    const contract = defineContract({
      taskQueue: 'orders',
@@ -197,6 +204,7 @@ This document provides AI-assisted code review rules and coding guidelines for t
    - Use type-safe workflow helpers from `@temporal-contract/worker`
    - Return `Result<T, E>` types for explicit error handling
    - Never throw exceptions in workflows (use Result pattern)
+
    ```typescript
    // ✅ Good
    export const processOrder = workflow.create(contract, 'processOrder', async (ctx, input) => {
@@ -222,13 +230,14 @@ This document provides AI-assisted code review rules and coding guidelines for t
 1. **Result Pattern**
    - Use `Result<T, E>` from `@temporal-contract/boxed` instead of throwing
    - Use `Ok` for success, `Error` for failure
+
    ```typescript
    // ❌ Bad
    function process(data: string): string {
      if (!data) throw new Error('Invalid data');
      return data.toUpperCase();
    }
-   
+
    // ✅ Good
    function process(data: string): Result<string, string> {
      if (!data) return new Error('Invalid data');
@@ -244,14 +253,15 @@ This document provides AI-assisted code review rules and coding guidelines for t
    - Extend base error classes appropriately
    - Include helpful context (activity name, available options, etc.)
    - Use `Error.captureStackTrace` for V8 compatibility
+
    ```typescript
    export class ActivityDefinitionNotFoundError extends WorkerError {
      constructor(
        public readonly activityName: string,
        public readonly availableDefinitions: readonly string[] = []
      ) {
-       const available = availableDefinitions.length > 0 
-         ? availableDefinitions.join(", ") 
+       const available = availableDefinitions.length > 0
+         ? availableDefinitions.join(", ")
          : "none";
        super(
          `Activity definition not found for: "${activityName}". Available activities: ${available}`
@@ -281,18 +291,19 @@ This document provides AI-assisted code review rules and coding guidelines for t
    - Use integration tests in `__tests__` directories
 
 2. **Test Structure**
+
    ```typescript
    import { describe, expect, it } from "vitest";
-   
+
    describe("Feature Name", () => {
      describe("specific function/method", () => {
        it("should do something specific", () => {
          // Arrange
          const input = { /* ... */ };
-         
+
          // Act
          const result = functionUnderTest(input);
-         
+
          // Assert
          expect(result).toEqual(expectedValue);
        });
@@ -380,18 +391,20 @@ This document provides AI-assisted code review rules and coding guidelines for t
 ### ❌ Anti-Patterns to Avoid
 
 1. **Using `any` type**
+
    ```typescript
    // ❌ Never do this
    function process(data: any): any { }
    ```
 
 2. **Throwing exceptions in workflows**
+
    ```typescript
    // ❌ Bad - breaks Result pattern
    export const workflow = async () => {
      throw new Error('Something failed');
    };
-   
+
    // ✅ Good - use Result pattern
    export const workflow = async (): Promise<Result<Output, Error>> => {
      return new Error('Something failed');
@@ -399,12 +412,13 @@ This document provides AI-assisted code review rules and coding guidelines for t
    ```
 
 3. **Missing input/output validation**
+
    ```typescript
    // ❌ Bad - no validation
    const activity = {
      handler: async (input) => { /* ... */ }
    };
-   
+
    // ✅ Good - with contract validation
    const contract = defineContract({
      activities: {
@@ -417,21 +431,23 @@ This document provides AI-assisted code review rules and coding guidelines for t
    ```
 
 4. **Missing `.js` extensions in imports**
+
    ```typescript
    // ❌ Bad
    import { helper } from "./utils";
-   
+
    // ✅ Good
    import { helper } from "./utils.js";
    ```
 
 5. **Not using workspace protocol**
+
    ```typescript
    // ❌ Bad in package.json
    "dependencies": {
      "@temporal-contract/contract": "^0.4.0"
    }
-   
+
    // ✅ Good in package.json (for monorepo)
    "dependencies": {
      "@temporal-contract/contract": "workspace:*"
@@ -479,6 +495,7 @@ Before submitting code, ensure:
 ## Questions or Clarifications?
 
 If you're unsure about any guideline:
+
 1. Check existing code for patterns
 2. Look at the samples in `samples/` directory
 3. Review recent PRs for examples

@@ -35,6 +35,7 @@ temporal-contract/
 📋 **[Read the complete coding guidelines](.github/copilot-instructions.md)**
 
 This project uses AI-assisted code review with GitHub Copilot. Our guidelines document:
+
 - TypeScript & type safety requirements
 - Code style & formatting rules
 - Error handling patterns (Result/Future)
