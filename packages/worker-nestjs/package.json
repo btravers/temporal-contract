@@ -52,8 +52,8 @@
     "@temporal-contract/worker": "workspace:*"
   },
   "devDependencies": {
-    "@nestjs/common": "^10.4.15",
-    "@nestjs/testing": "^10.4.15",
+    "@nestjs/common": "^11.1.9",
+    "@nestjs/testing": "^11.1.9",
     "@temporal-contract/testing": "workspace:*",
     "@temporal-contract/tsconfig": "workspace:*",
     "@temporalio/worker": "catalog:",
