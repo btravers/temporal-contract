@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { defineContract, defineActivity } from "./builder.js";
+import { defineContract } from "./builder.js";
 import {
   getAllActivityNames,
   getWorkflowActivities,

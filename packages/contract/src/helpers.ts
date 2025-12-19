@@ -1,4 +1,4 @@
-import type { ContractDefinition, WorkflowDefinition, ActivityDefinition } from "./types.js";
+import type { ContractDefinition, ActivityDefinition } from "./types.js";
 
 /**
  * Extract all activity names from a contract, including both global and workflow-specific activities.

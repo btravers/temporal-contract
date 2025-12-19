@@ -32,6 +32,13 @@ export {
   isContract,
 } from "./helpers.js";
 
+export {
+  debugContract,
+  debugContractJSON,
+  validateContractNaming,
+  compareContracts,
+} from "./debug.js";
+
 export { defineNexusOperation, defineNexusService } from "./nexus-types.js";
 
 export type {
