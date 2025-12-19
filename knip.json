@@ -35,6 +35,10 @@
       "entry": ["src/application/worker.ts", "src/application/workflows.ts"],
       "project": ["src/**/*.ts"]
     },
+    "samples/order-processing-worker-nestjs": {
+      "entry": ["src/main.ts", "src/workflows.ts"],
+      "project": ["src/**/*.ts"]
+    },
     "samples/order-processing-client": {
       "entry": ["src/client.ts"],
       "project": ["src/**/*.ts"]
