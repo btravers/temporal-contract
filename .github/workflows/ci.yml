@@ -76,7 +76,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Run knip
-        run: pnpm exec knip --reporter github-actions
+        run: pnpm knip --reporter github-actions
 
   test:
     name: Tests

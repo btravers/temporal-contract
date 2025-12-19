@@ -1,5 +1,9 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreExportsUsedInFile": true,
+  "vitest": {
+    "config": ["**/vitest.config.ts"]
+  },
   "workspaces": {
     ".": {
       "entry": ["lefthook.yml"]
@@ -8,43 +12,32 @@
       "ignoreDependencies": ["@swan-io/boxed"]
     },
     "packages/client": {
-      "entry": ["src/index.ts"],
-      "project": [
-        "src/**/*.ts",
-        "!src/**/*.spec.ts",
-        "!src/**/*.integration.spec.ts",
-        "!src/__tests__/**"
-      ],
-      "ignoreDependencies": ["@temporalio/workflow"]
+      "entry": ["src/index.ts", "src/__tests__/test.workflows.ts"],
+      "project": ["src/**/*.ts"]
     },
     "packages/contract": {
       "entry": ["src/index.ts"],
-      "project": ["src/**/*.ts", "!src/**/*.spec.ts", "!src/**/*.integration.spec.ts"]
+      "project": ["src/**/*.ts"]
     },
     "packages/worker": {
-      "entry": ["src/activity.ts", "src/workflow.ts"],
-      "project": [
-        "src/**/*.ts",
-        "!src/**/*.spec.ts",
-        "!src/**/*.integration.spec.ts",
-        "!src/__tests__/**"
-      ]
+      "entry": ["src/activity.ts", "src/workflow.ts", "src/__tests__/test.workflows.ts"],
+      "project": ["src/**/*.ts"]
     },
     "packages/testing": {
       "entry": ["src/extension.ts", "src/global-setup.ts"],
-      "project": ["src/**/*.ts", "!src/**/*.spec.ts", "!src/**/*.integration.spec.ts"]
+      "project": ["src/**/*.ts"]
     },
     "samples/order-processing-contract": {
       "entry": ["src/index.ts"],
-      "project": ["src/**/*.ts", "!src/**/*.spec.ts", "!src/**/*.integration.spec.ts"]
+      "project": ["src/**/*.ts"]
     },
     "samples/order-processing-worker": {
       "entry": ["src/application/worker.ts", "src/application/workflows.ts"],
-      "project": ["src/**/*.ts", "!src/**/*.spec.ts", "!src/**/*.integration.spec.ts"]
+      "project": ["src/**/*.ts"]
     },
     "samples/order-processing-client": {
       "entry": ["src/client.ts"],
-      "project": ["src/**/*.ts", "!src/**/*.spec.ts", "!src/**/*.integration.spec.ts"]
+      "project": ["src/**/*.ts"]
     },
     "tools/*": {
       "entry": ["*.json"]

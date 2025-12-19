@@ -10,6 +10,8 @@
     "changeset": "changeset",
     "dev": "turbo run dev",
     "format": "oxfmt .",
+    "knip": "knip",
+    "knip:fix": "knip --fix",
     "lint": "oxlint .",
     "prepare": "lefthook install",
     "release": "pnpm build && changeset publish",
