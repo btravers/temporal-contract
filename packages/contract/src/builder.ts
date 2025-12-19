@@ -10,30 +10,219 @@ import type {
 } from "./types.js";
 
 // Exported builders first (classic functions for hoisting)
+
+/**
+ * Define a Temporal activity with type-safe input and output schemas.
+ *
+ * Activities are the building blocks of Temporal workflows that execute business logic
+ * and interact with external services. This function preserves TypeScript types while
+ * providing a consistent structure for activity definitions.
+ *
+ * @template TActivity - The activity definition type with input/output schemas
+ * @param definition - The activity definition containing input and output schemas
+ * @returns The same definition with preserved types for type inference
+ *
+ * @example
+ * ```typescript
+ * import { defineActivity } from '@temporal-contract/contract';
+ * import { z } from 'zod';
+ *
+ * export const sendEmail = defineActivity({
+ *   input: z.object({
+ *     to: z.string().email(),
+ *     subject: z.string(),
+ *     body: z.string(),
+ *   }),
+ *   output: z.object({
+ *     messageId: z.string(),
+ *     sentAt: z.date(),
+ *   }),
+ * });
+ * ```
+ */
 export function defineActivity<TActivity extends ActivityDefinition>(
   definition: TActivity,
 ): TActivity {
   return definition;
 }
 
+/**
+ * Define a Temporal signal with type-safe input schema.
+ *
+ * Signals are asynchronous messages sent to running workflows to update their state
+ * or trigger certain behaviors. This function ensures type safety for signal payloads.
+ *
+ * @template TSignal - The signal definition type with input schema
+ * @param definition - The signal definition containing input schema
+ * @returns The same definition with preserved types for type inference
+ *
+ * @example
+ * ```typescript
+ * import { defineSignal } from '@temporal-contract/contract';
+ * import { z } from 'zod';
+ *
+ * export const approveOrder = defineSignal({
+ *   input: z.object({
+ *     orderId: z.string(),
+ *     approvedBy: z.string(),
+ *   }),
+ * });
+ * ```
+ */
 export function defineSignal<TSignal extends SignalDefinition>(definition: TSignal): TSignal {
   return definition;
 }
 
+/**
+ * Define a Temporal query with type-safe input and output schemas.
+ *
+ * Queries allow you to read the current state of a running workflow without
+ * modifying it. They are synchronous and should not perform any mutations.
+ *
+ * @template TQuery - The query definition type with input/output schemas
+ * @param definition - The query definition containing input and output schemas
+ * @returns The same definition with preserved types for type inference
+ *
+ * @example
+ * ```typescript
+ * import { defineQuery } from '@temporal-contract/contract';
+ * import { z } from 'zod';
+ *
+ * export const getOrderStatus = defineQuery({
+ *   input: z.object({ orderId: z.string() }),
+ *   output: z.object({
+ *     status: z.enum(['pending', 'processing', 'completed', 'failed']),
+ *     updatedAt: z.date(),
+ *   }),
+ * });
+ * ```
+ */
 export function defineQuery<TQuery extends QueryDefinition>(definition: TQuery): TQuery {
   return definition;
 }
 
+/**
+ * Define a Temporal update with type-safe input and output schemas.
+ *
+ * Updates are similar to signals but return a value and wait for the workflow
+ * to process them before completing. They provide a synchronous way to modify
+ * workflow state and get immediate feedback.
+ *
+ * @template TUpdate - The update definition type with input/output schemas
+ * @param definition - The update definition containing input and output schemas
+ * @returns The same definition with preserved types for type inference
+ *
+ * @example
+ * ```typescript
+ * import { defineUpdate } from '@temporal-contract/contract';
+ * import { z } from 'zod';
+ *
+ * export const updateOrderQuantity = defineUpdate({
+ *   input: z.object({
+ *     orderId: z.string(),
+ *     newQuantity: z.number().positive(),
+ *   }),
+ *   output: z.object({
+ *     success: z.boolean(),
+ *     totalPrice: z.number(),
+ *   }),
+ * });
+ * ```
+ */
 export function defineUpdate<TUpdate extends UpdateDefinition>(definition: TUpdate): TUpdate {
   return definition;
 }
 
+/**
+ * Define a Temporal workflow with type-safe input, output, and associated operations.
+ *
+ * Workflows are durable functions that orchestrate activities, handle timeouts,
+ * and manage long-running processes. This function provides type safety for the
+ * entire workflow definition including activities, signals, queries, and updates.
+ *
+ * @template TWorkflow - The workflow definition type with all associated schemas
+ * @param definition - The workflow definition containing input, output, and operations
+ * @returns The same definition with preserved types for type inference
+ *
+ * @example
+ * ```typescript
+ * import { defineWorkflow, defineActivity, defineSignal } from '@temporal-contract/contract';
+ * import { z } from 'zod';
+ *
+ * export const processOrder = defineWorkflow({
+ *   input: z.object({ orderId: z.string() }),
+ *   output: z.object({ success: z.boolean() }),
+ *   activities: {
+ *     validatePayment: defineActivity({
+ *       input: z.object({ orderId: z.string() }),
+ *       output: z.object({ valid: z.boolean() }),
+ *     }),
+ *   },
+ *   signals: {
+ *     cancel: defineSignal({
+ *       input: z.object({ reason: z.string() }),
+ *     }),
+ *   },
+ * });
+ * ```
+ */
 export function defineWorkflow<TWorkflow extends WorkflowDefinition>(
   definition: TWorkflow,
 ): TWorkflow {
   return definition;
 }
 
+/**
+ * Define a complete Temporal contract with type-safe workflows and activities.
+ *
+ * A contract is the central definition that ties together your Temporal application's
+ * workflows and activities. It provides:
+ * - Type safety across client, worker, and workflow code
+ * - Automatic validation at runtime
+ * - Compile-time verification of implementations
+ * - Clear API boundaries and documentation
+ *
+ * The contract validates the structure and ensures:
+ * - Task queue is specified
+ * - At least one workflow is defined
+ * - Valid JavaScript identifiers are used
+ * - No conflicts between global and workflow-specific activities
+ * - All schemas implement the Standard Schema specification
+ *
+ * @template TContract - The contract definition type
+ * @param definition - The complete contract definition
+ * @returns The same definition with preserved types for type inference
+ * @throws {Error} If the contract structure is invalid
+ *
+ * @example
+ * ```typescript
+ * import { defineContract } from '@temporal-contract/contract';
+ * import { z } from 'zod';
+ *
+ * export const myContract = defineContract({
+ *   taskQueue: 'orders',
+ *   workflows: {
+ *     processOrder: {
+ *       input: z.object({ orderId: z.string() }),
+ *       output: z.object({ success: z.boolean() }),
+ *       activities: {
+ *         chargePayment: {
+ *           input: z.object({ amount: z.number() }),
+ *           output: z.object({ transactionId: z.string() }),
+ *         },
+ *       },
+ *     },
+ *   },
+ *   // Optional global activities shared across workflows
+ *   activities: {
+ *     logEvent: {
+ *       input: z.object({ message: z.string() }),
+ *       output: z.void(),
+ *     },
+ *   },
+ * });
+ * ```
+ */
 export function defineContract<TContract extends ContractDefinition>(
   definition: TContract,
 ): TContract {
@@ -42,7 +231,7 @@ export function defineContract<TContract extends ContractDefinition>(
 
   if (!validationResult.success) {
     const cleanMessage = getCleanErrorMessage(validationResult.error);
-    throw new Error(`Contract error: ${cleanMessage}`);
+    throw new Error(`Contract validation failed: ${cleanMessage}`);
   }
 
   return definition;
