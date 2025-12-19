@@ -226,6 +226,14 @@ All tests verify:
 - Interoperability with @swan-io/boxed
 - Type safety and compatibility
 
+## Documentation
+
+📖 **[Read the full documentation →](https://btravers.github.io/temporal-contract)**
+
+- [API Reference](https://btravers.github.io/temporal-contract/api/boxed)
+- [Result Pattern Guide](https://btravers.github.io/temporal-contract/guide/result-pattern)
+- [Examples](https://btravers.github.io/temporal-contract/examples/)
+
 ## License
 
 MIT

@@ -22,6 +22,8 @@ End-to-end type safety and automatic validation for workflows and activities
 - ✅ **Automatic validation** — Zod schemas validate at all network boundaries
 - ✅ **Compile-time checks** — TypeScript catches missing or incorrect implementations
 - ✅ **Better DX** — Autocomplete, refactoring support, inline documentation
+- ✅ **Child workflows** — Type-safe child workflow execution with Result/Future pattern
+- ✅ **Result/Future pattern** — Explicit error handling without exceptions
 - 🚧 **Nexus support** — Cross-namespace operations (planned for v0.5.0)
 
 ## Quick Example
@@ -69,6 +71,7 @@ pnpm add @temporal-contract/contract @temporal-contract/worker @temporal-contrac
 | [@temporal-contract/contract](./packages/contract) | Contract builder and type definitions                                |
 | [@temporal-contract/worker](./packages/worker)     | Type-safe worker with automatic validation and Result/Future pattern |
 | [@temporal-contract/client](./packages/client)     | Type-safe client for consuming workflows with Result/Future pattern  |
+| [@temporal-contract/boxed](./packages/boxed)       | Result and Future types for explicit error handling                  |
 | [@temporal-contract/testing](./packages/testing)   | Testing utilities for integration tests                              |
 
 ## Contributing
