@@ -146,7 +146,7 @@ export function defineUpdate<TUpdate extends UpdateDefinition>(definition: TUpda
  *
  * @example
  * ```typescript
- * import { defineWorkflow, defineActivity } from '@temporal-contract/contract';
+ * import { defineWorkflow, defineActivity, defineSignal } from '@temporal-contract/contract';
  * import { z } from 'zod';
  *
  * export const processOrder = defineWorkflow({
