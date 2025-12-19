@@ -115,24 +115,42 @@ console.log(result.status);  // 'success' | 'failed' — full autocomplete!
 
 ## Quick Example
 
-See how easy it is to get started:
+See how easy it is to get started with a complete workflow:
 
 ::: code-group
 
-```typescript [contract.ts]
+```typescript [1. contract.ts]
 import { defineContract } from '@temporal-contract/contract';
 import { z } from 'zod';
 
+// ✅ Define your contract once
 export const orderContract = defineContract({
   taskQueue: 'orders',
   workflows: {
     processOrder: {
-      input: z.object({ orderId: z.string() }),
-      output: z.object({ status: z.enum(['success', 'failed']) }),
+      input: z.object({
+        orderId: z.string(),
+        customerId: z.string(),
+        amount: z.number()
+      }),
+      output: z.object({
+        status: z.enum(['success', 'failed']),
+        transactionId: z.string().optional()
+      }),
       activities: {
         processPayment: {
-          input: z.object({ amount: z.number() }),
+          input: z.object({
+            customerId: z.string(),
+            amount: z.number()
+          }),
           output: z.object({ transactionId: z.string() }),
+        },
+        sendNotification: {
+          input: z.object({
+            customerId: z.string(),
+            message: z.string()
+          }),
+          output: z.void(),
         },
       },
     },
@@ -140,32 +158,107 @@ export const orderContract = defineContract({
 });
 ```
 
-```typescript [workflow.ts]
-import { declareWorkflow } from '@temporal-contract/worker/workflow';
+```typescript [2. activities.ts]
+import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
+import { orderContract } from './contract';
 
-export const processOrder = declareWorkflow({
-  workflowName: 'processOrder',
+// ✅ Implement activities with full type safety
+export const activities = declareActivitiesHandler({
   contract: orderContract,
-  implementation: async (context, { orderId }) => {
-    const payment = await context.activities.processPayment({
-      amount: 100
-    });
-    return { status: 'success' };
+  activities: {
+    processOrder: {
+      processPayment: async ({ customerId, amount }) => {
+        // Call your payment service
+        const transaction = await paymentService.charge(customerId, amount);
+        return { transactionId: transaction.id };
+      },
+
+      sendNotification: async ({ customerId, message }) => {
+        // Send notification
+        await notificationService.send(customerId, message);
+      },
+    },
   },
 });
 ```
 
-```typescript [client.ts]
-import { TypedClient } from '@temporal-contract/client';
+```typescript [3. workflow.ts]
+import { declareWorkflow } from '@temporal-contract/worker/workflow';
+import { orderContract } from './contract';
 
+// ✅ Type-safe workflow orchestration
+export const processOrder = declareWorkflow({
+  workflowName: 'processOrder',
+  contract: orderContract,
+  implementation: async (context, { orderId, customerId, amount }) => {
+    // Activities are fully typed!
+    const { transactionId } = await context.activities.processPayment({
+      customerId,
+      amount,
+    });
+
+    await context.activities.sendNotification({
+      customerId,
+      message: `Order ${orderId} confirmed!`,
+    });
+
+    return { status: 'success', transactionId };
+  },
+});
+```
+
+```typescript [4. worker.ts]
+import { createWorker } from '@temporal-contract/worker/worker';
+import { orderContract } from './contract';
+import { activities } from './activities';
+
+// ✅ Start the worker
+const connection = await NativeConnection.connect({
+  address: 'localhost:7233',
+});
+
+const worker = await createWorker({
+  contract: orderContract,
+  connection,
+  namespace: 'default',
+  workflowsPath: './workflows',
+  activities,
+});
+
+await worker.run(); // Worker is now listening!
+```
+
+```typescript [5. client.ts]
+import { TypedClient } from '@temporal-contract/client';
+import { orderContract } from './contract';
+
+// ✅ Type-safe client calls
 const client = TypedClient.create(orderContract, { connection });
 
 const result = await client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
-  args: { orderId: 'ORD-123' },
+  args: {
+    orderId: 'ORD-123',
+    customerId: 'CUST-456',
+    amount: 99.99,
+  },
 });
 
-console.log(result.status); // ✅ Fully typed!
+// Full autocomplete on result!
+console.log(result.status); // 'success' | 'failed'
+console.log(result.transactionId); // string | undefined
 ```
 
 :::
+
+## What You Get
+
+With temporal-contract, you get a complete, type-safe workflow system:
+
+1. **Contract Definition** - Define your workflow interface once with Zod schemas
+2. **Activity Implementation** - Implement business logic with full type safety
+3. **Workflow Orchestration** - Coordinate activities with typed context
+4. **Worker Setup** - Register activities and workflows automatically
+5. **Type-safe Client** - Call workflows with autocomplete and validation
+
+All parts work together seamlessly with end-to-end type safety!
