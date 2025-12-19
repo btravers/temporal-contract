@@ -88,6 +88,26 @@ This document provides AI-assisted code review rules and coding guidelines for t
 2. **oxfmt** - Formatting (runs via `pnpm format`)
 3. **sort-package-json** - Keep package.json sorted (runs via `pnpm sort-package-json`)
 
+### ✅ Lint Suppression
+
+When you need to suppress a specific oxlint rule, use the inline comment syntax:
+
+```typescript
+// ❌ Bad - Empty pattern triggers lint warning
+async ({}, use) => { }
+
+// ✅ Good - Explicitly disable the rule
+// oxlint-disable-next-line no-empty-pattern
+async ({}, use) => { }
+```
+
+**When to use:**
+
+- Empty object patterns in function parameters (e.g., test fixtures that don't need context)
+- Cases where the linter flags valid patterns that can't be easily refactored
+
+**Note:** Always prefer refactoring over suppression when possible (e.g., use `_context` instead of `{}`).
+
 ### ✅ Required Practices
 
 1. **File Extensions**

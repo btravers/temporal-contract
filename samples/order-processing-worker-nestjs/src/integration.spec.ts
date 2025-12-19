@@ -24,7 +24,8 @@ const it = baseIt.extend<{
   moduleRef: TestingModule;
 }>({
   moduleRef: [
-    async (_context, use) => {
+    // oxlint-disable-next-line no-empty-pattern
+    async ({}, use) => {
       // Create a single NestJS testing module to be shared across fixtures
       const moduleRef = await Test.createTestingModule({
         imports: [DependenciesModule],
