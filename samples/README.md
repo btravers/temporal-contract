@@ -18,16 +18,6 @@ Standalone client demonstrating interaction with the unified contract
 
 **Note**: The `order-processing-worker` and `order-processing-worker-boxed` samples share a unified contract. Both workers implement the same contract (`orderProcessingContract`) but with different internal implementations. The client sample works with either worker implementation seamlessly.
 
-### 📄 [contract-utilities-example.ts](./contract-utilities-example.ts)
-
-Demonstrates the debugging utilities:
-
-- **Contract Debugging**: `debugContract`, `debugContractJSON`
-- **Contract Validation**: `validateContractNaming`
-- **Contract Comparison**: `compareContracts` for version migration analysis
-
-Run with: `npx tsx samples/contract-utilities-example.ts`
-
 ## Running Samples
 
 ```bash
@@ -45,9 +35,6 @@ pnpm dev  # Terminal 1
 # Run the client (in another terminal)
 cd samples/order-processing-client
 pnpm dev  # Terminal 2
-
-# Or run the utilities example
-npx tsx samples/contract-utilities-example.ts
 ```
 
 ## Documentation
