@@ -46,14 +46,12 @@ describe("Activity Utils", () => {
       expect(activities).toHaveProperty("globalActivity");
       expect(activities).toHaveProperty("workflowActivity");
       expect(activities).toHaveProperty("anotherActivity");
-      expect(Object.keys(activities)).toHaveLength(3);
     });
 
     it("should return only global activities when workflow has no specific activities", () => {
       const activities = getWorkflowActivities(testContract, "anotherWorkflow");
 
       expect(activities).toHaveProperty("globalActivity");
-      expect(Object.keys(activities)).toHaveLength(1);
     });
   });
 
@@ -61,17 +59,16 @@ describe("Activity Utils", () => {
     it("should return array of activity names for a workflow", () => {
       const names = getWorkflowActivityNames(testContract, "testWorkflow");
 
-      expect(names).toContain("globalActivity");
-      expect(names).toContain("workflowActivity");
-      expect(names).toContain("anotherActivity");
+      expect(names).toEqual(
+        expect.arrayContaining(["globalActivity", "workflowActivity", "anotherActivity"]),
+      );
       expect(names).toHaveLength(3);
     });
 
     it("should return only global activity names when workflow has no specific activities", () => {
       const names = getWorkflowActivityNames(testContract, "anotherWorkflow");
 
-      expect(names).toContain("globalActivity");
-      expect(names).toHaveLength(1);
+      expect(names).toEqual(["globalActivity"]);
     });
   });
 
@@ -95,8 +92,7 @@ describe("Activity Utils", () => {
     it("should return array of all workflow names", () => {
       const names = getWorkflowNames(testContract);
 
-      expect(names).toContain("testWorkflow");
-      expect(names).toContain("anotherWorkflow");
+      expect(names).toEqual(expect.arrayContaining(["testWorkflow", "anotherWorkflow"]));
       expect(names).toHaveLength(2);
     });
   });

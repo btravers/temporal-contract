@@ -1,4 +1,4 @@
-import { Module, DynamicModule, Global } from "@nestjs/common";
+import { Module, Global } from "@nestjs/common";
 import { ConfigurableModuleClass } from "./temporal.module-definition.js";
 import { TemporalService } from "./temporal.service.js";
 
@@ -16,7 +16,7 @@ import { TemporalService } from "./temporal.service.js";
  *       activities: {
  *         // All activities must be implemented here
  *       },
- *       connection: { address: 'localhost:7233' },
+ *       connection: nativeConnection,
  *       workflowsPath: require.resolve('./workflows'),
  *     }),
  *   ],
@@ -25,29 +25,8 @@ import { TemporalService } from "./temporal.service.js";
  * ```
  */
 @Global()
-@Module({})
-export class TemporalModule extends ConfigurableModuleClass {
-  static override forRoot(
-    options: Parameters<typeof ConfigurableModuleClass.forRoot>[0],
-  ): DynamicModule {
-    const module = super.forRoot(options);
-
-    return {
-      ...module,
-      providers: [...(module.providers || []), TemporalService],
-      exports: [TemporalService],
-    };
-  }
-
-  static override forRootAsync(
-    options: Parameters<typeof ConfigurableModuleClass.forRootAsync>[0],
-  ): DynamicModule {
-    const module = super.forRootAsync(options);
-
-    return {
-      ...module,
-      providers: [...(module.providers || []), TemporalService],
-      exports: [TemporalService],
-    };
-  }
-}
+@Module({
+  providers: [TemporalService],
+  exports: [TemporalService],
+})
+export class TemporalModule extends ConfigurableModuleClass {}

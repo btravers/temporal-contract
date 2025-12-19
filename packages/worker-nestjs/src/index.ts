@@ -6,9 +6,4 @@
 
 export { TemporalModule } from "./temporal.module.js";
 export { TemporalService } from "./temporal.service.js";
-export type {
-  TemporalModuleOptions,
-  TemporalModuleOptionsFactory,
-  TemporalModuleAsyncOptions,
-  ContractActivitiesImplementation,
-} from "./interfaces.js";
+export type { TemporalModuleOptions, ContractActivitiesImplementation } from "./interfaces.js";

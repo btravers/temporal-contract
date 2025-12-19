@@ -23,12 +23,13 @@ See `@temporal-contract/contract` for contract definition.
 
 ### 2. Implement Activities
 
-All activities must be provided upfront in the module configuration. Activities can access NestJS services through the application context.
+All activities must be provided upfront in the module configuration.
 
 ```typescript
 // app.module.ts
 import { Module } from '@nestjs/common';
 import { TemporalModule } from '@temporal-contract/worker-nestjs';
+import { NativeConnection } from '@temporalio/worker';
 import { orderProcessingContract } from './contract';
 
 @Module({
@@ -58,7 +59,7 @@ import { orderProcessingContract } from './contract';
           },
         },
       },
-      connection: { address: 'localhost:7233' },
+      connection: await NativeConnection.connect({ address: 'localhost:7233' }),
       workflowsPath: require.resolve('./workflows'),
     }),
   ],

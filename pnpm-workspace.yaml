@@ -3,7 +3,6 @@ packages:
   - samples/*
   - tools/*
   - website
-
 strictPeerDependencies: false
 
 catalog:

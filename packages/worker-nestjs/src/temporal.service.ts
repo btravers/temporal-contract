@@ -1,5 +1,5 @@
 import { Injectable, Inject, OnModuleInit, OnModuleDestroy, Logger } from "@nestjs/common";
-import { Worker, NativeConnection } from "@temporalio/worker";
+import { Worker } from "@temporalio/worker";
 import { declareActivitiesHandler } from "@temporal-contract/worker/activity";
 import { MODULE_OPTIONS_TOKEN } from "./temporal.module-definition.js";
 import type { TemporalModuleOptions } from "./interfaces.js";
@@ -11,8 +11,6 @@ import type { TemporalModuleOptions } from "./interfaces.js";
 export class TemporalService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TemporalService.name);
   private worker: Worker | undefined;
-  private connection: NativeConnection | undefined;
-  private shouldCloseConnection: boolean = false;
 
   constructor(
     @Inject(MODULE_OPTIONS_TOKEN)
@@ -55,12 +53,7 @@ export class TemporalService implements OnModuleInit, OnModuleDestroy {
       this.logger.log("Shutting down Temporal worker...");
       this.worker.shutdown();
       this.worker = undefined;
-    }
-
-    if (this.connection && this.shouldCloseConnection) {
-      this.logger.log("Closing Temporal connection...");
-      await this.connection.close();
-      this.connection = undefined;
+      this.logger.log("Temporal worker shut down");
     }
   }
 
@@ -75,14 +68,6 @@ export class TemporalService implements OnModuleInit, OnModuleDestroy {
    * Initialize the Temporal worker with provided activities
    */
   private async initializeWorker(): Promise<void> {
-    // Get or create connection
-    if (this.options.connection instanceof NativeConnection) {
-      this.connection = this.options.connection;
-    } else {
-      this.connection = await NativeConnection.connect(this.options.connection);
-      this.shouldCloseConnection = true;
-    }
-
     // Use declareActivitiesHandler to wrap activities with validation
     const activities = declareActivitiesHandler({
       contract: this.options.contract,
@@ -91,11 +76,11 @@ export class TemporalService implements OnModuleInit, OnModuleDestroy {
 
     // Create the worker
     this.worker = await Worker.create({
-      connection: this.connection,
+      connection: this.options.connection,
       workflowsPath: this.options.workflowsPath,
       taskQueue: this.options.contract.taskQueue,
       activities,
-      ...this.options.workerOptions,
+      ...this.options,
     });
   }
 }
