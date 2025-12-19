@@ -88,7 +88,9 @@ describe("TemporalService", () => {
       });
       expect(mockWorker.run).toHaveBeenCalled();
       expect(service["logger"].log).toHaveBeenCalledWith("Initializing Temporal worker...");
-      expect(service["logger"].log).toHaveBeenCalledWith("Starting Temporal worker on task queue: test-queue");
+      expect(service["logger"].log).toHaveBeenCalledWith(
+        "Starting Temporal worker on task queue: test-queue",
+      );
       expect(service["logger"].log).toHaveBeenCalledWith("Temporal worker initialized");
     });
 

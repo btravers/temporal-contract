@@ -85,7 +85,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
-  
+
   // Worker starts automatically during module initialization
 
   // Handle graceful shutdown
@@ -121,10 +121,12 @@ Service managing the Temporal worker lifecycle.
 - `getWorker()`: Get the worker instance (throws if not initialized)
 
 The service automatically:
+
 - Initializes and starts the worker when the module initializes (`onModuleInit`)
 - Shuts down the worker when the module is destroyed (`onModuleDestroy`)
 
 bootstrap();
+
 ```
 
 ## Why This Approach?
@@ -136,3 +138,4 @@ bootstrap();
 ## License
 
 MIT
+```
