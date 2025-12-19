@@ -1,0 +1,101 @@
+/**
+ * Customize default theme styling by overriding CSS variables:
+ * https://github.com/vuejs/vitepress/blob/main/src/client/theme-default/styles/vars.css
+ */
+
+/**
+ * Colors
+ * -------------------------------------------------------------------------- */
+
+:root {
+  /* Brand colors - Purple/Indigo theme matching the logo */
+  --vp-c-brand-1: #7C3AED;
+  --vp-c-brand-2: #6D28D9;
+  --vp-c-brand-3: #5B21B6;
+  --vp-c-brand-soft: rgba(124, 58, 237, 0.14);
+
+  /* Background colors */
+  --vp-c-bg-soft: #f6f6f7;
+}
+
+.dark {
+  /* Dark mode brand colors */
+  --vp-c-brand-1: #A78BFA;
+  --vp-c-brand-2: #8B5CF6;
+  --vp-c-brand-3: #7C3AED;
+  --vp-c-brand-soft: rgba(124, 58, 237, 0.24);
+
+  /* Dark mode background colors */
+  --vp-c-bg-soft: #202127;
+}
+
+/**
+ * Component: Button
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --vp-button-brand-border: transparent;
+  --vp-button-brand-text: var(--vp-c-white);
+  --vp-button-brand-bg: var(--vp-c-brand-3);
+  --vp-button-brand-hover-border: transparent;
+  --vp-button-brand-hover-text: var(--vp-c-white);
+  --vp-button-brand-hover-bg: var(--vp-c-brand-2);
+  --vp-button-brand-active-border: transparent;
+  --vp-button-brand-active-text: var(--vp-c-white);
+  --vp-button-brand-active-bg: var(--vp-c-brand-1);
+}
+
+/**
+ * Component: Home
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #5B21B6 30%, #7C3AED);
+
+  --vp-home-hero-image-background-image: linear-gradient(-45deg, #5B21B666 50%, #7C3AED66 50%);
+  --vp-home-hero-image-filter: blur(44px);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --vp-home-hero-image-filter: blur(56px);
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --vp-home-hero-image-filter: blur(68px);
+  }
+}
+
+/**
+ * Component: Logo Glowing Effect
+ * -------------------------------------------------------------------------- */
+
+/* Add glowing effect to logo in navbar */
+.VPNavBarTitle .VPImage {
+  filter: drop-shadow(0 0 8px rgba(124, 58, 237, 0.6))
+          drop-shadow(0 0 16px rgba(124, 58, 237, 0.4))
+          drop-shadow(0 0 24px rgba(124, 58, 237, 0.3));
+  transition: filter 0.3s ease;
+}
+
+.VPNavBarTitle .VPImage:hover {
+  filter: drop-shadow(0 0 12px rgba(124, 58, 237, 0.8))
+          drop-shadow(0 0 20px rgba(124, 58, 237, 0.6))
+          drop-shadow(0 0 32px rgba(124, 58, 237, 0.4));
+}
+
+/* Dark mode adjustments for logo glow */
+.dark .VPNavBarTitle .VPImage {
+  filter: drop-shadow(0 0 10px rgba(167, 139, 250, 0.7))
+          drop-shadow(0 0 20px rgba(167, 139, 250, 0.5))
+          drop-shadow(0 0 30px rgba(167, 139, 250, 0.3));
+}
+
+.dark .VPNavBarTitle .VPImage:hover {
+  filter: drop-shadow(0 0 14px rgba(167, 139, 250, 0.9))
+          drop-shadow(0 0 24px rgba(167, 139, 250, 0.7))
+          drop-shadow(0 0 36px rgba(167, 139, 250, 0.5));
+}
