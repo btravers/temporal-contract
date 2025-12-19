@@ -12,7 +12,7 @@ import type { z } from "zod";
 import { Client } from "@temporalio/client";
 import { Test, TestingModule } from "@nestjs/testing";
 import { ActivitiesProvider } from "./activities.provider.js";
-import { DependenciesModule } from "./dependencies.module.js";
+import { DependenciesModule, PAYMENT_ADAPTER } from "./dependencies.module.js";
 import { MockPaymentAdapter } from "./infrastructure/adapters/payment.adapter.js";
 
 type Order = z.infer<typeof OrderSchema>;
@@ -40,7 +40,7 @@ const it = baseIt.extend<{
   paymentAdapter: [
     async ({ moduleRef }, use) => {
       // Get the payment adapter from the shared module
-      const adapter = moduleRef.get<MockPaymentAdapter>("PaymentAdapter");
+      const adapter = moduleRef.get<MockPaymentAdapter>(PAYMENT_ADAPTER);
       await use(adapter);
     },
     { auto: true },

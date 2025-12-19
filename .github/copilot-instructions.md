@@ -102,8 +102,7 @@ async ({}, use) => { }
 ```
 
 **When to use:**
-
-- Empty object patterns in function parameters (e.g., test fixtures that don't need context)
+- Empty object patterns in Vitest fixture function parameters that don't need context
 - Cases where the linter flags valid patterns that can't be easily refactored
 
 **Note:** Always prefer refactoring over suppression when possible (e.g., use `_context` instead of `{}`).

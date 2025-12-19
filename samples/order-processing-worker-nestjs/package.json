@@ -9,8 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@nestjs/common": "11.1.9",
-    "@nestjs/core": "11.1.9",
+    "@nestjs/common": "catalog:",
+    "@nestjs/core": "catalog:",
     "@temporal-contract/boxed": "workspace:*",
     "@temporal-contract/sample-order-processing-contract": "workspace:*",
     "@temporal-contract/worker": "workspace:*",
@@ -19,11 +19,11 @@
     "@temporalio/workflow": "catalog:",
     "pino": "catalog:",
     "pino-pretty": "catalog:",
-    "reflect-metadata": "0.2.2",
+    "reflect-metadata": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@nestjs/testing": "11.1.9",
+    "@nestjs/testing": "catalog:",
     "@temporal-contract/client": "workspace:*",
     "@temporal-contract/testing": "workspace:*",
     "@temporal-contract/tsconfig": "workspace:*",
