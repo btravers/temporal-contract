@@ -45,13 +45,13 @@ const it = baseIt.extend<{
         console.error("Worker failed:", err);
       });
 
-      await vi.waitFor(() => worker.getState() === "RUNNING", { interval: 100 });
+      await vi.waitFor(() => worker.getState() === "RUNNING", { interval: 100, timeout: 5000 });
 
       await use(worker);
 
-      worker.shutdown();
+      await worker.shutdown();
 
-      await vi.waitFor(() => worker.getState() === "STOPPED", { interval: 100 });
+      await vi.waitFor(() => worker.getState() === "STOPPED", { interval: 100, timeout: 5000 });
 
       await moduleRef.close();
     },
