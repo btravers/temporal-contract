@@ -159,7 +159,8 @@ export const orderContract = defineContract({
 ```
 
 ```typescript [2. activities.ts]
-import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
+import { Future, Result } from '@temporal-contract/boxed';
+import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
 import { orderContract } from './contract';
 
 // ✅ Implement activities with full type safety
