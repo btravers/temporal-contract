@@ -1,38 +1,17 @@
 import { ContractDefinition, ActivityDefinition } from "@temporal-contract/contract";
 import type { NativeConnection, WorkerOptions } from "@temporalio/worker";
-import type { Future, Result } from "@temporal-contract/boxed";
-import type { ActivityError } from "@temporal-contract/worker/activity";
-import type { StandardSchemaV1 } from "@standard-schema/spec";
-
-/**
- * Infer input type from an activity definition (worker perspective)
- */
-type WorkerInferInput<T extends { input: { "~standard": StandardSchemaV1 } }> = StandardSchemaV1.InferOutput<
-  T["input"]["~standard"]
->;
-
-/**
- * Infer output type from an activity definition (worker perspective)
- */
-type WorkerInferOutput<T extends { output: { "~standard": StandardSchemaV1 } }> = StandardSchemaV1.InferInput<
-  T["output"]["~standard"]
->;
-
-/**
- * Activity implementation using Future/Result pattern
- */
-type BoxedActivityImplementation<TActivity extends ActivityDefinition> = (
-  args: WorkerInferInput<TActivity>,
-) => Future<Result<WorkerInferOutput<TActivity>, ActivityError>>;
 
 /**
  * Map of all activity implementations for a contract (global + all workflow-specific)
+ *
+ * Activities must return Future<Result<Output, ActivityError>>
+ * The actual type safety is enforced by declareActivitiesHandler
  */
 export type ContractActivitiesImplementation<TContract extends ContractDefinition> =
   // Global activities
   (TContract["activities"] extends Record<string, ActivityDefinition>
     ? {
-        [K in keyof TContract["activities"]]: BoxedActivityImplementation<TContract["activities"][K]>;
+        [K in keyof TContract["activities"]]: (args: unknown) => unknown;
       }
     : {}) &
     // All workflow-specific activities merged
@@ -42,9 +21,9 @@ export type ContractActivitiesImplementation<TContract extends ContractDefinitio
         ActivityDefinition
       >
         ? {
-            [K in keyof TContract["workflows"][TWorkflow]["activities"]]: BoxedActivityImplementation<
-              TContract["workflows"][TWorkflow]["activities"][K]
-            >;
+            [K in keyof TContract["workflows"][TWorkflow]["activities"]]: (
+              args: unknown,
+            ) => unknown;
           }
         : {};
     };

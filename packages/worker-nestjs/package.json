@@ -48,6 +48,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@standard-schema/spec": "catalog:",
     "@temporal-contract/boxed": "workspace:*",
     "@temporal-contract/contract": "workspace:*",
     "@temporal-contract/worker": "workspace:*"

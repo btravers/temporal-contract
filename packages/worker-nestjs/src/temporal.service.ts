@@ -1,7 +1,6 @@
 import { Injectable, Inject, OnModuleInit, OnModuleDestroy, Logger } from "@nestjs/common";
 import { Worker, NativeConnection } from "@temporalio/worker";
-import { ContractDefinition } from "@temporal-contract/contract";
-import { declareActivitiesHandler, ActivitiesHandler } from "@temporal-contract/worker/activity";
+import { declareActivitiesHandler } from "@temporal-contract/worker/activity";
 import { MODULE_OPTIONS_TOKEN } from "./temporal.module-definition.js";
 import type { TemporalModuleOptions } from "./interfaces.js";
 
