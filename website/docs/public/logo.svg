@@ -5,10 +5,6 @@
       <stop offset="100%" style="stop-color:#5B6FEE;stop-opacity:1" />
     </linearGradient>
   </defs>
-  <!-- Left curly brace -->
-  <text x="5" y="70" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="url(#grad)" text-anchor="start">{</text>
-  <!-- TC text -->
-  <text x="70" y="63" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="url(#grad)" text-anchor="middle">TC</text>
-  <!-- Right curly brace -->
-  <text x="135" y="70" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="url(#grad)" text-anchor="end">}</text>
+  <!-- Complete {TC} text with same size -->
+  <text x="70" y="65" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="url(#grad)" text-anchor="middle">{TC}</text>
 </svg>
