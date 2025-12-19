@@ -9,6 +9,7 @@ import { CreateShipmentUseCase } from "./domain/usecases/create-shipment.usecase
 import { SendNotificationUseCase } from "./domain/usecases/send-notification.usecase.js";
 import { RefundPaymentUseCase } from "./domain/usecases/refund-payment.usecase.js";
 import type { PinoLoggerAdapter } from "./infrastructure/adapters/logger.adapter.js";
+import { LOGGER_ADAPTER } from "./dependencies.module.js";
 
 /**
  * Injectable provider that creates type-safe activities with dependency injection
@@ -21,7 +22,7 @@ import type { PinoLoggerAdapter } from "./infrastructure/adapters/logger.adapter
 @Injectable()
 export class ActivitiesProvider {
   constructor(
-    @Inject("LoggerAdapter") private readonly loggerAdapter: PinoLoggerAdapter,
+    @Inject(LOGGER_ADAPTER) private readonly loggerAdapter: PinoLoggerAdapter,
     @Inject(ProcessPaymentUseCase) private readonly processPaymentUseCase: ProcessPaymentUseCase,
     @Inject(ReserveInventoryUseCase)
     private readonly reserveInventoryUseCase: ReserveInventoryUseCase,
