@@ -27,6 +27,7 @@ function workflowPath(filename: string): string {
       inject: [ActivitiesProvider],
       useFactory: async (activitiesProvider: ActivitiesProvider) => {
         // Create connection to Temporal server
+        // Note: This is hardcoded for the sample. In production, use environment variables
         const connection = await NativeConnection.connect({
           address: "localhost:7233",
         });

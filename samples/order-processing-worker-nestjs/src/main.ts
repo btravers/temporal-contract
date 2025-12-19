@@ -33,8 +33,8 @@ async function bootstrap() {
     process.on("SIGTERM", () => shutdown("SIGTERM"));
     process.on("SIGINT", () => shutdown("SIGINT"));
 
-    // Keep the process running
-    await new Promise(() => {});
+    // Keep the process running indefinitely
+    await new Promise<never>(() => {});
   } catch (err) {
     logger.error({ err }, "❌ Worker failed");
     process.exit(1);
