@@ -33,5 +33,5 @@
     "sort-package-json": "catalog:",
     "turbo": "catalog:"
   },
-  "packageManager": "pnpm@10.26.0"
+  "packageManager": "pnpm@10.26.1"
 }
