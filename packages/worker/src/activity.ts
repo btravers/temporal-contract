@@ -14,6 +14,13 @@ export {
   ActivityOutputValidationError,
 } from "./errors.js";
 
+export {
+  getWorkflowActivities,
+  getWorkflowActivityNames,
+  isWorkflowActivity,
+  getWorkflowNames,
+} from "./activity-utils.js";
+
 /**
  * Activity error class that should be used to wrap all technical exceptions
  * Forces proper error handling and enables retry policies

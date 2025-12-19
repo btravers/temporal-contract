@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TemporalActivity, getActivityHandlers } from "../src/decorators";
+import { TemporalActivity, getActivityHandlers } from "../src/decorators.js";
 
 describe("TemporalActivity decorator", () => {
   it("should store metadata for activity handlers", () => {
