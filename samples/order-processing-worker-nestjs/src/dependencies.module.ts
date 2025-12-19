@@ -80,6 +80,7 @@ import { PinoLoggerAdapter } from "./infrastructure/adapters/logger.adapter.js";
     },
   ],
   exports: [
+    "PaymentAdapter",
     "LoggerAdapter",
     ProcessPaymentUseCase,
     ReserveInventoryUseCase,
