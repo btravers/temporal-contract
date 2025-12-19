@@ -2,6 +2,32 @@
 
 Learn by example! Explore complete working examples that demonstrate temporal-contract in action.
 
+## Architecture Overview
+
+```mermaid
+graph TB
+    subgraph Contract Package
+        C[Contract Definition<br/>Zod Schemas]
+    end
+
+    subgraph Worker
+        W[Workflows]
+        A[Activities]
+    end
+
+    subgraph Client
+        CL[TypedClient<br/>Execute Workflows]
+    end
+
+    C --> W
+    C --> A
+    C --> CL
+
+    style C fill:#3b82f6,stroke:#1e40af,color:#fff
+    style Worker fill:#10b981,stroke:#059669,color:#fff
+    style Client fill:#8b5cf6,stroke:#6d28d9,color:#fff
+```
+
 ## Available Examples
 
 ### [Order Processing Example](/examples/basic-order-processing)

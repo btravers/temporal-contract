@@ -9,6 +9,26 @@ The `@temporal-contract/worker` package provides functions for implementing Temp
 1. **`declareActivitiesHandler`** - Implements all activities (global + workflow-specific)
 2. **`declareWorkflow`** - Implements individual workflows with typed context
 
+## Workflow Execution Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Worker
+    participant Workflow
+    participant Activities
+
+    Client->>Worker: Execute workflow (typed)
+    Worker->>Workflow: Start with validated input
+    Workflow->>Activities: Call activity (typed)
+    Activities->>Activities: Validate input
+    Activities->>Activities: Execute logic
+    Activities->>Activities: Validate output
+    Activities->>Workflow: Return result (typed)
+    Workflow->>Worker: Return output (validated)
+    Worker->>Client: Result (typed)
+```
+
 ## Activities Handler
 
 Create a handler for all activities:
@@ -136,6 +156,30 @@ implementation: async (context, input) => {
 ## Child Workflows
 
 Execute child workflows with type-safe Future/Result pattern. Child workflows can be from the same contract or from a different contract (cross-worker communication).
+
+```mermaid
+graph TB
+    subgraph PW[Parent Workflow]
+        P[Parent Logic]
+    end
+
+    subgraph SC[Same Contract]
+        CW1[Child Workflow 1]
+    end
+
+    subgraph DC[Different Contract]
+        CW2[Child Workflow 2]
+    end
+
+    P -->|executeChildWorkflow| CW1
+    P -->|executeChildWorkflow<br/>cross-contract| CW2
+    CW1 -->|Result| P
+    CW2 -->|Result| P
+
+    style PW fill:#3b82f6,stroke:#1e40af,color:#fff
+    style SC fill:#10b981,stroke:#059669,color:#fff
+    style DC fill:#8b5cf6,stroke:#6d28d9,color:#fff
+```
 
 ### Basic Usage
 

@@ -43,6 +43,14 @@ features:
   - icon: 🎯
     title: Explicit Error Handling
     details: Optional Result/Future pattern for workflows that need explicit error handling without exceptions.
+
+  - icon: 🔄
+    title: Child Workflow Support
+    details: Execute child workflows with type-safe Result/Future pattern, including cross-contract workflows for microservice orchestration.
+  
+  - icon: 🧪
+    title: Testing Utilities
+    details: Built-in testing support with testcontainers integration and type-safe mocks for workflows and activities.
 ---
 
 ## The Problem
@@ -62,6 +70,21 @@ console.log(result.status);  // unknown type, no autocomplete
 // ❌ Manual validation everywhere
 // ❌ Runtime errors from wrong data
 // ❌ Scattered activity definitions
+```
+
+## How It Works
+
+```mermaid
+graph LR
+    A[Contract Definition] --> B[Worker]
+    A --> C[Client]
+    B --> D[Type-safe Activities]
+    B --> E[Type-safe Workflows]
+    C --> F[Type-safe Calls]
+
+    style A fill:#3b82f6,stroke:#1e40af,color:#fff
+    style B fill:#10b981,stroke:#059669,color:#fff
+    style C fill:#8b5cf6,stroke:#6d28d9,color:#fff
 ```
 
 ## The Solution

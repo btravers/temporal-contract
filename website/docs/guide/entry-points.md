@@ -13,22 +13,37 @@ temporal-contract respects this architecture while providing type safety across 
 
 ## Architecture Overview
 
-```
-┌──────────────────────────────────────────────────────────┐
-│              Contract Package (Shared)                   │
-│  - Contract definition (workflows & activities)          │
-│  - Domain schemas (validation)                           │
-│  - TypeScript types                                      │
-└──────────────────────────────────────────────────────────┘
-         ↑                                         ↑
-         │ imports                                 │ imports
-         │                                         │
-┌────────┴─────────────────┐         ┌────────────┴──────────┐
-│   Worker Application     │         │   Client Application  │
-│  - Activities Handler    │         │  - TypedClient        │
-│  - Workflows             │         │  - Start workflows    │
-│  - Worker Setup          │         │  - Get results        │
-└──────────────────────────┘         └───────────────────────┘
+```mermaid
+graph TB
+    subgraph CP[Contract Package - Shared]
+        C[Contract Definition]
+        S[Schemas & Types]
+    end
+
+    subgraph WA[Worker Application]
+        AH[Activities Handler]
+        WF[Workflows]
+        WS[Worker Setup]
+    end
+
+    subgraph CA[Client Application]
+        TC[TypedClient]
+        EW[Execute Workflows]
+    end
+
+    C --> AH
+    C --> WF
+    C --> TC
+    S --> AH
+    S --> WF
+    S --> TC
+
+    AH --> WS
+    WF -.workflowsPath.-> WS
+
+    style CP fill:#3b82f6,stroke:#1e40af,color:#fff
+    style WA fill:#10b981,stroke:#059669,color:#fff
+    style CA fill:#8b5cf6,stroke:#6d28d9,color:#fff
 ```
 
 ## File Structure
