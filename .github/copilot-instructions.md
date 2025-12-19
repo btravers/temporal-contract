@@ -298,13 +298,13 @@ This document provides AI-assisted code review rules and coding guidelines for t
    describe("Feature Name", () => {
      describe("specific function/method", () => {
        it("should do something specific", () => {
-         // Arrange
+         // GIVEN
          const input = { /* ... */ };
 
-         // Act
+         // WHEN
          const result = functionUnderTest(input);
 
-         // Assert
+         // THEN
          expect(result).toEqual(expectedValue);
        });
      });
@@ -326,6 +326,33 @@ This document provides AI-assisted code review rules and coding guidelines for t
    - Use descriptive test names: "should [expected behavior] when [condition]"
    - Group related tests in `describe` blocks
    - Keep tests focused on one thing
+
+6. **Assertion Best Practices**
+   - Merge multiple assertions into one whenever possible for clarity
+   - Use `expect.objectContaining()` or `toMatchObject()` for complex object validation
+   - Prefer single comprehensive assertions over multiple fragmented ones
+
+   ```typescript
+   // ❌ Bad - multiple fragmented assertions
+   it("should return valid user", () => {
+     const user = createUser({ name: "John", age: 30 });
+     expect(user.name).toBe("John");
+     expect(user.age).toBe(30);
+     expect(user.id).toBeDefined();
+     expect(user.createdAt).toBeInstanceOf(Date);
+   });
+
+   // ✅ Good - merged into comprehensive assertion
+   it("should return valid user", () => {
+     const user = createUser({ name: "John", age: 30 });
+     expect(user).toMatchObject({
+       name: "John",
+       age: 30,
+       id: expect.any(String),
+       createdAt: expect.any(Date),
+     });
+   });
+   ```
 
 ---
 
