@@ -11,13 +11,13 @@ graph TB
     CL[client<br/>Consumption]
     T[testing<br/>Test Utilities]
     B[boxed<br/>Result/Future]
-    
+
     W --> C
     W --> B
     CL --> C
     CL --> B
     T --> C
-    
+
     style C fill:#3b82f6,stroke:#1e40af,color:#fff
     style W fill:#10b981,stroke:#059669,color:#fff
     style CL fill:#8b5cf6,stroke:#6d28d9,color:#fff

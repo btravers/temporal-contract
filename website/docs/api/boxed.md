@@ -18,7 +18,7 @@ graph LR
     B[Future Pattern] --> D[Async Operations]
     C --> E[Type-safe Error Handling]
     D --> E
-    
+
     style A fill:#3b82f6,stroke:#1e40af,color:#fff
     style B fill:#10b981,stroke:#059669,color:#fff
     style E fill:#8b5cf6,stroke:#6d28d9,color:#fff
@@ -187,13 +187,13 @@ export const workflow = declareWorkflow({
     });
 
     return paymentResult.match({
-      Ok: (payment) => Result.Ok({ 
-        success: true, 
-        transactionId: payment.transactionId 
+      Ok: (payment) => Result.Ok({
+        success: true,
+        transactionId: payment.transactionId
       }),
-      Error: (error) => Result.Error({ 
-        type: 'PAYMENT_FAILED', 
-        message: error.message 
+      Error: (error) => Result.Error({
+        type: 'PAYMENT_FAILED',
+        message: error.message
       }),
     });
   },

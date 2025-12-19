@@ -23,7 +23,7 @@ sequenceDiagram
     participant Inventory
     participant Payment
     participant Email
-    
+
     Client->>Workflow: Process Order
     Workflow->>Inventory: Validate Inventory
     Inventory-->>Workflow: Available ✓

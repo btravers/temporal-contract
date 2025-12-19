@@ -13,7 +13,7 @@ graph LR
     B -->|Error| D[Error Value]
     C --> E[Continue Flow]
     D --> F[Handle Error]
-    
+
     style B fill:#3b82f6,stroke:#1e40af,color:#fff
     style C fill:#10b981,stroke:#059669,color:#fff
     style D fill:#ef4444,stroke:#dc2626,color:#fff
@@ -249,7 +249,7 @@ graph LR
     C -->|Error| E
     D -->|Ok| F[Success]
     D -->|Error| E
-    
+
     style A fill:#3b82f6,stroke:#1e40af,color:#fff
     style F fill:#10b981,stroke:#059669,color:#fff
     style E fill:#ef4444,stroke:#dc2626,color:#fff

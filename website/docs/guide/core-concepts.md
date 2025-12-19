@@ -14,7 +14,7 @@ graph TB
     B --> E[Client Usage]
     C --> D
     C --> E
-    
+
     style A fill:#3b82f6,stroke:#1e40af,color:#fff
     style B fill:#10b981,stroke:#059669,color:#fff
     style C fill:#f59e0b,stroke:#d97706,color:#fff
@@ -50,15 +50,15 @@ sequenceDiagram
     participant W as Worker
     participant A as Activities
     participant Cl as Client
-    
+
     Note over C: 1. Definition
     C->>W: Type definitions
     C->>Cl: Type definitions
-    
+
     Note over W,A: 2. Implementation
     W->>A: Call with types
     A->>W: Return with types
-    
+
     Note over Cl: 3. Usage
     Cl->>W: Execute workflow (typed)
     W->>Cl: Return result (typed)
@@ -197,7 +197,7 @@ graph LR
     C -->|Validate Output| D[Activity Result]
     D --> E[Workflow Logic]
     E -->|Validate Output| F[Client Result]
-    
+
     style A fill:#8b5cf6,stroke:#6d28d9,color:#fff
     style B fill:#3b82f6,stroke:#1e40af,color:#fff
     style C fill:#10b981,stroke:#059669,color:#fff

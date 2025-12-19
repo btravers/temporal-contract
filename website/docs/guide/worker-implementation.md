@@ -17,7 +17,7 @@ sequenceDiagram
     participant Worker
     participant Workflow
     participant Activities
-    
+
     Client->>Worker: Execute workflow (typed)
     Worker->>Workflow: Start with validated input
     Workflow->>Activities: Call activity (typed)
@@ -162,20 +162,20 @@ graph TB
     subgraph PW[Parent Workflow]
         P[Parent Logic]
     end
-    
+
     subgraph SC[Same Contract]
         CW1[Child Workflow 1]
     end
-    
+
     subgraph DC[Different Contract]
         CW2[Child Workflow 2]
     end
-    
+
     P -->|executeChildWorkflow| CW1
     P -->|executeChildWorkflow<br/>cross-contract| CW2
     CW1 -->|Result| P
     CW2 -->|Result| P
-    
+
     style PW fill:#3b82f6,stroke:#1e40af,color:#fff
     style SC fill:#10b981,stroke:#059669,color:#fff
     style DC fill:#8b5cf6,stroke:#6d28d9,color:#fff

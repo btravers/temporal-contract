@@ -81,7 +81,7 @@ graph LR
     B --> D[Type-safe Activities]
     B --> E[Type-safe Workflows]
     C --> F[Type-safe Calls]
-    
+
     style A fill:#3b82f6,stroke:#1e40af,color:#fff
     style B fill:#10b981,stroke:#059669,color:#fff
     style C fill:#8b5cf6,stroke:#6d28d9,color:#fff

@@ -57,7 +57,7 @@ Let's build a simple order processing workflow in 3 steps.
 graph LR
     A[1. Define Contract] --> B[2. Implement Activities & Workflows]
     B --> C[3. Start Worker & Client]
-    
+
     style A fill:#3b82f6,stroke:#1e40af,color:#fff
     style B fill:#10b981,stroke:#059669,color:#fff
     style C fill:#8b5cf6,stroke:#6d28d9,color:#fff
