@@ -164,12 +164,13 @@ import { declareActivitiesHandler, ActivityError } from '@temporal-contract/work
 import { orderContract } from './contract';
 
 // ✅ Implement activities with full type safety
+// Note: Replace paymentService and notificationService with your actual service implementations
 export const activities = declareActivitiesHandler({
   contract: orderContract,
   activities: {
     processOrder: {
       processPayment: ({ customerId, amount }) => {
-        // Your payment service implementation
+        // Replace paymentService with your actual payment service
         return Future.fromPromise(
           paymentService.charge(customerId, amount)
         ).mapOk((transaction) => ({ transactionId: transaction.id }))
@@ -183,7 +184,7 @@ export const activities = declareActivitiesHandler({
       },
 
       sendNotification: ({ customerId, message }) => {
-        // Your notification service implementation
+        // Replace notificationService with your actual notification service
         return Future.fromPromise(
           notificationService.send(customerId, message)
         ).mapError((error) =>
