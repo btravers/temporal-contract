@@ -7,9 +7,8 @@
   </defs>
   <!-- Left curly brace -->
   <text x="5" y="70" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="url(#grad)" text-anchor="start">{</text>
-  <!-- Circle with TC -->
-  <circle cx="70" cy="50" r="35" fill="url(#grad)" />
-  <text x="70" y="63" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="white" text-anchor="middle">TC</text>
+  <!-- TC text -->
+  <text x="70" y="63" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="url(#grad)" text-anchor="middle">TC</text>
   <!-- Right curly brace -->
   <text x="135" y="70" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="url(#grad)" text-anchor="end">}</text>
 </svg>
