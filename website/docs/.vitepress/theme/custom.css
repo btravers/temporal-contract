@@ -9,9 +9,9 @@
 
 :root {
   /* Brand colors - Temporal.io UV theme matching the logo */
-  --vp-c-brand-1: #5B6FEE;
-  --vp-c-brand-2: #4F60E8;
-  --vp-c-brand-3: #444CE7;
+  --vp-c-brand-1: #5b6fee;
+  --vp-c-brand-2: #4f60e8;
+  --vp-c-brand-3: #444ce7;
   --vp-c-brand-soft: rgba(68, 76, 231, 0.14);
 
   /* Background colors */
@@ -20,9 +20,9 @@
 
 .dark {
   /* Dark mode brand colors */
-  --vp-c-brand-1: #7C8BFA;
-  --vp-c-brand-2: #6271F0;
-  --vp-c-brand-3: #5B6FEE;
+  --vp-c-brand-1: #7c8bfa;
+  --vp-c-brand-2: #6271f0;
+  --vp-c-brand-3: #5b6fee;
   --vp-c-brand-soft: rgba(68, 76, 231, 0.24);
 
   /* Dark mode background colors */
@@ -51,9 +51,9 @@
 
 :root {
   --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #5B21B6 30%, #7C3AED);
+  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #444ce7 30%, #5b6fee);
 
-  --vp-home-hero-image-background-image: linear-gradient(-45deg, #5B21B666 50%, #7C3AED66 50%);
+  --vp-home-hero-image-background-image: linear-gradient(-45deg, #444ce766 50%, #5b6fee66 50%);
   --vp-home-hero-image-filter: blur(44px);
 }
 
@@ -75,27 +75,23 @@
 
 /* Add glowing effect to logo in navbar */
 .VPNavBarTitle .VPImage {
-  filter: drop-shadow(0 0 8px rgba(124, 58, 237, 0.6))
-          drop-shadow(0 0 16px rgba(124, 58, 237, 0.4))
-          drop-shadow(0 0 24px rgba(124, 58, 237, 0.3));
+  filter: drop-shadow(0 0 8px rgba(68, 76, 231, 0.6)) drop-shadow(0 0 16px rgba(68, 76, 231, 0.4))
+    drop-shadow(0 0 24px rgba(68, 76, 231, 0.3));
   transition: filter 0.3s ease;
 }
 
 .VPNavBarTitle .VPImage:hover {
-  filter: drop-shadow(0 0 12px rgba(124, 58, 237, 0.8))
-          drop-shadow(0 0 20px rgba(124, 58, 237, 0.6))
-          drop-shadow(0 0 32px rgba(124, 58, 237, 0.4));
+  filter: drop-shadow(0 0 12px rgba(68, 76, 231, 0.8)) drop-shadow(0 0 20px rgba(68, 76, 231, 0.6))
+    drop-shadow(0 0 32px rgba(68, 76, 231, 0.4));
 }
 
 /* Dark mode adjustments for logo glow */
 .dark .VPNavBarTitle .VPImage {
-  filter: drop-shadow(0 0 10px rgba(167, 139, 250, 0.7))
-          drop-shadow(0 0 20px rgba(167, 139, 250, 0.5))
-          drop-shadow(0 0 30px rgba(167, 139, 250, 0.3));
+  filter: drop-shadow(0 0 10px rgba(124, 139, 250, 0.7))
+    drop-shadow(0 0 20px rgba(124, 139, 250, 0.5)) drop-shadow(0 0 30px rgba(124, 139, 250, 0.3));
 }
 
 .dark .VPNavBarTitle .VPImage:hover {
-  filter: drop-shadow(0 0 14px rgba(167, 139, 250, 0.9))
-          drop-shadow(0 0 24px rgba(167, 139, 250, 0.7))
-          drop-shadow(0 0 36px rgba(167, 139, 250, 0.5));
+  filter: drop-shadow(0 0 14px rgba(124, 139, 250, 0.9))
+    drop-shadow(0 0 24px rgba(124, 139, 250, 0.7)) drop-shadow(0 0 36px rgba(124, 139, 250, 0.5));
 }
