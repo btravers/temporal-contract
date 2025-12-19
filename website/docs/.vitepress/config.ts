@@ -1,7 +1,7 @@
-import { defineConfig } from "vitepress";
+import { withMermaid } from "vitepress-plugin-mermaid";
 
 // https://vitepress.dev/reference/site-config
-export default defineConfig({
+export default withMermaid({
   title: "temporal-contract",
   description: "Type-safe contracts for Temporal.io workflows and activities",
   base: "/temporal-contract/",
@@ -85,4 +85,9 @@ export default defineConfig({
   },
 
   head: [["link", { rel: "icon", type: "image/svg+xml", href: "/temporal-contract/logo.svg" }]],
+
+  mermaid: {
+    // Configuration options for mermaid
+    // See: https://mermaid.js.org/config/setup/modules/mermaidAPI.html
+  },
 });
