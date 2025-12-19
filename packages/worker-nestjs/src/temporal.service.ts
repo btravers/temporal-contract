@@ -1,6 +1,5 @@
 import { Injectable, Inject, OnModuleInit, OnModuleDestroy, Logger } from "@nestjs/common";
 import { Worker } from "@temporalio/worker";
-import { declareActivitiesHandler } from "@temporal-contract/worker/activity";
 import { MODULE_OPTIONS_TOKEN } from "./temporal.module-definition.js";
 import type { TemporalModuleOptions } from "./interfaces.js";
 
@@ -35,14 +34,35 @@ export class TemporalService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Start the Temporal worker
+   *
+   * This method starts the worker and returns immediately without blocking.
+   * The worker runs in the background until stop() is called or the process terminates.
+   *
+   * @example
+   * ```ts
+   * const app = await NestFactory.createApplicationContext(AppModule);
+   * const temporalService = app.get(TemporalService);
+   *
+   * // Start worker (non-blocking)
+   * temporalService.start();
+   *
+   * // Handle graceful shutdown
+   * process.on('SIGTERM', async () => {
+   *   await app.close();
+   * });
+   * ```
    */
-  async start(): Promise<void> {
+  start(): void {
     if (!this.worker) {
       throw new Error("Worker not initialized. Call initializeWorker first.");
     }
 
     this.logger.log(`Starting Temporal worker on task queue: ${this.options.contract.taskQueue}`);
-    await this.worker.run();
+
+    // Run worker in background without blocking
+    this.worker.run().catch((error) => {
+      this.logger.error(`Temporal worker encountered an error: ${error.message}`, error.stack);
+    });
   }
 
   /**
@@ -68,19 +88,13 @@ export class TemporalService implements OnModuleInit, OnModuleDestroy {
    * Initialize the Temporal worker with provided activities
    */
   private async initializeWorker(): Promise<void> {
-    // Use declareActivitiesHandler to wrap activities with validation
-    const activities = declareActivitiesHandler({
-      contract: this.options.contract,
-      activities: this.options.activities as never,
-    });
-
-    // Create the worker
+    // Create the worker - activities are already properly typed and validated
     this.worker = await Worker.create({
       ...this.options,
       connection: this.options.connection,
       workflowsPath: this.options.workflowsPath,
       taskQueue: this.options.contract.taskQueue,
-      activities,
+      activities: this.options.activities,
     });
   }
 }

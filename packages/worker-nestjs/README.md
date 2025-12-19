@@ -23,13 +23,15 @@ See `@temporal-contract/contract` for contract definition.
 
 ### 2. Implement Activities
 
-All activities must be provided upfront in the module configuration.
+All activities must be provided upfront in the module configuration. Use `declareActivitiesHandler` to create type-safe activities.
 
 ```typescript
 // app.module.ts
 import { Module } from '@nestjs/common';
 import { TemporalModule } from '@temporal-contract/worker-nestjs';
 import { NativeConnection } from '@temporalio/worker';
+import { Future, Result } from '@temporal-contract/boxed';
+import { ActivityError, declareActivitiesHandler } from '@temporal-contract/worker/activity';
 import { orderProcessingContract } from './contract';
 
 @Module({
@@ -37,29 +39,32 @@ import { orderProcessingContract } from './contract';
     TemporalModule.forRootAsync({
       useFactory: async () => ({
         contract: orderProcessingContract,
-        activities: {
-          // Global activities
-          log: ({ level, message }) => {
-            console.log(`[${level}] ${message}`);
-            return Future.value(Result.Ok(undefined));
-          },
+        activities: declareActivitiesHandler({
+          contract: orderProcessingContract,
+          activities: {
+            // Global activities
+            log: ({ level, message }) => {
+              console.log(`[${level}] ${message}`);
+              return Future.value(Result.Ok(undefined));
+            },
 
-          // Workflow-specific activities
-          processOrder: {
-            processPayment: ({ customerId, amount }) => {
-              return Future.make(async (resolve) => {
-                try {
-                  // Implementation
-                  resolve(Result.Ok({ transactionId: 'txn_123' }));
-                } catch (error) {
-                  resolve(Result.Error(
-                    new ActivityError('PAYMENT_FAILED', 'Payment failed', error)
-                  ));
-                }
-              });
+            // Workflow-specific activities
+            processOrder: {
+              processPayment: ({ customerId, amount }) => {
+                return Future.make(async (resolve) => {
+                  try {
+                    // Implementation
+                    resolve(Result.Ok({ transactionId: 'txn_123' }));
+                  } catch (error) {
+                    resolve(Result.Error(
+                      new ActivityError('PAYMENT_FAILED', 'Payment failed', error)
+                    ));
+                  }
+                });
+              },
             },
           },
-        },
+        }),
         connection: await NativeConnection.connect({ address: 'localhost:7233' }),
         workflowsPath: require.resolve('./workflows'),
       }),
@@ -80,7 +85,18 @@ import { TemporalService } from '@temporal-contract/worker-nestjs';
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
   const temporalService = app.get(TemporalService);
-  await temporalService.start();
+
+  // Start worker (non-blocking)
+  temporalService.start();
+
+  // Handle graceful shutdown
+  process.on('SIGTERM', async () => {
+    await app.close();
+  });
+
+  process.on('SIGINT', async () => {
+    await app.close();
+  });
 }
 
 bootstrap();

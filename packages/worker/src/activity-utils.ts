@@ -10,7 +10,7 @@ import { ActivityDefinition, ContractDefinition } from "@temporal-contract/contr
  *
  * @param contract - The contract definition
  * @param workflowName - The name of the workflow
- * @returns Activity definitions for the workflow (workflow-specific + global)
+ * @returns Activity definitions for the workflow (workflow-specific + global activities merged)
  *
  * @example
  * ```ts
@@ -41,7 +41,7 @@ export function getWorkflowActivities<
  *
  * @param contract - The contract definition
  * @param workflowName - The name of the workflow
- * @returns Array of activity names available for the workflow
+ * @returns Array of activity names (strings) available for the workflow
  *
  * @example
  * ```ts
@@ -63,7 +63,7 @@ export function getWorkflowActivityNames<
  * @param contract - The contract definition
  * @param workflowName - The name of the workflow
  * @param activityName - The name of the activity to check
- * @returns True if the activity is available for the workflow
+ * @returns True if the activity is available for the workflow, false otherwise
  *
  * @example
  * ```ts
@@ -84,7 +84,7 @@ export function isWorkflowActivity<
  * Get all workflow names from a contract
  *
  * @param contract - The contract definition
- * @returns Array of workflow names
+ * @returns Array of workflow names defined in the contract
  *
  * @example
  * ```ts
