@@ -13,12 +13,14 @@ import { Client } from "@temporalio/client";
 import { Test } from "@nestjs/testing";
 import { ActivitiesProvider } from "./activities.provider.js";
 import { DependenciesModule } from "./dependencies.module.js";
+import { MockPaymentAdapter } from "./infrastructure/adapters/payment.adapter.js";
 
 type Order = z.infer<typeof OrderSchema>;
 
 const it = baseIt.extend<{
   worker: Worker;
   client: TypedClient<typeof orderProcessingContract>;
+  paymentAdapter: MockPaymentAdapter;
 }>({
   worker: [
     async ({ workerConnection }, use) => {
@@ -57,6 +59,19 @@ const it = baseIt.extend<{
     },
     { auto: true },
   ],
+  paymentAdapter: [
+    async (_context, use) => {
+      // Create a module to get the payment adapter
+      const moduleRef = await Test.createTestingModule({
+        imports: [DependenciesModule],
+      }).compile();
+
+      const adapter = moduleRef.get<MockPaymentAdapter>("PaymentAdapter");
+      await use(adapter);
+      await moduleRef.close();
+    },
+    { auto: true },
+  ],
   client: async ({ clientConnection }, use) => {
     // Create typed client
     const rawClient = new Client({
@@ -70,8 +85,14 @@ const it = baseIt.extend<{
 });
 
 describe("Order Processing Workflow - Integration Tests (NestJS)", () => {
-  it("should process an order successfully", async ({ client }) => {
-    // GIVEN
+  it("should process an order successfully", async ({ client, paymentAdapter }) => {
+    // GIVEN - Mock payment to succeed
+    vi.spyOn(paymentAdapter, "processPayment").mockResolvedValue({
+      transactionId: "TXN-MOCK-123",
+      status: "success",
+      paidAmount: 0,
+    });
+
     const order: Order = {
       orderId: `ORD-TEST-${Date.now()}`,
       customerId: "CUST-TEST-001",
@@ -110,8 +131,14 @@ describe("Order Processing Workflow - Integration Tests (NestJS)", () => {
     );
   });
 
-  it("should handle workflow with startWorkflow and result", async ({ client }) => {
-    // GIVEN
+  it("should handle workflow with startWorkflow and result", async ({ client, paymentAdapter }) => {
+    // GIVEN - Mock payment to succeed
+    vi.spyOn(paymentAdapter, "processPayment").mockResolvedValue({
+      transactionId: "TXN-MOCK-123",
+      status: "success",
+      paidAmount: 0,
+    });
+
     const order: Order = {
       orderId: `ORD-TEST-${Date.now()}`,
       customerId: "CUST-TEST-002",
@@ -155,8 +182,14 @@ describe("Order Processing Workflow - Integration Tests (NestJS)", () => {
     );
   });
 
-  it("should be able to get workflow handle after start", async ({ client }) => {
-    // GIVEN
+  it("should be able to get workflow handle after start", async ({ client, paymentAdapter }) => {
+    // GIVEN - Mock payment to succeed
+    vi.spyOn(paymentAdapter, "processPayment").mockResolvedValue({
+      transactionId: "TXN-MOCK-123",
+      status: "success",
+      paidAmount: 0,
+    });
+
     const order: Order = {
       orderId: `ORD-TEST-${Date.now()}`,
       customerId: "CUST-TEST-003",
@@ -202,8 +235,14 @@ describe("Order Processing Workflow - Integration Tests (NestJS)", () => {
     );
   });
 
-  it("should handle describe and terminate operations", async ({ client }) => {
-    // GIVEN
+  it("should handle describe and terminate operations", async ({ client, paymentAdapter }) => {
+    // GIVEN - Mock payment to succeed
+    vi.spyOn(paymentAdapter, "processPayment").mockResolvedValue({
+      transactionId: "TXN-MOCK-123",
+      status: "success",
+      paidAmount: 0,
+    });
+
     const order: Order = {
       orderId: `ORD-TEST-${Date.now()}`,
       customerId: "CUST-TEST-004",
@@ -286,6 +325,45 @@ describe("Order Processing Workflow - Integration Tests (NestJS)", () => {
             },
           ],
         }),
+      }),
+    );
+  });
+
+  it("should handle payment failure", async ({ client, paymentAdapter }) => {
+    // GIVEN - Mock payment to fail
+    vi.spyOn(paymentAdapter, "processPayment").mockResolvedValue({
+      status: "failed",
+    });
+
+    const order: Order = {
+      orderId: `ORD-TEST-${Date.now()}`,
+      customerId: "CUST-TEST-006",
+      items: [
+        {
+          productId: "PROD-007",
+          quantity: 1,
+          price: 99.99,
+        },
+      ],
+      totalAmount: 99.99,
+    };
+
+    // WHEN
+    const result = await client.executeWorkflow("processOrder", {
+      workflowId: order.orderId,
+      args: order,
+    });
+
+    // THEN - Should return failed status
+    expect(result).toEqual(
+      expect.objectContaining({
+        tag: "Ok",
+        value: {
+          status: "failed",
+          errorCode: "PAYMENT_FAILED",
+          failureReason: "Payment was declined",
+          orderId: order.orderId,
+        },
       }),
     );
   });
