@@ -1,0 +1,10 @@
+{
+  "extends": "@temporal-contract/tsconfig/sample.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "include": ["src/**/*"]
+}

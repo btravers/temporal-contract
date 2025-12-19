@@ -8,15 +8,15 @@
 
 Standard Promise-based worker with Clean Architecture
 
-### 📦 [order-processing-worker-boxed](./order-processing-worker-boxed)
+### 📦 [order-processing-worker-nestjs](./order-processing-worker-nestjs)
 
-Result/Future pattern worker with explicit error handling
+NestJS-based worker with dependency injection and Result/Future pattern
 
 ### 📦 [order-processing-client](./order-processing-client)
 
 Standalone client demonstrating interaction with the unified contract
 
-**Note**: The `order-processing-worker` and `order-processing-worker-boxed` samples share a unified contract. Both workers implement the same contract (`orderProcessingContract`) but with different internal implementations. The client sample works with either worker implementation seamlessly.
+**Note**: All worker samples (`order-processing-worker` and `order-processing-worker-nestjs`) implement the same contract (`orderProcessingContract`) but with different internal implementations. The client sample works with any worker implementation seamlessly.
 
 ## Running Samples
 
@@ -30,6 +30,10 @@ pnpm install && pnpm build
 
 # Run a worker (choose one)
 cd samples/order-processing-worker
+pnpm dev  # Terminal 1
+
+# Or use the NestJS worker
+cd samples/order-processing-worker-nestjs
 pnpm dev  # Terminal 1
 
 # Run the client (in another terminal)

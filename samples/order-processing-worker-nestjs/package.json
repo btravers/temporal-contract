@@ -1,0 +1,30 @@
+{
+  "name": "@temporal-contract/sample-order-processing-worker-nestjs",
+  "private": true,
+  "description": "NestJS order processing worker using temporal-contract",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.9",
+    "@nestjs/core": "^11.1.9",
+    "@temporal-contract/boxed": "workspace:*",
+    "@temporal-contract/sample-order-processing-contract": "workspace:*",
+    "@temporal-contract/worker": "workspace:*",
+    "@temporal-contract/worker-nestjs": "workspace:*",
+    "@temporalio/worker": "catalog:",
+    "@temporalio/workflow": "catalog:",
+    "pino": "catalog:",
+    "pino-pretty": "catalog:",
+    "reflect-metadata": "^0.2.2",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@temporal-contract/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}

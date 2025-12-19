@@ -461,6 +461,58 @@ importers:
         specifier: 'catalog:'
         version: 4.0.16(@types/node@25.0.3)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
 
+  samples/order-processing-worker-nestjs:
+    dependencies:
+      '@nestjs/common':
+        specifier: ^11.1.9
+        version: 11.1.9(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: ^11.1.9
+        version: 11.1.9(@nestjs/common@11.1.9(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@temporal-contract/boxed':
+        specifier: workspace:*
+        version: link:../../packages/boxed
+      '@temporal-contract/sample-order-processing-contract':
+        specifier: workspace:*
+        version: link:../order-processing-contract
+      '@temporal-contract/worker':
+        specifier: workspace:*
+        version: link:../../packages/worker
+      '@temporal-contract/worker-nestjs':
+        specifier: workspace:*
+        version: link:../../packages/worker-nestjs
+      '@temporalio/worker':
+        specifier: 'catalog:'
+        version: 1.14.0
+      '@temporalio/workflow':
+        specifier: 'catalog:'
+        version: 1.14.0
+      pino:
+        specifier: 'catalog:'
+        version: 10.1.0
+      pino-pretty:
+        specifier: 'catalog:'
+        version: 13.1.3
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+      zod:
+        specifier: 'catalog:'
+        version: 4.2.1
+    devDependencies:
+      '@temporal-contract/tsconfig':
+        specifier: workspace:*
+        version: link:../../tools/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.0.3
+      tsx:
+        specifier: 'catalog:'
+        version: 4.21.0
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
   tools/tsconfig: {}
 
   website:

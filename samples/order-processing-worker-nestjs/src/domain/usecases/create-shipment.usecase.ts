@@ -1,0 +1,25 @@
+import type { ShippingPort } from "../ports/shipping.port.js";
+import type { ShippingResult } from "../entities/order.schema.js";
+
+/**
+ * Create Shipment Use Case
+ *
+ * Business logic for creating shipments
+ */
+export class CreateShipmentUseCase {
+  constructor(private readonly shippingPort: ShippingPort) {}
+
+  async execute(orderId: string, customerId: string): Promise<ShippingResult> {
+    // Business validation
+    if (!orderId || orderId.trim() === "") {
+      throw new Error("Order ID is required");
+    }
+
+    if (!customerId || customerId.trim() === "") {
+      throw new Error("Customer ID is required");
+    }
+
+    // Delegate to shipping port
+    return this.shippingPort.createShipment(orderId, customerId);
+  }
+}
