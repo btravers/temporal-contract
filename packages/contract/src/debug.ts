@@ -92,11 +92,11 @@ export function debugContractJSON(contract: ContractDefinition): Record<string, 
       updates: workflow.updates ? Object.keys(workflow.updates) : [],
     };
   }
-  result.workflows = workflows;
+  result["workflows"] = workflows;
 
   // Process global activities
   if (contract.activities) {
-    result.activities = Object.keys(contract.activities);
+    result["activities"] = Object.keys(contract.activities);
   }
 
   return result;
@@ -235,6 +235,9 @@ export function compareContracts(
   const modifiedWorkflows = commonWorkflows.filter((name) => {
     const oldWf = oldContract.workflows[name];
     const newWf = newContract.workflows[name];
+
+    // Both should exist since they're in commonWorkflows
+    if (!oldWf || !newWf) return false;
 
     // Compare activity counts
     const oldActivityCount = oldWf.activities ? Object.keys(oldWf.activities).length : 0;

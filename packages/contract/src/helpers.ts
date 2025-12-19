@@ -222,11 +222,12 @@ export function mergeContracts(
     Object.assign(merged.workflows, contract.workflows);
 
     // Merge global activities
-    if (contract.activities) {
-      if (!merged.activities) {
-        merged.activities = {};
-      }
+    if (contract.activities && merged.activities) {
       Object.assign(merged.activities, contract.activities);
+    } else if (contract.activities) {
+      (merged as { activities: Record<string, ActivityDefinition> }).activities = {
+        ...contract.activities,
+      };
     }
   }
 
@@ -255,9 +256,9 @@ export function isContract(value: unknown): value is ContractDefinition {
   const obj = value as Record<string, unknown>;
 
   return (
-    typeof obj.taskQueue === "string" &&
-    typeof obj.workflows === "object" &&
-    obj.workflows !== null &&
-    Object.keys(obj.workflows).length > 0
+    typeof obj["taskQueue"] === "string" &&
+    typeof obj["workflows"] === "object" &&
+    obj["workflows"] !== null &&
+    Object.keys(obj["workflows"]).length > 0
   );
 }

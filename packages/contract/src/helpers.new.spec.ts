@@ -252,7 +252,7 @@ describe("Contract Helpers", () => {
       const merged = mergeContracts("merged", [contract1, contract2]);
 
       // The second contract's workflow should override the first
-      expect(merged.workflows.wf.input).toBe(contract2.workflows.wf.input);
+      expect(merged.workflows["wf"]!.input).toBe(contract2.workflows.wf.input);
     });
 
     it("should throw error for empty contracts array", () => {

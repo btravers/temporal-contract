@@ -85,18 +85,18 @@ describe("Debug Utilities", () => {
     it("should generate JSON representation", () => {
       const json = debugContractJSON(sampleContract);
 
-      expect(json.taskQueue).toBe("test-queue");
-      expect(Object.keys(json.workflows as Record<string, unknown>)).toHaveLength(2);
+      expect(json["taskQueue"]).toBe("test-queue");
+      expect(Object.keys(json["workflows"] as Record<string, unknown>)).toHaveLength(2);
 
-      const processOrder = (json.workflows as Record<string, unknown>).processOrder as Record<
+      const processOrder = (json["workflows"] as Record<string, unknown>)["processOrder"] as Record<
         string,
         unknown
       >;
-      expect(processOrder.hasInput).toBe(true);
-      expect(processOrder.hasOutput).toBe(true);
-      expect((processOrder.activities as string[]).length).toBe(2);
-      expect((processOrder.signals as string[]).length).toBe(1);
-      expect((processOrder.queries as string[]).length).toBe(1);
+      expect(processOrder["hasInput"]).toBe(true);
+      expect(processOrder["hasOutput"]).toBe(true);
+      expect((processOrder["activities"] as string[]).length).toBe(2);
+      expect((processOrder["signals"] as string[]).length).toBe(1);
+      expect((processOrder["queries"] as string[]).length).toBe(1);
     });
 
     it("should handle workflows without operations", () => {
@@ -111,12 +111,15 @@ describe("Debug Utilities", () => {
       });
 
       const json = debugContractJSON(contract);
-      const simple = (json.workflows as Record<string, unknown>).simple as Record<string, unknown>;
+      const simple = (json["workflows"] as Record<string, unknown>)["simple"] as Record<
+        string,
+        unknown
+      >;
 
-      expect((simple.activities as string[]).length).toBe(0);
-      expect((simple.signals as string[]).length).toBe(0);
-      expect((simple.queries as string[]).length).toBe(0);
-      expect((simple.updates as string[]).length).toBe(0);
+      expect((simple["activities"] as string[]).length).toBe(0);
+      expect((simple["signals"] as string[]).length).toBe(0);
+      expect((simple["queries"] as string[]).length).toBe(0);
+      expect((simple["updates"] as string[]).length).toBe(0);
     });
   });
 
