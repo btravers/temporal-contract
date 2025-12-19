@@ -69,15 +69,16 @@ export class OrderActivitiesService {
   ): Promise<Future<Result<{ reserved: boolean; reservationId?: string }, ActivityError>>> {
     return Future.make(async (resolve) => {
       try {
-        if (items.length === 0) {
+        const [firstItem] = items;
+        if (!firstItem) {
           resolve(Result.Ok({ reserved: true }));
           return;
         }
 
         // Reserve all items (in a real app, this would be more sophisticated)
         const reservationId = await this.inventoryService.reserve(
-          items[0]!.productId,
-          items[0]!.quantity,
+          firstItem.productId,
+          firstItem.quantity,
         );
         resolve(Result.Ok({ reserved: true, reservationId }));
       } catch (error) {
