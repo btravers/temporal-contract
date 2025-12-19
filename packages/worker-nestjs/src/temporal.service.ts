@@ -9,6 +9,7 @@ import type { TemporalModuleOptions } from "./interfaces.js";
 @Injectable()
 export class TemporalService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TemporalService.name);
+
   private worker: Worker | undefined;
 
   constructor(

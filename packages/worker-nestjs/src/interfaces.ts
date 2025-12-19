@@ -1,4 +1,5 @@
 import type { ContractDefinition } from "@temporal-contract/contract";
+import { ActivitiesHandler } from "@temporal-contract/worker/activity";
 import type { NativeConnection, WorkerOptions } from "@temporalio/worker";
 
 // Re-export the type from worker package for proper type safety
@@ -21,7 +22,7 @@ export interface TemporalModuleOptions<
    *
    * Use declareActivitiesHandler from @temporal-contract/worker to create type-safe activities
    */
-  activities: Record<string, (args: unknown) => unknown>;
+  activities: ActivitiesHandler<TContract>;
 
   /**
    * Connection to Temporal server
