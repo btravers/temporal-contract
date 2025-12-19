@@ -48,15 +48,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@standard-schema/spec": "catalog:",
-    "@temporal-contract/boxed": "workspace:*",
     "@temporal-contract/contract": "workspace:*",
     "@temporal-contract/worker": "workspace:*"
   },
   "devDependencies": {
     "@nestjs/common": "^10.4.15",
-    "@nestjs/core": "^10.4.15",
     "@nestjs/testing": "^10.4.15",
+    "@temporal-contract/testing": "workspace:*",
     "@temporal-contract/tsconfig": "workspace:*",
     "@temporalio/worker": "catalog:",
     "@types/node": "catalog:",

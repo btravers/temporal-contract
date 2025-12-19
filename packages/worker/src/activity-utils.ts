@@ -23,7 +23,7 @@ export function getWorkflowActivities<
   TContract extends ContractDefinition,
   TWorkflowName extends keyof TContract["workflows"],
 >(contract: TContract, workflowName: TWorkflowName): Record<string, ActivityDefinition> {
-  const workflowDef = contract.workflows[workflowName];
+  const workflowDef = contract.workflows[workflowName as string];
   const workflowActivities =
     (workflowDef as { activities?: Record<string, ActivityDefinition> })?.activities || {};
   const globalActivities = contract.activities || {};
