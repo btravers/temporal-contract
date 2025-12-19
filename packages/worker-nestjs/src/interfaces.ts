@@ -1,9 +1,22 @@
-import { ContractDefinition } from "@temporal-contract/contract";
+import { ContractDefinition, ActivityDefinition } from "@temporal-contract/contract";
 import type { NativeConnection, WorkerOptions } from "@temporalio/worker";
 import type { Future, Result } from "@temporal-contract/boxed";
 import type { ActivityError } from "@temporal-contract/worker/activity";
-import type { WorkerInferInput, WorkerInferOutput } from "@temporal-contract/worker/activity";
-import type { ActivityDefinition } from "@temporal-contract/contract";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
+
+/**
+ * Infer input type from an activity definition (worker perspective)
+ */
+type WorkerInferInput<T extends { input: { "~standard": StandardSchemaV1 } }> = StandardSchemaV1.InferOutput<
+  T["input"]["~standard"]
+>;
+
+/**
+ * Infer output type from an activity definition (worker perspective)
+ */
+type WorkerInferOutput<T extends { output: { "~standard": StandardSchemaV1 } }> = StandardSchemaV1.InferInput<
+  T["output"]["~standard"]
+>;
 
 /**
  * Activity implementation using Future/Result pattern

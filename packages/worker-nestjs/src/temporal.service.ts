@@ -2,7 +2,7 @@ import { Injectable, Inject, OnModuleInit, OnModuleDestroy, Logger } from "@nest
 import { Worker, NativeConnection } from "@temporalio/worker";
 import { ContractDefinition } from "@temporal-contract/contract";
 import { declareActivitiesHandler, ActivitiesHandler } from "@temporal-contract/worker/activity";
-import { TEMPORAL_MODULE_OPTIONS } from "./constants.js";
+import { MODULE_OPTIONS_TOKEN } from "./temporal.module-definition.js";
 import type { TemporalModuleOptions } from "./interfaces.js";
 
 /**
@@ -16,7 +16,7 @@ export class TemporalService implements OnModuleInit, OnModuleDestroy {
   private shouldCloseConnection: boolean = false;
 
   constructor(
-    @Inject(TEMPORAL_MODULE_OPTIONS)
+    @Inject(MODULE_OPTIONS_TOKEN)
     private readonly options: TemporalModuleOptions,
   ) {}
 
