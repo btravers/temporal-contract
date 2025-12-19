@@ -51,7 +51,7 @@ export class TemporalService implements OnModuleInit, OnModuleDestroy {
   async stop(): Promise<void> {
     if (this.worker) {
       this.logger.log("Shutting down Temporal worker...");
-      this.worker.shutdown();
+      await this.worker.shutdown();
       this.worker = undefined;
       this.logger.log("Temporal worker shut down");
     }
