@@ -168,15 +168,31 @@ export const activities = declareActivitiesHandler({
   contract: orderContract,
   activities: {
     processOrder: {
-      processPayment: async ({ customerId, amount }) => {
+      processPayment: ({ customerId, amount }) => {
         // Your payment service implementation
-        const transaction = await paymentService.charge(customerId, amount);
-        return { transactionId: transaction.id };
+        return Future.fromPromise(
+          paymentService.charge(customerId, amount)
+        ).mapOk((transaction) => ({ transactionId: transaction.id }))
+          .mapError((error) =>
+            new ActivityError(
+              'PAYMENT_FAILED',
+              error instanceof Error ? error.message : 'Payment processing failed',
+              error
+            )
+          );
       },
 
-      sendNotification: async ({ customerId, message }) => {
+      sendNotification: ({ customerId, message }) => {
         // Your notification service implementation
-        await notificationService.send(customerId, message);
+        return Future.fromPromise(
+          notificationService.send(customerId, message)
+        ).mapError((error) =>
+          new ActivityError(
+            'NOTIFICATION_FAILED',
+            error instanceof Error ? error.message : 'Failed to send notification',
+            error
+          )
+        );
       },
     },
   },
