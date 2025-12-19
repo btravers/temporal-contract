@@ -30,10 +30,24 @@ temporal-contract/
 └── tools/          # Dev tools (testing utilities, configs)
 ```
 
+## Coding Guidelines
+
+📋 **[Read the complete coding guidelines](.github/copilot-instructions.md)**
+
+This project uses AI-assisted code review with GitHub Copilot. Our guidelines document:
+
+- TypeScript & type safety requirements
+- Code style & formatting rules
+- Error handling patterns (Result/Future)
+- Testing best practices
+- Common review issues to avoid
+
+These guidelines are both human-readable and used for automated reviews.
+
 ## Making Changes
 
 1. **Branch:** `git checkout -b feat/your-feature`
-2. **Code:** Make your changes
+2. **Code:** Make your changes following the [coding guidelines](.github/copilot-instructions.md)
 3. **Test:** `pnpm test && pnpm typecheck`
 4. **Commit:** `git commit -m "feat: description"`
 5. **PR:** Push and create pull request
