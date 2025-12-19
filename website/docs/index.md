@@ -168,13 +168,13 @@ export const activities = declareActivitiesHandler({
   activities: {
     processOrder: {
       processPayment: async ({ customerId, amount }) => {
-        // Call your payment service
+        // Your payment service implementation
         const transaction = await paymentService.charge(customerId, amount);
         return { transactionId: transaction.id };
       },
 
       sendNotification: async ({ customerId, message }) => {
-        // Send notification
+        // Your notification service implementation
         await notificationService.send(customerId, message);
       },
     },
@@ -208,6 +208,7 @@ export const processOrder = declareWorkflow({
 ```
 
 ```typescript [4. worker.ts]
+import { NativeConnection } from '@temporalio/worker';
 import { createWorker } from '@temporal-contract/worker/worker';
 import { orderContract } from './contract';
 import { activities } from './activities';
