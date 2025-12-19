@@ -217,17 +217,23 @@ export function mergeContracts(
     workflows: {},
   };
 
+  // Track if we've seen any activities
+  let hasActivities = false;
+
   for (const contract of contracts) {
     // Merge workflows
     Object.assign(merged.workflows, contract.workflows);
 
     // Merge global activities
-    if (contract.activities && merged.activities) {
-      Object.assign(merged.activities, contract.activities);
-    } else if (contract.activities) {
-      (merged as { activities: Record<string, ActivityDefinition> }).activities = {
-        ...contract.activities,
-      };
+    if (contract.activities) {
+      if (!hasActivities) {
+        (merged as { activities: Record<string, ActivityDefinition> }).activities = {
+          ...contract.activities,
+        };
+        hasActivities = true;
+      } else {
+        Object.assign(merged.activities!, contract.activities);
+      }
     }
   }
 
