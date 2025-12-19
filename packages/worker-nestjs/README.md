@@ -34,33 +34,35 @@ import { orderProcessingContract } from './contract';
 
 @Module({
   imports: [
-    TemporalModule.forRoot({
-      contract: orderProcessingContract,
-      activities: {
-        // Global activities
-        log: ({ level, message }) => {
-          console.log(`[${level}] ${message}`);
-          return Future.value(Result.Ok(undefined));
-        },
+    TemporalModule.forRootAsync({
+      useFactory: async () => ({
+        contract: orderProcessingContract,
+        activities: {
+          // Global activities
+          log: ({ level, message }) => {
+            console.log(`[${level}] ${message}`);
+            return Future.value(Result.Ok(undefined));
+          },
 
-        // Workflow-specific activities
-        processOrder: {
-          processPayment: ({ customerId, amount }) => {
-            return Future.make(async (resolve) => {
-              try {
-                // Implementation
-                resolve(Result.Ok({ transactionId: 'txn_123' }));
-              } catch (error) {
-                resolve(Result.Error(
-                  new ActivityError('PAYMENT_FAILED', 'Payment failed', error)
-                ));
-              }
-            });
+          // Workflow-specific activities
+          processOrder: {
+            processPayment: ({ customerId, amount }) => {
+              return Future.make(async (resolve) => {
+                try {
+                  // Implementation
+                  resolve(Result.Ok({ transactionId: 'txn_123' }));
+                } catch (error) {
+                  resolve(Result.Error(
+                    new ActivityError('PAYMENT_FAILED', 'Payment failed', error)
+                  ));
+                }
+              });
+            },
           },
         },
-      },
-      connection: await NativeConnection.connect({ address: 'localhost:7233' }),
-      workflowsPath: require.resolve('./workflows'),
+        connection: await NativeConnection.connect({ address: 'localhost:7233' }),
+        workflowsPath: require.resolve('./workflows'),
+      }),
     }),
   ],
 })
