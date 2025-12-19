@@ -8,11 +8,11 @@
  * -------------------------------------------------------------------------- */
 
 :root {
-  /* Brand colors - Purple/Indigo theme matching the logo */
-  --vp-c-brand-1: #7C3AED;
-  --vp-c-brand-2: #6D28D9;
-  --vp-c-brand-3: #5B21B6;
-  --vp-c-brand-soft: rgba(124, 58, 237, 0.14);
+  /* Brand colors - Temporal.io UV theme matching the logo */
+  --vp-c-brand-1: #5B6FEE;
+  --vp-c-brand-2: #4F60E8;
+  --vp-c-brand-3: #444CE7;
+  --vp-c-brand-soft: rgba(68, 76, 231, 0.14);
 
   /* Background colors */
   --vp-c-bg-soft: #f6f6f7;
@@ -20,10 +20,10 @@
 
 .dark {
   /* Dark mode brand colors */
-  --vp-c-brand-1: #A78BFA;
-  --vp-c-brand-2: #8B5CF6;
-  --vp-c-brand-3: #7C3AED;
-  --vp-c-brand-soft: rgba(124, 58, 237, 0.24);
+  --vp-c-brand-1: #7C8BFA;
+  --vp-c-brand-2: #6271F0;
+  --vp-c-brand-3: #5B6FEE;
+  --vp-c-brand-soft: rgba(68, 76, 231, 0.24);
 
   /* Dark mode background colors */
   --vp-c-bg-soft: #202127;
