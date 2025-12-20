@@ -57,13 +57,11 @@ export async function createWorker<TContract extends ContractDefinition>(
   const { contract, activities, ...workerOptions } = options;
 
   // Create the worker with contract's task queue
-  const worker = await Worker.create({
+  return await Worker.create({
     ...workerOptions,
     activities,
     taskQueue: contract.taskQueue,
   });
-
-  return worker;
 }
 
 /**
