@@ -8,10 +8,10 @@ This sample demonstrates that a single client can interact with any worker imple
 
 This client package demonstrates that:
 
-- Both `order-processing-worker` and `order-processing-worker-boxed` workers implement the **same unified contract**
+- Both `order-processing-worker` and `order-processing-worker-nestjs` workers implement the **same unified contract**
 - A single client works with any worker implementation
 - From the client's perspective, all workers are identical
-- The only difference is in how workers handle errors internally (Promise-based vs. Result/Future pattern)
+- Workers handle errors internally using the Result/Future pattern with ActivityError
 
 ## Running the Sample
 
@@ -34,17 +34,17 @@ pnpm install && pnpm build
 
 1. Start a worker (choose one):
 
-**Option A: Basic Worker**
+**Option A: Standard Worker**
 
 ```bash
 cd ../order-processing-worker
 pnpm dev
 ```
 
-**Option B: Boxed Worker**
+**Option B: NestJS Worker**
 
 ```bash
-cd ../order-processing-worker-boxed
+cd ../order-processing-worker-nestjs
 pnpm dev
 ```
 
@@ -89,19 +89,19 @@ The unified contract (`orderProcessingContract`) defines:
 
 ### Worker Implementations
 
-Both workers implement the exact same contract but with different patterns:
+Both workers implement the exact same contract but with different frameworks:
 
-1. **Basic Worker** (`samples/order-processing-worker`)
+1. **Standard Worker** (`samples/order-processing-worker`)
    - Uses `@temporal-contract/worker`
-   - Promise-based activities
-   - Traditional error handling with try/catch
-   - Simpler to understand and implement
+   - Activities use Result/Future pattern with ActivityError
+   - Clean Architecture with dependency injection
+   - Standalone TypeScript application
 
-2. **Boxed Worker** (`samples/order-processing-worker-boxed`)
-   - Uses `@temporal-contract/worker-boxed`
-   - Result/Future pattern with `@temporal-contract/boxed`
-   - Explicit error types in function signatures
-   - Better type safety and functional composition
+2. **NestJS Worker** (`samples/order-processing-worker-nestjs`)
+   - Uses `@temporal-contract/worker-nestjs`
+   - Activities use Result/Future pattern with ActivityError
+   - NestJS dependency injection and decorators
+   - Better for NestJS-based applications
 
 ### Client Perspective
 

@@ -33,10 +33,10 @@ const client = TypedClient.create(myContract, temporalClient);
 
 ### Basic Execution
 
-Execute a workflow and wait for completion:
+Execute a workflow and wait for completion using the Result/Future pattern:
 
 ```typescript
-const result = await client.executeWorkflow('processOrder', {
+const future = client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
   args: {
     orderId: 'ORD-123',
@@ -44,8 +44,18 @@ const result = await client.executeWorkflow('processOrder', {
   },
 });
 
-// Result is fully typed from your contract!
-console.log(result.status); // TypeScript knows the shape
+// await the Future to get the Result
+const result = await future;
+
+// Handle the Result with pattern matching
+result.match({
+  Ok: (output) => {
+    console.log('Order processed:', output.status); // TypeScript knows the shape!
+  },
+  Error: (error) => {
+    console.error('Workflow failed:', error);
+  },
+});
 ```
 
 ### Start Without Waiting
@@ -53,7 +63,7 @@ console.log(result.status); // TypeScript knows the shape
 Start a workflow without waiting for completion:
 
 ```typescript
-const handle = await client.startWorkflow('processOrder', {
+const handleResult = await client.startWorkflow('processOrder', {
   workflowId: 'order-123',
   args: {
     orderId: 'ORD-123',
@@ -61,11 +71,22 @@ const handle = await client.startWorkflow('processOrder', {
   },
 });
 
-// Get workflow ID
-console.log('Started workflow:', handle.workflowId);
+handleResult.match({
+  Ok: async (handle) => {
+    // Get workflow ID
+    console.log('Started workflow:', handle.workflowId);
 
-// Wait for result later
-const result = await handle.result();
+    // Wait for result later
+    const result = await handle.result();
+    result.match({
+      Ok: (output) => console.log('Completed:', output),
+      Error: (error) => console.error('Failed:', error),
+    });
+  },
+  Error: (error) => {
+    console.error('Failed to start workflow:', error);
+  },
+});
 ```
 
 ## Type Safety

@@ -149,12 +149,12 @@ import { orderContract } from 'contract-package';
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: orderContract,
-  implementation: async (context, { orderId }) => {
-    const payment = await context.activities.processPayment({
+  implementation: async ({ activities }, { orderId }) => {
+    const payment = await activities.processPayment({
       amount: 100
     });
 
-    await context.activities.sendEmail({
+    await activities.sendEmail({
       to: 'customer@example.com',
       body: `Order ${orderId} processed`
     });
@@ -276,9 +276,9 @@ declareActivitiesHandler({
 declareWorkflow({
   workflowName: 'processOrder',
   contract,
-  implementation: async (context, input) => {
+  implementation: async ({ activities }, input) => {
     // ✅ TypeScript knows processPayment exists
-    const result = await context.activities.processPayment({
+    const result = await activities.processPayment({
       amount: 100  // ✅ Type checked
     });
 

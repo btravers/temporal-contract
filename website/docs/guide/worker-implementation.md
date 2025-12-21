@@ -31,25 +31,40 @@ sequenceDiagram
 
 ## Activities Handler
 
-Create a handler for all activities:
+Create a handler for all activities using the Result/Future pattern:
 
 ```typescript
-import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
+import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
+import { Future, Result } from '@swan-io/boxed';
 import { myContract } from './contract';
 
 export const activities = declareActivitiesHandler({
   contract: myContract,
   activities: {
-    // Global activities
-    sendEmail: async ({ to, subject, body }) => {
-      await emailService.send({ to, subject, body });
-      return { sent: true };
+    // Global activities - use Future/Result for explicit error handling
+    sendEmail: ({ to, subject, body }) => {
+      return Future.fromPromise(emailService.send({ to, subject, body }))
+        .mapError((error) =>
+          new ActivityError(
+            'EMAIL_FAILED',
+            error instanceof Error ? error.message : 'Failed to send email',
+            error
+          )
+        )
+        .mapOk(() => ({ sent: true }));
     },
 
     // Workflow-specific activities
-    processPayment: async ({ customerId, amount }) => {
-      const txId = await paymentGateway.charge(customerId, amount);
-      return { transactionId: txId, success: true };
+    processPayment: ({ customerId, amount }) => {
+      return Future.fromPromise(paymentGateway.charge(customerId, amount))
+        .mapError((error) =>
+          new ActivityError(
+            'PAYMENT_FAILED',
+            error instanceof Error ? error.message : 'Payment failed',
+            error
+          )
+        )
+        .mapOk((txId) => ({ transactionId: txId, success: true }));
     },
   },
 });
@@ -57,7 +72,7 @@ export const activities = declareActivitiesHandler({
 
 ## Workflow Implementation
 
-Implement workflows with typed context:
+Implement workflows with typed context. Activities called from workflows return plain values (Result is unwrapped internally):
 
 ```typescript
 import { declareWorkflow } from '@temporal-contract/worker/workflow';
@@ -66,19 +81,21 @@ import { myContract } from './contract';
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: myContract,
-  implementation: async (context, input) => {
-    // context.activities is fully typed
-    const payment = await context.activities.processPayment({
+  implementation: async ({ activities }, input) => {
+    // activities is fully typed
+    // Activities return plain values (Result is unwrapped by the framework)
+    const payment = await activities.processPayment({
       customerId: input.customerId,
       amount: 100
     });
 
-    await context.activities.sendEmail({
+    await activities.sendEmail({
       to: input.customerId,
       subject: 'Order Confirmed',
       body: 'Your order has been processed'
     });
 
+    // Return plain object (not Result)
     return {
       status: payment.success ? 'success' : 'failed',
       transactionId: payment.transactionId
@@ -97,8 +114,8 @@ import { activities } from './activities';
 
 const worker = await Worker.create({
   workflowsPath: require.resolve('./workflows'),
-  activities: activities.activities,
-  taskQueue: activities.contract.taskQueue,
+  activities,
+  taskQueue: 'my-task-queue', // or myContract.taskQueue
 });
 
 await worker.run();
@@ -141,13 +158,13 @@ return { txId: 'TXN-123' };  // Wrong field name
 The workflow context is fully typed based on your contract:
 
 ```typescript
-implementation: async (context, input) => {
+implementation: async ({ activities }, input) => {
   // TypeScript knows all available activities
-  context.activities.processPayment  // ✅ Available
-  context.activities.unknownActivity // ❌ TypeScript error
+  activities.processPayment  // ✅ Available
+  activities.unknownActivity // ❌ TypeScript error
 
   // Full autocomplete for parameters
-  await context.activities.processPayment({
+  await activities.processPayment({
     // IDE shows: customerId: string, amount: number
   });
 }
@@ -190,9 +207,9 @@ import { myContract, notificationContract } from './contracts';
 export const parentWorkflow = declareWorkflow({
   workflowName: 'parentWorkflow',
   contract: myContract,
-  implementation: async (context, input) => {
+  implementation: async ({ executeChildWorkflow }, input) => {
     // Execute child workflow from same contract and wait for result
-    const result = await context.executeChildWorkflow(myContract, 'processPayment', {
+    const result = await executeChildWorkflow(myContract, 'processPayment', {
       workflowId: `payment-${input.orderId}`,
       args: { amount: input.totalAmount }
     });
@@ -215,9 +232,9 @@ Invoke child workflows from different contracts and workers:
 export const orderWorkflow = declareWorkflow({
   workflowName: 'processOrder',
   contract: orderContract,
-  implementation: async (context, input) => {
+  implementation: async ({ executeChildWorkflow }, input) => {
     // Process payment in same contract
-    const paymentResult = await context.executeChildWorkflow(
+    const paymentResult = await executeChildWorkflow(
       orderContract,
       'processPayment',
       {
@@ -231,7 +248,7 @@ export const orderWorkflow = declareWorkflow({
     }
 
     // Send notification using another worker's contract
-    const notificationResult = await context.executeChildWorkflow(
+    const notificationResult = await executeChildWorkflow(
       notificationContract,
       'sendOrderConfirmation',
       {
@@ -256,9 +273,9 @@ Use `startChildWorkflow` to start a child workflow without waiting for its resul
 export const orderWorkflow = declareWorkflow({
   workflowName: 'processOrder',
   contract: myContract,
-  implementation: async (context, input) => {
+  implementation: async ({ startChildWorkflow }, input) => {
     // Start background notification workflow
-    const handleResult = await context.startChildWorkflow(
+    const handleResult = await startChildWorkflow(
       notificationContract,
       'sendEmail',
       {
@@ -366,23 +383,58 @@ export const createActivities = (services: {
 
 ### 3. Error Handling
 
-Handle errors appropriately:
+Activities use the Future/Result pattern for explicit error handling:
 
 ```typescript
+import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
+import { Future, Result } from '@swan-io/boxed';
+
 export const activities = declareActivitiesHandler({
   contract: myContract,
   activities: {
-    processPayment: async ({ customerId, amount }) => {
-      try {
-        const txId = await paymentGateway.charge(customerId, amount);
-        return { transactionId: txId, success: true };
-      } catch (error) {
-        // Log error
-        logger.error('Payment failed', error);
+    processPayment: ({ customerId, amount }) => {
+      return Future.fromPromise(paymentGateway.charge(customerId, amount))
+        .mapError((error) => {
+          // Wrap technical errors in ActivityError
+          // This enables proper retry policies and error handling
+          return new ActivityError(
+            'PAYMENT_FAILED',
+            error instanceof Error ? error.message : 'Payment failed',
+            error
+          );
+        })
+        .mapOk((txId) => ({ transactionId: txId, success: true }));
+    }
+  }
+});
+```
 
-        // Return typed error response
-        return { transactionId: '', success: false };
-      }
+In workflows, activities return plain values. If an activity fails, it will throw an error that can be caught:
+
+```typescript
+export const processOrder = declareWorkflow({
+  workflowName: 'processOrder',
+  contract: myContract,
+  implementation: async ({ activities }, input) => {
+    try {
+      // Activity returns plain value if successful
+      const payment = await activities.processPayment({
+        customerId: input.customerId,
+        amount: 100
+      });
+
+      return {
+        status: 'success',
+        transactionId: payment.transactionId
+      };
+    } catch (error) {
+      // Activity errors are thrown and can be caught
+      console.error('Payment failed:', error);
+
+      return {
+        status: 'failed',
+        transactionId: ''
+      };
     }
   }
 });

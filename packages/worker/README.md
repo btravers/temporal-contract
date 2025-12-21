@@ -14,12 +14,23 @@ pnpm add @temporal-contract/worker @temporal-contract/contract @temporalio/workf
 
 ```typescript
 // activities.ts
-import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
+import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
+import { Future, Result } from '@swan-io/boxed';
 
 export const activities = declareActivitiesHandler({
   contract: myContract,
   activities: {
-    sendEmail: async ({ to, body }) => ({ sent: true })
+    sendEmail: ({ to, body }) => {
+      return Future.fromPromise(emailService.send({ to, body }))
+        .mapError((error) =>
+          new ActivityError(
+            'EMAIL_FAILED',
+            error instanceof Error ? error.message : 'Failed to send email',
+            error
+          )
+        )
+        .mapOk(() => ({ sent: true }));
+    }
   }
 });
 
@@ -29,28 +40,23 @@ import { declareWorkflow } from '@temporal-contract/worker/workflow';
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: myContract,
-  implementation: async (context, input) => {
-    await context.activities.sendEmail({ to: 'user@example.com', body: 'Done!' });
+  implementation: async ({ activities }, input) => {
+    // Activities return plain values (Result is unwrapped internally)
+    await activities.sendEmail({ to: 'user@example.com', body: 'Done!' });
     return { success: true };
   }
 });
 
 // worker.ts
-import { NativeConnection } from '@temporalio/worker';
-import { createWorker } from '@temporal-contract/worker/worker';
+import { Worker } from '@temporalio/worker';
 import { activities } from './activities';
 import myContract from './contract';
 
 async function run() {
-  const connection = await NativeConnection.connect({
-    address: 'localhost:7233',
-  });
-
-  const worker = await createWorker({
-    contract: myContract,
-    connection,
+  const worker = await Worker.create({
     workflowsPath: require.resolve('./workflows'),
     activities,
+    taskQueue: myContract.taskQueue,
   });
 
   await worker.run();
@@ -70,9 +76,9 @@ import { declareWorkflow } from '@temporal-contract/worker/workflow';
 export const parentWorkflow = declareWorkflow({
   workflowName: 'parentWorkflow',
   contract: myContract,
-  implementation: async (context, input) => {
+  implementation: async ({ executeChildWorkflow }, input) => {
     // Execute child workflow from same contract and wait for result
-    const childResult = await context.executeChildWorkflow(myContract, 'processPayment', {
+    const childResult = await executeChildWorkflow(myContract, 'processPayment', {
       workflowId: `payment-${input.orderId}`,
       args: { amount: input.totalAmount }
     });
@@ -83,13 +89,13 @@ export const parentWorkflow = declareWorkflow({
     });
 
     // Execute child workflow from another contract (another worker)
-    const notificationResult = await context.executeChildWorkflow(notificationContract, 'sendNotification', {
+    const notificationResult = await executeChildWorkflow(notificationContract, 'sendNotification', {
       workflowId: `notification-${input.orderId}`,
       args: { message: 'Order received' }
     });
 
     // Or start child workflow without waiting
-    const handleResult = await context.startChildWorkflow(myContract, 'sendEmail', {
+    const handleResult = await startChildWorkflow(myContract, 'sendEmail', {
       workflowId: `email-${input.orderId}`,
       args: { to: 'user@example.com', body: 'Order received' }
     });
