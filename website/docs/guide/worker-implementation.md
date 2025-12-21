@@ -82,7 +82,7 @@ export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: myContract,
   implementation: async ({ activities }, input) => {
-    // context.activities is fully typed
+    // activities is fully typed
     // Activities return plain values (Result is unwrapped by the framework)
     const payment = await activities.processPayment({
       customerId: input.customerId,
