@@ -202,36 +202,29 @@ export const activities = declareActivitiesHandler({
 
 ```typescript [3. workflow.ts]
 import { declareWorkflow } from '@temporal-contract/worker/workflow';
-import { Result } from '@temporal-contract/boxed';
 import { orderContract } from './contract';
 
 // ✅ Type-safe workflow orchestration
-// Note: Workflows use @temporal-contract/boxed for Temporal compatibility
+// Note: Activities return plain values (Result is unwrapped by framework)
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: orderContract,
   implementation: async (context, { orderId, customerId, amount }) => {
-    // Activities are fully typed!
-    const paymentResult = await context.activities.processPayment({
+    // Activities are fully typed and return plain values
+    const payment = await context.activities.processPayment({
       customerId,
       amount,
     });
 
-    if (paymentResult.isError()) {
-      return Result.Error({
-        type: 'PAYMENT_FAILED',
-        error: paymentResult.getError(),
-      });
-    }
-
-    const { transactionId } = paymentResult.get();
+    const { transactionId } = payment;
 
     await context.activities.sendNotification({
       customerId,
       message: `Order ${orderId} confirmed!`,
     });
 
-    return Result.Ok({ status: 'success', transactionId });
+    // Return plain object (not Result - network serialization requirement)
+    return { status: 'success', transactionId };
   },
 });
 ```

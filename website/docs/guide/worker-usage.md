@@ -33,20 +33,15 @@ export const activities = declareActivitiesHandler({
     // Workflow-specific activities
     processOrder: {
       processPayment: ({ customerId, amount }) => {
-        return Future.make(async (resolve) => {
-          try {
-            const result = await paymentService.charge(customerId, amount);
-            resolve(Result.Ok({ transactionId: result.id }));
-          } catch (error) {
-            resolve(Result.Error(
-              new ActivityError(
-                'PAYMENT_FAILED',
-                error instanceof Error ? error.message : 'Payment processing failed',
-                error
-              )
-            ));
-          }
-        });
+        return Future.fromPromise(paymentService.charge(customerId, amount))
+          .mapOk((result) => ({ transactionId: result.id }))
+          .mapError((error) =>
+            new ActivityError(
+              'PAYMENT_FAILED',
+              error instanceof Error ? error.message : 'Payment processing failed',
+              error
+            )
+          );
       },
     },
   },
@@ -55,41 +50,32 @@ export const activities = declareActivitiesHandler({
 
 ## Implementing Workflows
 
-Workflows can use either `@swan-io/boxed` or `@temporal-contract/boxed` depending on your needs. For Temporal's deterministic execution requirements, use `@temporal-contract/boxed`:
+Workflows return plain objects (not Result) due to network serialization. Activities called in workflows return plain values (Result is unwrapped by the framework):
 
 ```typescript
 import { declareWorkflow } from '@temporal-contract/worker/workflow';
-import { Result } from '@temporal-contract/boxed';
 import { myContract } from './contract';
 
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: myContract,
   implementation: async (context, { orderId, customerId, amount }) => {
-    // Activities are fully typed
-    const paymentResult = await context.activities.processPayment({
+    // Activities return plain values (Result is unwrapped internally)
+    const payment = await context.activities.processPayment({
       customerId,
       amount,
     });
-
-    if (paymentResult.isError()) {
-      return Result.Error({
-        type: 'PAYMENT_FAILED',
-        error: paymentResult.getError(),
-      });
-    }
-
-    const payment = paymentResult.get();
 
     await context.activities.log({
       level: 'info',
       message: `Order ${orderId} processed with transaction ${payment.transactionId}`,
     });
 
-    return Result.Ok({
+    // Return plain object (not Result - network serialization requirement)
+    return {
       success: true,
       transactionId: payment.transactionId,
-    });
+    };
   },
 });
 ```
@@ -194,14 +180,13 @@ Execute child workflows with type safety:
 
 ```typescript
 import { declareWorkflow } from '@temporal-contract/worker/workflow';
-import { Result } from '@temporal-contract/boxed';
 
 export const parentWorkflow = declareWorkflow({
   workflowName: 'parentWorkflow',
   contract: myContract,
   implementation: async (context, input) => {
     // Execute child workflow and wait
-    const childResult = await context.executeChildWorkflow(
+    const childOutput = await context.executeChildWorkflow(
       myContract,
       'processPayment',
       {
@@ -210,10 +195,11 @@ export const parentWorkflow = declareWorkflow({
       }
     );
 
-    return childResult.match({
-      Ok: (output) => Result.Ok({ success: true, transactionId: output.transactionId }),
-      Error: (error) => Result.Error({ type: 'CHILD_FAILED', error }),
-    });
+    // Child workflow returns plain values
+    return { 
+      success: true, 
+      transactionId: childOutput.transactionId 
+    };
   },
 });
 ```
@@ -302,40 +288,67 @@ describe('Activities', () => {
 
 ## Best Practices
 
-### 1. Use Future for Activities
+### 1. Use Future.fromPromise with mapError/mapOk for Activities
 
-Activities should return `Future<Result<T, ActivityError>>`:
+Activities should use `Future.fromPromise` with `mapError` and `mapOk`:
 
 ```typescript
-// ✅ Good - explicit error handling
+// ✅ Good - explicit error handling with Future.fromPromise
 processPayment: ({ amount }) => {
   return Future.fromPromise(paymentService.charge(amount))
     .mapOk((tx) => ({ transactionId: tx.id }))
     .mapError((err) => new ActivityError('PAYMENT_FAILED', err.message, err));
 }
 
-// ❌ Avoid - throwing exceptions
-processPayment: async ({ amount }) => {
-  const tx = await paymentService.charge(amount); // Might throw
-  return { transactionId: tx.id };
+// ❌ Avoid - using Future.make with try/catch
+processPayment: ({ amount }) => {
+  return Future.make(async (resolve) => {
+    try {
+      const tx = await paymentService.charge(amount);
+      resolve(Result.Ok({ transactionId: tx.id }));
+    } catch (err) {
+      resolve(Result.Error(new ActivityError('PAYMENT_FAILED', err.message, err)));
+    }
+  });
 }
 ```
 
-### 2. Handle Activity Failures in Workflows
+### 2. Activities Return Plain DTOs (Not Result)
+
+Activities internally use Result, but the framework unwraps them for network serialization:
 
 ```typescript
-// ✅ Good - explicit error handling
-const result = await context.activities.processPayment({ amount: 100 });
-if (result.isError()) {
-  return Result.Error({ type: 'PAYMENT_FAILED', error: result.getError() });
-}
+// ✅ Good - activity returns Future<Result<T, ActivityError>>
+// Framework unwraps to plain DTO over network
+processPayment: ({ amount }) =>
+  Future.fromPromise(paymentService.charge(amount))
+    .mapOk((tx) => ({ transactionId: tx.id }))
+    .mapError((err) => new ActivityError('PAYMENT_FAILED', err.message, err))
 
-// ❌ Avoid - assuming success
+// In workflow, you receive the plain value:
 const payment = await context.activities.processPayment({ amount: 100 });
-return Result.Ok({ transactionId: payment.transactionId }); // Might crash
+// payment is { transactionId: string }, not Result
 ```
 
-### 3. Use Descriptive Error Codes
+### 3. Workflows Return Plain Objects (Not Result)
+
+Workflows cannot return Result due to network serialization:
+
+```typescript
+// ✅ Good - return plain object
+implementation: async (context, input) => {
+  const payment = await context.activities.processPayment({ amount: 100 });
+  return { success: true, transactionId: payment.transactionId };
+}
+
+// ❌ Avoid - returning Result (will lose instance over network)
+implementation: async (context, input) => {
+  const payment = await context.activities.processPayment({ amount: 100 });
+  return Result.Ok({ transactionId: payment.transactionId }); // Won't work!
+}
+```
+
+### 4. Use Descriptive Error Codes
 
 ```typescript
 // ✅ Good - clear error codes

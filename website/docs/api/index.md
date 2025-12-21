@@ -155,16 +155,11 @@ const handler = declareActivitiesHandler({
   contract,
   activities: {
     sendEmail: ({ to, body }) =>
-      Future.make(async (resolve) => {
-        try {
-          await emailService.send({ to, body });
-          resolve(Result.Ok({ sent: true }));
-        } catch (error) {
-          resolve(Result.Error(
-            new ActivityError('EMAIL_FAILED', 'Failed to send email', error)
-          ));
-        }
-      }),
+      Future.fromPromise(emailService.send({ to, body }))
+        .mapOk(() => ({ sent: true }))
+        .mapError((error) =>
+          new ActivityError('EMAIL_FAILED', 'Failed to send email', error)
+        ),
     validateOrder: ({ orderId }) =>
       Future.value(Result.Ok({ valid: true }))
   }
@@ -175,26 +170,21 @@ const handler = declareActivitiesHandler({
 
 ```typescript
 import { declareWorkflow } from '@temporal-contract/worker/workflow';
-import { Result } from '@temporal-contract/boxed';
 
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract,
   implementation: async (context, { orderId }) => {
-    const validResult = await context.activities.validateOrder({ orderId });
-    
-    if (validResult.isError()) {
-      return Result.Error({ type: 'VALIDATION_FAILED', error: validResult.getError() });
-    }
-    
-    const { valid } = validResult.get();
+    // Activities return plain values (Result is unwrapped by the framework)
+    const { valid } = await context.activities.validateOrder({ orderId });
     
     await context.activities.sendEmail({
       to: 'admin@example.com',
       body: 'Order processed'
     });
     
-    return Result.Ok({ success: valid });
+    // Return plain object (not Result - network serialization)
+    return { success: valid };
   }
 });
 ```

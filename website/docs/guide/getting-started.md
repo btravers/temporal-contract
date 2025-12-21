@@ -160,7 +160,6 @@ export const activities = declareActivitiesHandler({
 ```typescript
 // workflows.ts
 import { declareWorkflow } from '@temporal-contract/worker/workflow';
-import { Result } from '@temporal-contract/boxed';
 import { orderContract } from './contract';
 
 export const processOrder = declareWorkflow({
@@ -168,17 +167,11 @@ export const processOrder = declareWorkflow({
   contract: orderContract,
   implementation: async (context, { orderId, customerId }) => {
     // Full autocomplete for activities and their parameters
+    // Activities return plain values (Result is unwrapped internally)
     const payment = await context.activities.processPayment({
       customerId,
       amount: 100
     });
-
-    if (payment.isError()) {
-      return Result.Error({
-        type: 'PAYMENT_FAILED',
-        error: payment.getError(),
-      });
-    }
 
     await context.activities.sendEmail({
       to: customerId,
@@ -186,10 +179,11 @@ export const processOrder = declareWorkflow({
       body: `Order ${orderId} processed`,
     });
 
-    return Result.Ok({
-      status: payment.get().success ? 'success' : 'failed',
-      transactionId: payment.get().transactionId,
-    });
+    // Return plain object (not Result - network serialization requirement)
+    return {
+      status: payment.success ? 'success' : 'failed',
+      transactionId: payment.transactionId,
+    };
   },
 });
 ```
