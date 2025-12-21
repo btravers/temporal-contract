@@ -105,7 +105,6 @@ export const processOrder = declareWorkflow({
     // return type must match { success: boolean, transactionId: string }
     
     const payment = await activities.processPayment({
-      customerId: input.customerId,
       amount: input.amount
     });
     
