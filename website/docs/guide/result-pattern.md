@@ -189,7 +189,8 @@ export const processOrder = declareWorkflow({
 });
 ```
 
-Note: For child workflows, you do get Result objects. See the Child Workflows section below.
+> [!NOTE]
+> For child workflows, you do get Result objects. See the Child Workflows section below.
 
 ## Chaining Activities
 
