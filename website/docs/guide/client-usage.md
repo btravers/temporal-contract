@@ -228,10 +228,12 @@ const connection = await Connection.connect({
   address: 'localhost:7233',
 });
 
-const orderClient = TypedClient.create(orderContract, { connection });
-const inventoryClient = TypedClient.create(inventoryContract, { connection });
+const temporalClient = new Client({ connection });
 
-// Both clients share the same connection
+const orderClient = TypedClient.create(orderContract, temporalClient);
+const inventoryClient = TypedClient.create(inventoryContract, temporalClient);
+
+// Both clients share the same connection and Temporal client instance
 ```
 
 ### Connection Pooling
