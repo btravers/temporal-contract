@@ -40,9 +40,9 @@ import { declareWorkflow } from '@temporal-contract/worker/workflow';
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: myContract,
-  implementation: async (context, input) => {
+  implementation: async ({ activities }, input) => {
     // Activities return plain values (Result is unwrapped internally)
-    await context.activities.sendEmail({ to: 'user@example.com', body: 'Done!' });
+    await activities.sendEmail({ to: 'user@example.com', body: 'Done!' });
     return { success: true };
   }
 });
