@@ -105,12 +105,21 @@ const contract = defineContract({
 });
 
 // ✅ Type-safe client
-const result = await client.executeWorkflow('processOrder', {
+const future = client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
   args: { orderId: 'ORD-123', customerId: 'CUST-456' },  // TypeScript knows!
 });
 
-console.log(result.status);  // 'success' | 'failed' — full autocomplete!
+const result = await future;
+
+result.match({
+  Ok: (output) => {
+    console.log(output.status);  // 'success' | 'failed' — full autocomplete!
+  },
+  Error: (error) => {
+    console.error('Workflow failed:', error);
+  },
+});
 ```
 
 ## Quick Example
@@ -230,22 +239,15 @@ export const processOrder = declareWorkflow({
 ```
 
 ```typescript [4. worker.ts]
-import { NativeConnection } from '@temporalio/worker';
-import { createWorker } from '@temporal-contract/worker/worker';
+import { Worker } from '@temporalio/worker';
 import { orderContract } from './contract';
 import { activities } from './activities';
 
 // ✅ Start the worker
-const connection = await NativeConnection.connect({
-  address: 'localhost:7233',
-});
-
-const worker = await createWorker({
-  contract: orderContract,
-  connection,
-  namespace: 'default',
-  workflowsPath: './workflows',
+const worker = await Worker.create({
+  workflowsPath: require.resolve('./workflows'),
   activities,
+  taskQueue: orderContract.taskQueue,
 });
 
 await worker.run(); // Worker is now listening!
@@ -253,14 +255,15 @@ await worker.run(); // Worker is now listening!
 
 ```typescript [5. client.ts]
 import { TypedClient } from '@temporal-contract/client';
-import { Client } from '@temporalio/client';
+import { Connection, Client } from '@temporalio/client';
 import { orderContract } from './contract';
 
 // ✅ Type-safe client calls
+const connection = await Connection.connect({ address: 'localhost:7233' });
 const temporalClient = new Client({ connection });
 const client = TypedClient.create(orderContract, temporalClient);
 
-const result = await client.executeWorkflow('processOrder', {
+const future = client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
   args: {
     orderId: 'ORD-123',
@@ -269,9 +272,18 @@ const result = await client.executeWorkflow('processOrder', {
   },
 });
 
-// Full autocomplete on result!
-console.log(result.status); // 'success' | 'failed'
-console.log(result.transactionId); // string | undefined
+const result = await future;
+
+// Handle Result with pattern matching
+result.match({
+  Ok: (output) => {
+    console.log(output.status); // 'success' | 'failed'
+    console.log(output.transactionId); // string | undefined
+  },
+  Error: (error) => {
+    console.error('Workflow failed:', error);
+  },
+});
 ```
 
 :::

@@ -167,52 +167,67 @@ For explicit conversion between the two (rarely needed), see the [@temporal-cont
 
 ## Pattern Matching
 
-Use `.match()` for elegant error handling:
+Activities return plain values when called from workflows. If an activity fails, it will throw an error:
 
 ```typescript
-const result = await context.activities.processPayment({ amount: 100 });
+export const processOrder = declareWorkflow({
+  workflowName: 'processOrder',
+  contract: orderContract,
+  implementation: async ({ activities }, input) => {
+    try {
+      // Activity returns plain value (Result is unwrapped internally)
+      const payment = await activities.processPayment({ amount: 100 });
+      console.log('Payment succeeded:', payment.transactionId);
 
-return result.match({
-  Ok: (payment) => {
-    console.log('Payment succeeded:', payment.transactionId);
-    return Result.Ok({ success: true });
-  },
-  Error: (error) => {
-    console.error('Payment failed:', error);
-    return Result.Error({ type: 'PaymentFailed', error });
+      return { success: true, transactionId: payment.transactionId };
+    } catch (error) {
+      // Activity errors are thrown
+      console.error('Payment failed:', error);
+      return { success: false, transactionId: '' };
+    }
   }
 });
 ```
 
-## Chaining Results
+> [!NOTE]
+> For child workflows, you do get Result objects. See the Child Workflows section below.
 
-Chain operations with `.flatMap()`:
+## Chaining Activities
+
+When calling multiple activities, use standard async/await with try/catch:
 
 ```typescript
-const result = await context.activities.processPayment({ amount: 100 })
-  .flatMap(async (payment) => {
-    // Only runs if payment succeeded
-    return context.activities.sendEmail({
-      to: 'customer@example.com',
-      body: `Payment ${payment.transactionId} processed`
-    });
-  })
-  .flatMap(async (email) => {
-    // Only runs if both payment and email succeeded
-    return context.activities.updateDatabase({
-      status: 'completed'
-    });
-  });
+export const processOrder = declareWorkflow({
+  workflowName: 'processOrder',
+  contract: orderContract,
+  implementation: async ({ activities }, input) => {
+    try {
+      // Activities return plain values
+      const payment = await activities.processPayment({ amount: 100 });
 
-return result.match({
-  Ok: () => Result.Ok({ success: true }),
-  Error: (error) => Result.Error({ type: 'WorkflowFailed', error })
+      // Next activity only runs if payment succeeded
+      await activities.sendEmail({
+        to: 'customer@example.com',
+        body: `Payment ${payment.transactionId} processed`
+      });
+
+      // Update database
+      await activities.updateDatabase({
+        status: 'completed'
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Workflow failed:', error);
+      return { success: false };
+    }
+  }
 });
 ```
 
 ## Error Types
 
-Define typed errors:
+Define typed errors in your activities:
 
 ```typescript
 type PaymentError =
@@ -224,14 +239,18 @@ type EmailError =
   | { type: 'InvalidEmail' }
   | { type: 'ServiceUnavailable' };
 
-// Activities return typed errors
+// Activities return Future with typed errors
 processPayment: ({ amount }) => {
   return Future.fromPromise(paymentGateway.charge(amount))
-    .map<{ transactionId: string }>(txId => ({ transactionId: txId }))
-    .mapError<PaymentError>(error => ({
-      type: 'CardDeclined',
-      // error qualification logic
-    }));
+    .mapError<ActivityError>(error => {
+      // Wrap domain errors in ActivityError for Temporal retry policies
+      return new ActivityError(
+        'PAYMENT_FAILED',
+        error instanceof Error ? error.message : 'Payment failed',
+        error
+      );
+    })
+    .mapOk((txId) => ({ transactionId: txId }));
 }
 ```
 
@@ -239,78 +258,125 @@ processPayment: ({ amount }) => {
 
 ### 1. Explicit Error Handling
 
-Errors are part of the type system:
+Activities use the Result pattern internally, while workflows use try/catch:
 
 ```typescript
-// TypeScript knows this can fail
-const result: Future<Payment, PaymentError> =
-  context.activities.processPayment({ amount: 100 });
+// Activity implementation (uses Result pattern)
+const processPayment = ({ amount }) => {
+  return Future.fromPromise(paymentGateway.charge(amount))
+    .mapError((error) =>
+      new ActivityError('PAYMENT_FAILED', 'Payment failed', error)
+    )
+    .mapOk((txId) => ({ transactionId: txId }));
+};
 
-// Must handle error case
-if (result.isError()) {
-  // Handle error
+// Workflow (uses standard try/catch for activities)
+export const processOrder = declareWorkflow({
+  workflowName: 'processOrder',
+  contract: myContract,
+  implementation: async ({ activities }, input) => {
+    try {
+      // Activity returns plain value
+      const payment = await activities.processPayment({ amount: 100 });
+      return { success: true, transactionId: payment.transactionId };
+    } catch (error) {
+      // Handle activity error
+      return { success: false };
+    }
+  }
+});
+```
+
+### 2. No Hidden Exceptions in Activities
+
+Activities explicitly return Results instead of throwing:
+
+```typescript
+// ✅ Clear - activity returns Future<Result>
+const processPayment = ({ amount }) => {
+  return Future.fromPromise(paymentGateway.charge(amount))
+    .mapError((error) =>
+      new ActivityError('PAYMENT_FAILED', 'Payment failed', error)
+    )
+    .mapOk((txId) => ({ transactionId: txId }));
+};
+
+// ❌ Unclear - might throw anything
+async function processPayment({ amount }) {
+  const txId = await paymentGateway.charge(amount);
+  return { transactionId: txId };
 }
 ```
 
-### 2. No Hidden Exceptions
+### 3. Railway-Oriented Programming (Activities)
 
-All failures are explicit in the return type:
-
-```typescript
-// ✅ Clear - returns Result
-async function processOrder(): Promise<Result<Order, OrderError>> { /* ... */ }
-
-// ❌ Unclear - might throw anything
-async function processOrder(): Promise<Order> { /* ... */ }
-```
-
-### 3. Railway-Oriented Programming
-
-Chain operations that short-circuit on error:
+Activity implementations can chain operations that short-circuit on error:
 
 ```mermaid
 graph LR
-    A[validateOrder] -->|Ok| B[checkInventory]
+    A[validateInput] -->|Ok| B[callAPI]
     A -->|Error| E[Error Path]
-    B -->|Ok| C[processPayment]
+    B -->|Ok| C[processResponse]
     B -->|Error| E
-    C -->|Ok| D[sendConfirmation]
+    C -->|Ok| D[Success]
     C -->|Error| E
-    D -->|Ok| F[Success]
-    D -->|Error| E
 
     style A fill:#3b82f6,stroke:#1e40af,color:#fff
-    style F fill:#10b981,stroke:#059669,color:#fff
+    style D fill:#10b981,stroke:#059669,color:#fff
     style E fill:#ef4444,stroke:#dc2626,color:#fff
 ```
 
 ```typescript
-return await validateOrder({ orderId })
-  .flatMap(() => checkInventory({ orderId }))
-  .flatMap(() => processPayment({ amount }))
-  .flatMap(() => sendConfirmation({ orderId }));
-// Stops at first error
+// Activity implementation with chaining
+const processOrder = ({ orderId }) => {
+  return validateOrderId(orderId)
+    .flatMap((validId) => fetchOrder(validId))
+    .flatMap((order) => processPayment(order))
+    .flatMap((payment) => updateDatabase(payment))
+    .mapError((error) =>
+      new ActivityError('ORDER_FAILED', 'Order processing failed', error)
+    );
+  // Stops at first error
+};
 ```
 
 ### 4. Partial Success Handling
 
-Track partial success in complex workflows:
+Track partial success in complex workflows using try/catch blocks:
 
 ```typescript
-const paymentResult = await processPayment({ amount });
-if (paymentResult.isError()) {
-  return Result.Error({ step: 'payment', error: paymentResult.getError() });
-}
+export const processOrder = declareWorkflow({
+  workflowName: 'processOrder',
+  contract: orderContract,
+  implementation: async ({ activities }, input) => {
+    let paymentTransactionId: string | undefined;
 
-const shipmentResult = await scheduleShipment({ orderId });
-if (shipmentResult.isError()) {
-  // Payment succeeded, shipment failed - can handle specially
-  return Result.Error({
-    step: 'shipment',
-    error: shipmentResult.getError(),
-    completedSteps: { payment: paymentResult.get() }
-  });
-}
+    try {
+      // Step 1: Process payment
+      const payment = await activities.processPayment({ amount: input.amount });
+      paymentTransactionId = payment.transactionId;
+
+      // Step 2: Schedule shipment
+      await activities.scheduleShipment({ orderId: input.orderId });
+
+      return { success: true, transactionId: paymentTransactionId };
+    } catch (error) {
+      // Payment succeeded but shipment failed - can handle specially
+      if (paymentTransactionId) {
+        // Rollback payment
+        await activities.refundPayment({ transactionId: paymentTransactionId });
+
+        return {
+          success: false,
+          message: 'Shipment failed, payment refunded',
+          completedSteps: { payment: paymentTransactionId }
+        };
+      }
+
+      return { success: false, message: 'Payment failed' };
+    }
+  }
+});
 ```
 
 ## Child Workflows
@@ -325,9 +391,9 @@ import { declareWorkflow } from '@temporal-contract/worker/workflow';
 export const parentWorkflow = declareWorkflow({
   workflowName: 'parentWorkflow',
   contract: myContract,
-  implementation: async (context, input) => {
+  implementation: async ({ executeChildWorkflow }, input) => {
     // Execute child workflow and wait for result
-    const result = await context.executeChildWorkflow(myContract, 'processPayment', {
+    const result = await executeChildWorkflow(myContract, 'processPayment', {
       workflowId: `payment-${input.orderId}`,
       args: { amount: input.totalAmount }
     });
@@ -352,9 +418,9 @@ export const parentWorkflow = declareWorkflow({
 export const parentWorkflow = declareWorkflow({
   workflowName: 'parentWorkflow',
   contract: myContract,
-  implementation: async (context, input) => {
+  implementation: async ({ startChildWorkflow }, input) => {
     // Start child workflow without waiting
-    const handleResult = await context.startChildWorkflow(myContract, 'sendNotification', {
+    const handleResult = await startChildWorkflow(myContract, 'sendNotification', {
       workflowId: `notification-${input.orderId}`,
       args: { message: 'Order received' }
     });
@@ -385,9 +451,9 @@ import { orderContract, notificationContract } from './contracts';
 export const orderWorkflow = declareWorkflow({
   workflowName: 'processOrder',
   contract: orderContract,
-  implementation: async (context, input) => {
+  implementation: async ({ executeChildWorkflow }, input) => {
     // Child workflow from another contract
-    const notifyResult = await context.executeChildWorkflow(
+    const notifyResult = await executeChildWorkflow(
       notificationContract,
       'sendOrderConfirmation',
       {
@@ -409,19 +475,17 @@ export const orderWorkflow = declareWorkflow({
 
 ## When to Use
 
-### Use Result Pattern When:
+### Use Result/Future Pattern When:
 
-- You need explicit error types
-- You want to track partial success
-- You prefer functional programming style
-- You need fine-grained error handling
+- **In Activity Implementations**: Always use Future/Result pattern for explicit error handling
+- **For Child Workflows**: Child workflows return Results for explicit error handling
+- **For Type-Safe Errors**: When you need ActivityError with proper retry policies
 
-### Use Standard Pattern When:
+### Use Standard async/await When:
 
-- You're comfortable with exceptions
-- You prefer imperative style
-- You have simple error handling needs
-- You want less boilerplate
+- **In Workflow Logic**: Use try/catch when calling activities from workflows
+- **For Simple Error Handling**: When standard exception handling is sufficient
+- **For Deterministic Code**: Workflows must remain deterministic
 
 ## See Also
 

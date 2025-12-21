@@ -12,20 +12,36 @@ Instead of defining activity implementations inline, you can extract types for r
 
 ```typescript
 import type { ActivityHandlers } from '@temporal-contract/worker/activity';
+import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
+import { Future, Result } from '@swan-io/boxed';
 import { orderContract } from './contract';
 
 // Extract all activity handler types from contract
 type OrderActivityHandlers = ActivityHandlers<typeof orderContract>;
 
-// Implement activities with explicit types
-const sendEmail: OrderActivityHandlers['sendEmail'] = async ({ to, body }) => {
-  await emailService.send({ to, body });
-  return { sent: true };
+// Implement activities with explicit types using Future/Result pattern
+const sendEmail: OrderActivityHandlers['sendEmail'] = ({ to, body }) => {
+  return Future.fromPromise(emailService.send({ to, body }))
+    .mapError((error) =>
+      new ActivityError(
+        'EMAIL_FAILED',
+        error instanceof Error ? error.message : 'Failed to send email',
+        error
+      )
+    )
+    .mapOk(() => ({ sent: true }));
 };
 
-const processPayment: OrderActivityHandlers['processPayment'] = async ({ amount }) => {
-  const txId = await paymentGateway.charge(amount);
-  return { transactionId: txId };
+const processPayment: OrderActivityHandlers['processPayment'] = ({ amount }) => {
+  return Future.fromPromise(paymentGateway.charge(amount))
+    .mapError((error) =>
+      new ActivityError(
+        'PAYMENT_FAILED',
+        error instanceof Error ? error.message : 'Payment failed',
+        error
+      )
+    )
+    .mapOk((txId) => ({ transactionId: txId }));
 };
 
 // Use in handler
@@ -77,26 +93,44 @@ Implement activities in separate files:
 ```typescript
 // activities/email.ts
 import type { ActivityHandlers } from '@temporal-contract/worker/activity';
+import { ActivityError } from '@temporal-contract/worker/activity';
+import { Future, Result } from '@swan-io/boxed';
 import { orderContract } from '../contracts/order.contract';
 
 type Handlers = ActivityHandlers<typeof orderContract>;
 
-export const sendEmail: Handlers['sendEmail'] = async ({ to, body }) => {
-  await emailService.send({ to, body });
-  return { sent: true };
+export const sendEmail: Handlers['sendEmail'] = ({ to, body }) => {
+  return Future.fromPromise(emailService.send({ to, body }))
+    .mapError((error) =>
+      new ActivityError(
+        'EMAIL_FAILED',
+        error instanceof Error ? error.message : 'Failed to send email',
+        error
+      )
+    )
+    .mapOk(() => ({ sent: true }));
 };
 ```
 
 ```typescript
 // activities/payment.ts
 import type { ActivityHandlers } from '@temporal-contract/worker/activity';
+import { ActivityError } from '@temporal-contract/worker/activity';
+import { Future, Result } from '@swan-io/boxed';
 import { orderContract } from '../contracts/order.contract';
 
 type Handlers = ActivityHandlers<typeof orderContract>;
 
-export const processPayment: Handlers['processPayment'] = async ({ amount }) => {
-  const txId = await paymentGateway.charge(amount);
-  return { transactionId: txId };
+export const processPayment: Handlers['processPayment'] = ({ amount }) => {
+  return Future.fromPromise(paymentGateway.charge(amount))
+    .mapError((error) =>
+      new ActivityError(
+        'PAYMENT_FAILED',
+        error instanceof Error ? error.message : 'Payment failed',
+        error
+      )
+    )
+    .mapOk((txId) => ({ transactionId: txId }));
 };
 ```
 
@@ -165,13 +199,14 @@ Mock activities with correct types:
 
 ```typescript
 import type { ActivityHandlers } from '@temporal-contract/worker/activity';
+import { Future, Result } from '@swan-io/boxed';
 
 type Handlers = ActivityHandlers<typeof orderContract>;
 
 // Create mock activities for testing
 const mockActivities: Handlers = {
-  sendEmail: async ({ to, body }) => ({ sent: true }),
-  processPayment: async ({ amount }) => ({ transactionId: 'TEST-TXN' })
+  sendEmail: ({ to, body }) => Future.value(Result.Ok({ sent: true })),
+  processPayment: ({ amount }) => Future.value(Result.Ok({ transactionId: 'TEST-TXN' }))
 };
 
 // Use in tests
