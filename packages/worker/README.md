@@ -14,12 +14,23 @@ pnpm add @temporal-contract/worker @temporal-contract/contract @temporalio/workf
 
 ```typescript
 // activities.ts
-import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
+import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
+import { Future, Result } from '@swan-io/boxed';
 
 export const activities = declareActivitiesHandler({
   contract: myContract,
   activities: {
-    sendEmail: async ({ to, body }) => ({ sent: true })
+    sendEmail: ({ to, body }) => {
+      return Future.fromPromise(emailService.send({ to, body }))
+        .mapError((error) =>
+          new ActivityError(
+            'EMAIL_FAILED',
+            error instanceof Error ? error.message : 'Failed to send email',
+            error
+          )
+        )
+        .mapOk(() => ({ sent: true }));
+    }
   }
 });
 
@@ -30,27 +41,22 @@ export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: myContract,
   implementation: async (context, input) => {
+    // Activities return plain values (Result is unwrapped internally)
     await context.activities.sendEmail({ to: 'user@example.com', body: 'Done!' });
     return { success: true };
   }
 });
 
 // worker.ts
-import { NativeConnection } from '@temporalio/worker';
-import { createWorker } from '@temporal-contract/worker/worker';
+import { Worker } from '@temporalio/worker';
 import { activities } from './activities';
 import myContract from './contract';
 
 async function run() {
-  const connection = await NativeConnection.connect({
-    address: 'localhost:7233',
-  });
-
-  const worker = await createWorker({
-    contract: myContract,
-    connection,
+  const worker = await Worker.create({
     workflowsPath: require.resolve('./workflows'),
     activities,
+    taskQueue: myContract.taskQueue,
   });
 
   await worker.run();

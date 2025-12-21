@@ -36,12 +36,34 @@ const contract = defineContract({
     processOrder: {
       input: z.object({ orderId: z.string() }),
       output: z.object({ success: z.boolean() }),
-      activities: { /* ... */ }
+      activities: {
+        processPayment: {
+          input: z.object({ orderId: z.string() }),
+          output: z.object({ transactionId: z.string() })
+        }
+      }
     }
   }
 });
 
-// Fully typed everywhere
+// Implement activities with Future/Result pattern
+import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
+import { Future } from '@swan-io/boxed';
+
+const activities = declareActivitiesHandler({
+  contract,
+  activities: {
+    processPayment: ({ orderId }) => {
+      return Future.fromPromise(paymentService.process(orderId))
+        .mapError((error) =>
+          new ActivityError('PAYMENT_FAILED', 'Payment failed', error)
+        )
+        .mapOk((txId) => ({ transactionId: txId }));
+    }
+  }
+});
+
+// Call from client - fully typed everywhere
 const result = await client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
   args: { orderId: 'ORD-123' }  // ✅ TypeScript knows!

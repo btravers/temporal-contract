@@ -199,8 +199,8 @@ import { activities } from './activities';
 
 const worker = await Worker.create({
   workflowsPath: require.resolve('./workflows'),
-  activities: activities.activities,
-  taskQueue: activities.contract.taskQueue,
+  activities,
+  taskQueue: 'orders', // or activities.contract.taskQueue
 });
 
 await worker.run();
@@ -219,13 +219,22 @@ const connection = await Connection.connect({
 const temporalClient = new Client({ connection });
 const client = TypedClient.create(orderContract, temporalClient);
 
-// Fully typed workflow execution
-const result = await client.executeWorkflow('processOrder', {
+// Fully typed workflow execution with Result/Future pattern
+const resultFuture = client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
   args: { orderId: 'ORD-123', customerId: 'CUST-456' },
 });
 
-console.log(result.status);  // 'success' | 'failed' — fully typed!
+const result = await resultFuture;
+
+result.match({
+  Ok: (output) => {
+    console.log(output.status);  // 'success' | 'failed' — fully typed!
+  },
+  Error: (error) => {
+    console.error('Workflow failed:', error);
+  },
+});
 ```
 
 ## What's Next?
