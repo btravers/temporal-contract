@@ -11,7 +11,7 @@
   "dependencies": {
     "@nestjs/common": "catalog:",
     "@nestjs/core": "catalog:",
-    "@temporal-contract/boxed": "workspace:*",
+    "@swan-io/boxed": "catalog:",
     "@temporal-contract/sample-order-processing-contract": "workspace:*",
     "@temporal-contract/worker": "workspace:*",
     "@temporal-contract/worker-nestjs": "workspace:*",

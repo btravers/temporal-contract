@@ -161,9 +161,9 @@ importers:
       '@standard-schema/spec':
         specifier: 'catalog:'
         version: 1.1.0
-      '@temporal-contract/boxed':
-        specifier: workspace:*
-        version: link:../boxed
+      '@swan-io/boxed':
+        specifier: 'catalog:'
+        version: 3.2.1(typescript@5.9.3)
       '@temporal-contract/contract':
         specifier: workspace:*
         version: link:../contract
@@ -266,6 +266,9 @@ importers:
       '@standard-schema/spec':
         specifier: 'catalog:'
         version: 1.1.0
+      '@swan-io/boxed':
+        specifier: 'catalog:'
+        version: 3.2.1(typescript@5.9.3)
       '@temporal-contract/boxed':
         specifier: workspace:*
         version: link:../boxed
@@ -420,9 +423,9 @@ importers:
 
   samples/order-processing-worker:
     dependencies:
-      '@temporal-contract/boxed':
-        specifier: workspace:*
-        version: link:../../packages/boxed
+      '@swan-io/boxed':
+        specifier: 'catalog:'
+        version: 3.2.1(typescript@5.9.3)
       '@temporal-contract/sample-order-processing-contract':
         specifier: workspace:*
         version: link:../order-processing-contract
@@ -481,9 +484,9 @@ importers:
       '@nestjs/core':
         specifier: 'catalog:'
         version: 11.1.9(@nestjs/common@11.1.9(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      '@temporal-contract/boxed':
-        specifier: workspace:*
-        version: link:../../packages/boxed
+      '@swan-io/boxed':
+        specifier: 'catalog:'
+        version: 3.2.1(typescript@5.9.3)
       '@temporal-contract/sample-order-processing-contract':
         specifier: workspace:*
         version: link:../order-processing-contract

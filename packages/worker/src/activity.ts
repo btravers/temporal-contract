@@ -1,6 +1,6 @@
 // Entry point for activities
 import { ActivityDefinition, ContractDefinition } from "@temporal-contract/contract";
-import { Future, Result } from "@temporal-contract/boxed";
+import { Future, Result } from "@swan-io/boxed";
 import { WorkerInferInput, WorkerInferOutput } from "./types.js";
 import {
   ActivityDefinitionNotFoundError,
@@ -131,7 +131,7 @@ export type ActivitiesHandler<TContract extends ContractDefinition> =
  * @example
  * ```ts
  * import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
- * import { Result, Future } from '@temporal-contract/boxed';
+ * import { Result, Future } from '@swan-io/boxed';
  * import myContract from './contract';
  *
  * export const activities = declareActivitiesHandler({

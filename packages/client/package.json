@@ -51,7 +51,7 @@
   },
   "dependencies": {
     "@standard-schema/spec": "catalog:",
-    "@temporal-contract/boxed": "workspace:*",
+    "@swan-io/boxed": "catalog:",
     "@temporal-contract/contract": "workspace:*"
   },
   "devDependencies": {

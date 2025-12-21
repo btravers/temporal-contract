@@ -1,5 +1,5 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import type { Future, Result } from "@temporal-contract/boxed";
+import type { Future, Result } from "@swan-io/boxed";
 import type {
   AnySchema,
   ActivityDefinition,

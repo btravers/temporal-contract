@@ -2,7 +2,7 @@ import { describe, expect, vi, beforeEach } from "vitest";
 import { Worker } from "@temporalio/worker";
 import { TypedClient } from "@temporal-contract/client";
 import { it as baseIt } from "@temporal-contract/testing/extension";
-import { Future, Result } from "@temporal-contract/boxed";
+import { Future, Result } from "@swan-io/boxed";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { testContract } from "./test.contract.js";
