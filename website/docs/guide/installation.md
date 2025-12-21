@@ -20,11 +20,14 @@ temporal-contract consists of multiple packages. Install the ones you need:
 # Contract definitions
 pnpm add @temporal-contract/contract
 
-# Worker implementation (includes Result/Future pattern)
-pnpm add @temporal-contract/worker @temporal-contract/boxed
+# Worker implementation (uses @swan-io/boxed for activities)
+pnpm add @temporal-contract/worker @swan-io/boxed
 
-# Client for executing workflows (includes Result/Future pattern)
-pnpm add @temporal-contract/client @temporal-contract/boxed
+# For workflows (Temporal-compatible Result/Future)
+pnpm add @temporal-contract/boxed
+
+# Client for executing workflows (uses @swan-io/boxed)
+pnpm add @temporal-contract/client @swan-io/boxed
 
 # Required peer dependencies
 pnpm add zod @temporalio/client @temporalio/worker @temporalio/workflow
@@ -32,16 +35,46 @@ pnpm add zod @temporalio/client @temporalio/worker @temporalio/workflow
 
 ```bash [npm]
 npm install @temporal-contract/contract
-npm install @temporal-contract/worker @temporal-contract/boxed
-npm install @temporal-contract/client @temporal-contract/boxed
+npm install @temporal-contract/worker @swan-io/boxed
+npm install @temporal-contract/boxed
+npm install @temporal-contract/client @swan-io/boxed
 npm install zod @temporalio/client @temporalio/worker @temporalio/workflow
 ```
 
 ```bash [yarn]
 yarn add @temporal-contract/contract
-yarn add @temporal-contract/worker @temporal-contract/boxed
-yarn add @temporal-contract/client @temporal-contract/boxed
+yarn add @temporal-contract/worker @swan-io/boxed
+yarn add @temporal-contract/boxed
+yarn add @temporal-contract/client @swan-io/boxed
 yarn add zod @temporalio/client @temporalio/worker @temporalio/workflow
+```
+
+:::
+
+::: tip Package Usage
+
+- **@swan-io/boxed**: Used for activities and clients (battle-tested, excellent performance)
+- **@temporal-contract/boxed**: Used for workflows (Temporal-compatible, deterministic execution)
+
+Both packages provide the same API, making it easy to work with both.
+:::
+
+### NestJS Integration
+
+For NestJS applications, also install:
+
+::: code-group
+
+```bash [pnpm]
+pnpm add @temporal-contract/worker-nestjs @nestjs/common @nestjs/core
+```
+
+```bash [npm]
+npm install @temporal-contract/worker-nestjs @nestjs/common @nestjs/core
+```
+
+```bash [yarn]
+yarn add @temporal-contract/worker-nestjs @nestjs/common @nestjs/core
 ```
 
 :::

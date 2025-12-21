@@ -4,68 +4,43 @@ Learn how to use explicit error handling with the Result/Future pattern.
 
 ## Overview
 
-The `@temporal-contract/worker` and `@temporal-contract/client` packages use the Result/Future pattern from @temporal-contract/boxed for explicit error handling.
+temporal-contract uses the Result/Future pattern for explicit error handling. The implementation differs between activities and workflows:
+
+- **Activities and Clients**: Use **[@swan-io/boxed](https://github.com/swan-io/boxed)** - a battle-tested library with excellent performance
+- **Workflows**: Use **@temporal-contract/boxed** - a Temporal-compatible implementation required for deterministic execution
+
+Both packages provide the same API, making it easy to work with both.
 
 ```mermaid
 graph LR
-    A[Operation] --> B{Result}
-    B -->|Ok| C[Success Value]
-    B -->|Error| D[Error Value]
-    C --> E[Continue Flow]
-    D --> F[Handle Error]
+    A[Activities] -->|@swan-io/boxed| B[Result/Future]
+    C[Workflows] -->|@temporal-contract/boxed| B
+    D[Clients] -->|@swan-io/boxed| B
 
-    style B fill:#3b82f6,stroke:#1e40af,color:#fff
-    style C fill:#10b981,stroke:#059669,color:#fff
-    style D fill:#ef4444,stroke:#dc2626,color:#fff
-```
-
-## Why Use Result Pattern?
-
-### Traditional Exception-Based
-
-```typescript
-try {
-  const payment = await processPayment({ amount: 100 });
-  const email = await sendEmail({ to: 'user@example.com' });
-  return { success: true };
-} catch (error) {
-  // What failed? Payment or email?
-  // What type of error?
-  return { success: false };
-}
-```
-
-### Result Pattern
-
-```typescript
-const payment = await processPayment({ amount: 100 });
-if (payment.isError()) {
-  return Result.Error({ type: 'PaymentFailed', error: payment.getError() });
-}
-
-const email = await sendEmail({ to: 'user@example.com' });
-if (email.isError()) {
-  return Result.Error({ type: 'EmailFailed', error: email.getError() });
-}
-
-return Result.Ok({ success: true });
+    style A fill:#10b981,stroke:#059669,color:#fff
+    style C fill:#3b82f6,stroke:#1e40af,color:#fff
+    style D fill:#8b5cf6,stroke:#6d28d9,color:#fff
 ```
 
 ## Installation
 
 ```bash
-pnpm add @temporal-contract/worker @temporal-contract/client @temporal-contract/boxed
+# For activities and clients
+pnpm add @swan-io/boxed
+
+# For workflows (Temporal-compatible)
+pnpm add @temporal-contract/boxed
 ```
 
 ## Basic Usage
 
-### Activities
+### Activities (using @swan-io/boxed)
 
-Use `Future<T, E>` for async activities:
+Activities use `@swan-io/boxed` for excellent performance and ecosystem compatibility:
 
 ```typescript
-import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
-import { Future } from '@temporal-contract/boxed';
+import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
+import { Future, Result } from '@swan-io/boxed';
 import { orderContract } from './contract';
 
 export const activities = declareActivitiesHandler({
@@ -73,22 +48,34 @@ export const activities = declareActivitiesHandler({
   activities: {
     processPayment: ({ amount }) => {
       return Future.fromPromise(paymentGateway.charge(amount))
-        .map(txId => ({ transactionId: txId, success: true }))
-        .mapError(error => ({ type: 'PaymentFailed', message: error instanceof Error ? error.message : 'Unknown error' }));
+        .mapError(error =>
+          new ActivityError(
+            'PAYMENT_FAILED',
+            error instanceof Error ? error.message : 'Payment failed',
+            error
+          )
+        )
+        .mapOk(txId => ({ transactionId: txId, success: true }));
     },
 
     sendEmail: ({ to, body }) => {
       return Future.fromPromise(emailService.send({ to, body }))
-        .map(() => ({ sent: true }))
-        .mapError(error => ({ type: 'EmailFailed', message: error instanceof Error ? error.message : 'Unknown error' }));
+        .mapError(error =>
+          new ActivityError(
+            'EMAIL_FAILED',
+            error instanceof Error ? error.message : 'Email failed',
+            error
+          )
+        )
+        .mapOk(() => ({ sent: true }));
     }
   }
 });
 ```
 
-### Workflows
+### Workflows (using @temporal-contract/boxed)
 
-Use `Result<T, E>` for workflows:
+Workflows require `@temporal-contract/boxed` for Temporal's deterministic execution:
 
 ```typescript
 import { declareWorkflow } from '@temporal-contract/worker/workflow';
@@ -98,43 +85,85 @@ import { orderContract } from './contract';
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: orderContract,
-  implementation: async (context, { orderId, amount }) => {
-    // Process payment
-    const paymentResult = await context.activities.processPayment({ amount });
-
-    if (paymentResult.isError()) {
-      return Result.Error({
-        type: 'OrderFailed',
-        reason: 'PaymentFailed',
-        error: paymentResult.getError()
-      });
-    }
-
-    const payment = paymentResult.get();
+  implementation: async ({ activities }, { orderId, amount }) => {
+    // Process payment - activities return plain values
+    const payment = await activities.processPayment({ amount });
 
     // Send confirmation email
-    const emailResult = await context.activities.sendEmail({
+    await activities.sendEmail({
       to: 'customer@example.com',
       body: `Order ${orderId} confirmed`
     });
 
-    if (emailResult.isError()) {
-      // Payment succeeded but email failed
-      return Result.Error({
-        type: 'OrderFailed',
-        reason: 'EmailFailed',
-        error: emailResult.getError(),
-        partialSuccess: { payment }
-      });
-    }
-
-    return Result.Ok({
+    return {
       success: true,
       transactionId: payment.transactionId
-    });
+    };
   }
 });
 ```
+
+### Clients (using @swan-io/boxed)
+
+Clients use `@swan-io/boxed` to handle workflow results:
+
+```typescript
+import { TypedClient } from '@temporal-contract/client';
+import { Result } from '@swan-io/boxed';
+import { Client } from '@temporalio/client';
+import { orderContract } from './contract';
+
+const temporalClient = new Client({ connection });
+
+const client = TypedClient.create(orderContract, temporalClient);
+const result = await client.executeWorkflow('processOrder', {
+  workflowId: 'order-123',
+  args: { orderId: 'ORD-123', amount: 100 },
+});
+
+// Handle result with pattern matching
+result.match({
+  Ok: (value) => {
+    console.log('Order processed:', value.transactionId);
+  },
+  Error: (error) => {
+    console.error('Order failed:', error);
+  },
+});
+```
+
+## Why Two Packages?
+
+### @swan-io/boxed (Activities & Clients)
+
+- ✅ Battle-tested with extensive usage
+- ✅ Excellent performance optimizations
+- ✅ Large ecosystem support
+- ✅ Works perfectly outside of Temporal workflows
+
+### @temporal-contract/boxed (Workflows)
+
+- ✅ Temporal deterministic execution compatible
+- ✅ Same API as @swan-io/boxed
+- ✅ Designed specifically for workflow constraints
+- ✅ Seamless interoperability with @swan-io/boxed
+
+## Interoperability
+
+Both packages share the same API surface, so code is portable:
+
+```typescript
+// Same API for both packages!
+const result = Result.Ok(42);
+const future = Future.value(42);
+
+result.match({
+  Ok: (value) => console.log(value),
+  Error: (error) => console.error(error),
+});
+```
+
+For explicit conversion between the two (rarely needed), see the [@temporal-contract/boxed interop documentation](/api/boxed#interoperability).
 
 ## Pattern Matching
 
@@ -396,6 +425,6 @@ export const orderWorkflow = declareWorkflow({
 
 ## See Also
 
-- [@temporal-contract/boxed API Reference](/api/index#error-handling)
+- [@temporal-contract/boxed API Reference](/api/boxed)
 - [Order Processing Example](/examples/basic-order-processing)
 - [Worker Implementation](/guide/worker-implementation)
