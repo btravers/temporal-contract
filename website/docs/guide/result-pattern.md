@@ -110,10 +110,12 @@ Clients use `@swan-io/boxed` to handle workflow results:
 ```typescript
 import { TypedClient } from '@temporal-contract/client';
 import { Result } from '@swan-io/boxed';
+import { Client } from '@temporalio/client';
 import { orderContract } from './contract';
 
-const client = TypedClient.create(orderContract, { connection });
+const temporalClient = new Client({ connection });
 
+const client = TypedClient.create(orderContract, temporalClient);
 const result = await client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
   args: { orderId: 'ORD-123', amount: 100 },
