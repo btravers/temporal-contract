@@ -443,6 +443,6 @@ export const orderWorkflow = declareWorkflow({
 
 ## See Also
 
-- [@temporal-contract/boxed API Reference](/api/index#error-handling)
+- [@temporal-contract/boxed API Reference](/api/boxed)
 - [Order Processing Example](/examples/basic-order-processing)
 - [Worker Implementation](/guide/worker-implementation)
