@@ -171,9 +171,9 @@ import { declareWorkflow } from '@temporal-contract/worker/workflow';
 export const parentWorkflow = declareWorkflow({
   workflowName: 'parentWorkflow',
   contract: myContract,
-  implementation: async (context, input) => {
+  implementation: async ({ executeChildWorkflow }, input) => {
     // Execute child workflow - returns Future<Result>
-    const childResult = await context.executeChildWorkflow(
+    const childResult = await executeChildWorkflow(
       myContract,
       'processPayment',
       {

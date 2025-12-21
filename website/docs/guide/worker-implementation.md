@@ -81,15 +81,15 @@ import { myContract } from './contract';
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: myContract,
-  implementation: async (context, input) => {
+  implementation: async ({ activities }, input) => {
     // context.activities is fully typed
     // Activities return plain values (Result is unwrapped by the framework)
-    const payment = await context.activities.processPayment({
+    const payment = await activities.processPayment({
       customerId: input.customerId,
       amount: 100
     });
 
-    await context.activities.sendEmail({
+    await activities.sendEmail({
       to: input.customerId,
       subject: 'Order Confirmed',
       body: 'Your order has been processed'
@@ -158,13 +158,13 @@ return { txId: 'TXN-123' };  // Wrong field name
 The workflow context is fully typed based on your contract:
 
 ```typescript
-implementation: async (context, input) => {
+implementation: async ({ activities }, input) => {
   // TypeScript knows all available activities
-  context.activities.processPayment  // ✅ Available
-  context.activities.unknownActivity // ❌ TypeScript error
+  activities.processPayment  // ✅ Available
+  activities.unknownActivity // ❌ TypeScript error
 
   // Full autocomplete for parameters
-  await context.activities.processPayment({
+  await activities.processPayment({
     // IDE shows: customerId: string, amount: number
   });
 }
@@ -207,9 +207,9 @@ import { myContract, notificationContract } from './contracts';
 export const parentWorkflow = declareWorkflow({
   workflowName: 'parentWorkflow',
   contract: myContract,
-  implementation: async (context, input) => {
+  implementation: async ({ executeChildWorkflow }, input) => {
     // Execute child workflow from same contract and wait for result
-    const result = await context.executeChildWorkflow(myContract, 'processPayment', {
+    const result = await executeChildWorkflow(myContract, 'processPayment', {
       workflowId: `payment-${input.orderId}`,
       args: { amount: input.totalAmount }
     });
@@ -232,9 +232,9 @@ Invoke child workflows from different contracts and workers:
 export const orderWorkflow = declareWorkflow({
   workflowName: 'processOrder',
   contract: orderContract,
-  implementation: async (context, input) => {
+  implementation: async ({ executeChildWorkflow }, input) => {
     // Process payment in same contract
-    const paymentResult = await context.executeChildWorkflow(
+    const paymentResult = await executeChildWorkflow(
       orderContract,
       'processPayment',
       {
@@ -248,7 +248,7 @@ export const orderWorkflow = declareWorkflow({
     }
 
     // Send notification using another worker's contract
-    const notificationResult = await context.executeChildWorkflow(
+    const notificationResult = await executeChildWorkflow(
       notificationContract,
       'sendOrderConfirmation',
       {
@@ -273,9 +273,9 @@ Use `startChildWorkflow` to start a child workflow without waiting for its resul
 export const orderWorkflow = declareWorkflow({
   workflowName: 'processOrder',
   contract: myContract,
-  implementation: async (context, input) => {
+  implementation: async ({ startChildWorkflow }, input) => {
     // Start background notification workflow
-    const handleResult = await context.startChildWorkflow(
+    const handleResult = await startChildWorkflow(
       notificationContract,
       'sendEmail',
       {
@@ -415,10 +415,10 @@ In workflows, activities return plain values. If an activity fails, it will thro
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: myContract,
-  implementation: async (context, input) => {
+  implementation: async ({ activities }, input) => {
     try {
       // Activity returns plain value if successful
-      const payment = await context.activities.processPayment({
+      const payment = await activities.processPayment({
         customerId: input.customerId,
         amount: 100
       });

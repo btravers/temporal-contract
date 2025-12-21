@@ -173,10 +173,10 @@ Activities return plain values when called from workflows. If an activity fails,
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: orderContract,
-  implementation: async (context, input) => {
+  implementation: async ({ activities }, input) => {
     try {
       // Activity returns plain value (Result is unwrapped internally)
-      const payment = await context.activities.processPayment({ amount: 100 });
+      const payment = await activities.processPayment({ amount: 100 });
       console.log('Payment succeeded:', payment.transactionId);
       
       return { success: true, transactionId: payment.transactionId };
@@ -199,19 +199,19 @@ When calling multiple activities, use standard async/await with try/catch:
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: orderContract,
-  implementation: async (context, input) => {
+  implementation: async ({ activities }, input) => {
     try {
       // Activities return plain values
-      const payment = await context.activities.processPayment({ amount: 100 });
+      const payment = await activities.processPayment({ amount: 100 });
       
       // Next activity only runs if payment succeeded
-      await context.activities.sendEmail({
+      await activities.sendEmail({
         to: 'customer@example.com',
         body: `Payment ${payment.transactionId} processed`
       });
       
       // Update database
-      await context.activities.updateDatabase({
+      await activities.updateDatabase({
         status: 'completed'
       });
       
@@ -273,10 +273,10 @@ const processPayment = ({ amount }) => {
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: myContract,
-  implementation: async (context, input) => {
+  implementation: async ({ activities }, input) => {
     try {
       // Activity returns plain value
-      const payment = await context.activities.processPayment({ amount: 100 });
+      const payment = await activities.processPayment({ amount: 100 });
       return { success: true, transactionId: payment.transactionId };
     } catch (error) {
       // Handle activity error
@@ -347,23 +347,23 @@ Track partial success in complex workflows using try/catch blocks:
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: orderContract,
-  implementation: async (context, input) => {
+  implementation: async ({ activities }, input) => {
     let paymentTransactionId: string | undefined;
     
     try {
       // Step 1: Process payment
-      const payment = await context.activities.processPayment({ amount: input.amount });
+      const payment = await activities.processPayment({ amount: input.amount });
       paymentTransactionId = payment.transactionId;
       
       // Step 2: Schedule shipment
-      await context.activities.scheduleShipment({ orderId: input.orderId });
+      await activities.scheduleShipment({ orderId: input.orderId });
       
       return { success: true, transactionId: paymentTransactionId };
     } catch (error) {
       // Payment succeeded but shipment failed - can handle specially
       if (paymentTransactionId) {
         // Rollback payment
-        await context.activities.refundPayment({ transactionId: paymentTransactionId });
+        await activities.refundPayment({ transactionId: paymentTransactionId });
         
         return {
           success: false,
@@ -390,9 +390,9 @@ import { declareWorkflow } from '@temporal-contract/worker/workflow';
 export const parentWorkflow = declareWorkflow({
   workflowName: 'parentWorkflow',
   contract: myContract,
-  implementation: async (context, input) => {
+  implementation: async ({ executeChildWorkflow }, input) => {
     // Execute child workflow and wait for result
-    const result = await context.executeChildWorkflow(myContract, 'processPayment', {
+    const result = await executeChildWorkflow(myContract, 'processPayment', {
       workflowId: `payment-${input.orderId}`,
       args: { amount: input.totalAmount }
     });
@@ -417,9 +417,9 @@ export const parentWorkflow = declareWorkflow({
 export const parentWorkflow = declareWorkflow({
   workflowName: 'parentWorkflow',
   contract: myContract,
-  implementation: async (context, input) => {
+  implementation: async ({ startChildWorkflow }, input) => {
     // Start child workflow without waiting
-    const handleResult = await context.startChildWorkflow(myContract, 'sendNotification', {
+    const handleResult = await startChildWorkflow(myContract, 'sendNotification', {
       workflowId: `notification-${input.orderId}`,
       args: { message: 'Order received' }
     });
@@ -450,9 +450,9 @@ import { orderContract, notificationContract } from './contracts';
 export const orderWorkflow = declareWorkflow({
   workflowName: 'processOrder',
   contract: orderContract,
-  implementation: async (context, input) => {
+  implementation: async ({ executeChildWorkflow }, input) => {
     // Child workflow from another contract
-    const notifyResult = await context.executeChildWorkflow(
+    const notifyResult = await executeChildWorkflow(
       notificationContract,
       'sendOrderConfirmation',
       {
