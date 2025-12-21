@@ -209,16 +209,16 @@ import { orderContract } from './contract';
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: orderContract,
-  implementation: async (context, { orderId, customerId, amount }) => {
+  implementation: async ({ activities }, { orderId, customerId, amount }) => {
     // Activities are fully typed and return plain values
-    const payment = await context.activities.processPayment({
+    const payment = await activities.processPayment({
       customerId,
       amount,
     });
 
     const { transactionId } = payment;
 
-    await context.activities.sendNotification({
+    await activities.sendNotification({
       customerId,
       message: `Order ${orderId} confirmed!`,
     });
