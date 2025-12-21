@@ -36,7 +36,7 @@ const client = TypedClient.create(myContract, temporalClient);
 Execute a workflow and wait for completion using the Result/Future pattern:
 
 ```typescript
-const resultFuture = client.executeWorkflow('processOrder', {
+const future = client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
   args: {
     orderId: 'ORD-123',
@@ -45,7 +45,7 @@ const resultFuture = client.executeWorkflow('processOrder', {
 });
 
 // await the Future to get the Result
-const result = await resultFuture;
+const result = await future;
 
 // Handle the Result with pattern matching
 result.match({

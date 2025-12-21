@@ -105,12 +105,12 @@ const contract = defineContract({
 });
 
 // ✅ Type-safe client
-const resultFuture = client.executeWorkflow('processOrder', {
+const future = client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
   args: { orderId: 'ORD-123', customerId: 'CUST-456' },  // TypeScript knows!
 });
 
-const result = await resultFuture;
+const result = await future;
 
 result.match({
   Ok: (output) => {
@@ -263,7 +263,7 @@ const connection = await Connection.connect({ address: 'localhost:7233' });
 const temporalClient = new Client({ connection });
 const client = TypedClient.create(orderContract, temporalClient);
 
-const resultFuture = client.executeWorkflow('processOrder', {
+const future = client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
   args: {
     orderId: 'ORD-123',
@@ -272,7 +272,7 @@ const resultFuture = client.executeWorkflow('processOrder', {
   },
 });
 
-const result = await resultFuture;
+const result = await future;
 
 // Handle Result with pattern matching
 result.match({

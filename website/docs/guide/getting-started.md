@@ -220,12 +220,12 @@ const temporalClient = new Client({ connection });
 const client = TypedClient.create(orderContract, temporalClient);
 
 // Fully typed workflow execution with Result/Future pattern
-const resultFuture = client.executeWorkflow('processOrder', {
+const future = client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
   args: { orderId: 'ORD-123', customerId: 'CUST-456' },
 });
 
-const result = await resultFuture;
+const result = await future;
 
 result.match({
   Ok: (output) => {
