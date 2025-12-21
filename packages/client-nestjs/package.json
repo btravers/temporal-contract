@@ -67,8 +67,8 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "@nestjs/common": "^10",
-    "@nestjs/core": "^10",
+    "@nestjs/common": "^11",
+    "@nestjs/core": "^11",
     "@temporalio/client": "^1",
     "reflect-metadata": "^0.2.0"
   }
