@@ -1,6 +1,6 @@
-# Basic Order Processing
+# Order Processing Worker
 
-> Standard Promise-based workflow with Clean Architecture
+> Type-safe order processing worker with Clean Architecture and Result/Future pattern
 
 ## Running
 
@@ -15,6 +15,7 @@ pnpm dev
 ## What It Demonstrates
 
 - ✅ Type-safe contracts with Zod
+- ✅ Result/Future pattern with ActivityError for explicit error handling
 - ✅ Clean Architecture (Domain → Infrastructure → Application)
 - ✅ Dependency injection for testability
 - ✅ Error handling with compensating actions

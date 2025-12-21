@@ -83,22 +83,15 @@ export const processOrder = declareWorkflow({
 ## Starting a Worker
 
 ```typescript
-import { NativeConnection, Worker } from '@temporalio/worker';
-import { createWorker } from '@temporal-contract/worker/worker';
+import { Worker } from '@temporalio/worker';
 import { myContract } from './contract';
 import { activities } from './activities';
 
 async function main() {
-  const connection = await NativeConnection.connect({
-    address: 'localhost:7233',
-  });
-
-  const worker = await createWorker({
-    contract: myContract,
-    connection,
-    namespace: 'default',
+  const worker = await Worker.create({
     workflowsPath: require.resolve('./workflows'),
     activities,
+    taskQueue: myContract.taskQueue,
   });
 
   console.log('Worker started, listening on task queue:', myContract.taskQueue);
@@ -170,7 +163,7 @@ implementation: async ({ activities, info, sleep }, input) => {
 
 ## Child Workflows
 
-Execute child workflows with type safety:
+Execute child workflows with type safety using the Result/Future pattern:
 
 ```typescript
 import { declareWorkflow } from '@temporal-contract/worker/workflow';
@@ -178,9 +171,9 @@ import { declareWorkflow } from '@temporal-contract/worker/workflow';
 export const parentWorkflow = declareWorkflow({
   workflowName: 'parentWorkflow',
   contract: myContract,
-  implementation: async ({ executeChildWorkflow }, input) => {
-    // Execute child workflow and wait
-    const childOutput = await executeChildWorkflow(
+  implementation: async (context, input) => {
+    // Execute child workflow - returns Future<Result>
+    const childResult = await context.executeChildWorkflow(
       myContract,
       'processPayment',
       {
@@ -189,11 +182,17 @@ export const parentWorkflow = declareWorkflow({
       }
     );
 
-    // Child workflow returns plain values
-    return {
-      success: true,
-      transactionId: childOutput.transactionId
-    };
+    // Handle the Result with pattern matching
+    return childResult.match({
+      Ok: (output) => ({
+        success: true,
+        transactionId: output.transactionId
+      }),
+      Error: (error) => ({
+        success: false,
+        error: error.message
+      }),
+    });
   },
 });
 ```
@@ -204,12 +203,10 @@ Handle shutdown signals properly:
 
 ```typescript
 async function main() {
-  const worker = await createWorker({
-    contract: myContract,
-    connection,
-    namespace: 'default',
+  const worker = await Worker.create({
     workflowsPath: require.resolve('./workflows'),
     activities,
+    taskQueue: myContract.taskQueue,
   });
 
   // Graceful shutdown
@@ -232,20 +229,16 @@ async function main() {
 Run multiple workers with different contracts:
 
 ```typescript
-const orderWorker = await createWorker({
-  contract: orderContract,
-  connection,
-  namespace: 'default',
+const orderWorker = await Worker.create({
   workflowsPath: require.resolve('./order-workflows'),
   activities: orderActivities,
+  taskQueue: orderContract.taskQueue,
 });
 
-const paymentWorker = await createWorker({
-  contract: paymentContract,
-  connection,
-  namespace: 'default',
+const paymentWorker = await Worker.create({
   workflowsPath: require.resolve('./payment-workflows'),
   activities: paymentActivities,
+  taskQueue: paymentContract.taskQueue,
 });
 
 // Run both workers concurrently
