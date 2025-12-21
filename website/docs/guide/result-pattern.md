@@ -85,40 +85,20 @@ import { orderContract } from './contract';
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: orderContract,
-  implementation: async (context, { orderId, amount }) => {
-    // Process payment
-    const paymentResult = await context.activities.processPayment({ amount });
-
-    if (paymentResult.isError()) {
-      return Result.Error({
-        type: 'OrderFailed',
-        reason: 'PaymentFailed',
-        error: paymentResult.getError()
-      });
-    }
-
-    const payment = paymentResult.get();
+  implementation: async ({ activities }, { orderId, amount }) => {
+    // Process payment - activities return plain values
+    const payment = await activities.processPayment({ amount });
 
     // Send confirmation email
-    const emailResult = await context.activities.sendEmail({
+    await activities.sendEmail({
       to: 'customer@example.com',
       body: `Order ${orderId} confirmed`
     });
 
-    if (emailResult.isError()) {
-      // Payment succeeded but email failed
-      return Result.Error({
-        type: 'OrderFailed',
-        reason: 'EmailFailed',
-        error: emailResult.getError(),
-        partialSuccess: { payment }
-      });
-    }
-
-    return Result.Ok({
+    return {
       success: true,
       transactionId: payment.transactionId
-    });
+    };
   }
 });
 ```

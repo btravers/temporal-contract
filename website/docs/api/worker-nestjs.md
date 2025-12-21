@@ -36,16 +36,13 @@ import { orderContract } from './contract';
           activities: {
             processOrder: {
               processPayment: ({ customerId, amount }) => {
-                return Future.make(async (resolve) => {
-                  try {
-                    // Implementation
-                    resolve(Result.Ok({ transactionId: 'txn_123' }));
-                  } catch (error) {
-                    resolve(Result.Error(
-                      new ActivityError('PAYMENT_FAILED', 'Payment failed', error)
-                    ));
-                  }
-                });
+                return Future.fromPromise(
+                  Promise.resolve({ transactionId: 'txn_123' })
+                )
+                  .mapError((error) =>
+                    new ActivityError('PAYMENT_FAILED', 'Payment failed', error)
+                  )
+                  .mapOk((value) => value);
               },
             },
           },

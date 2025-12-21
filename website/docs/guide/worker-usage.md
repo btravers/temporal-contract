@@ -141,17 +141,11 @@ processPayment: ({ customerId, amount }) => {
 Activity errors are automatically propagated to workflows:
 
 ```typescript
-const result = await context.activities.processPayment({ customerId, amount });
+const payment = await activities.processPayment({ customerId, amount });
 
-if (result.isError()) {
-  const error = result.getError(); // ActivityError instance
-  console.error('Activity failed:', error.code, error.message);
-  
-  // Handle specific error codes
-  if (error.code === 'PAYMENT_FAILED') {
-    // Handle payment failure
-  }
-}
+// Activities return plain values - framework handles errors internally
+// If an activity fails, the workflow will fail automatically
+console.log('Payment successful:', payment.transactionId);
 ```
 
 ## Workflow Context
@@ -159,18 +153,18 @@ if (result.isError()) {
 The workflow context provides typed access to activities:
 
 ```typescript
-implementation: async (context, input) => {
+implementation: async ({ activities, info, sleep }, input) => {
   // Execute activities
-  const result = await context.activities.someActivity(input);
+  const result = await activities.someActivity(input);
   
   // Access workflow info
-  console.log('Workflow ID:', context.info.workflowId);
-  console.log('Run ID:', context.info.runId);
+  console.log('Workflow ID:', info.workflowId);
+  console.log('Run ID:', info.runId);
   
   // Use Temporal utilities
-  await context.sleep('1 hour');
+  await sleep('1 hour');
   
-  return Result.Ok({ success: true });
+  return { success: true };
 }
 ```
 
@@ -184,9 +178,9 @@ import { declareWorkflow } from '@temporal-contract/worker/workflow';
 export const parentWorkflow = declareWorkflow({
   workflowName: 'parentWorkflow',
   contract: myContract,
-  implementation: async (context, input) => {
+  implementation: async ({ executeChildWorkflow }, input) => {
     // Execute child workflow and wait
-    const childOutput = await context.executeChildWorkflow(
+    const childOutput = await executeChildWorkflow(
       myContract,
       'processPayment',
       {

@@ -165,15 +165,15 @@ import { orderContract } from './contract';
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: orderContract,
-  implementation: async (context, { orderId, customerId }) => {
+  implementation: async ({ activities }, { orderId, customerId }) => {
     // Full autocomplete for activities and their parameters
     // Activities return plain values (Result is unwrapped internally)
-    const payment = await context.activities.processPayment({
+    const payment = await activities.processPayment({
       customerId,
       amount: 100
     });
 
-    await context.activities.sendEmail({
+    await activities.sendEmail({
       to: customerId,
       subject: 'Order Confirmed',
       body: `Order ${orderId} processed`,

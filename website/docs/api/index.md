@@ -174,11 +174,11 @@ import { declareWorkflow } from '@temporal-contract/worker/workflow';
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract,
-  implementation: async (context, { orderId }) => {
+  implementation: async ({ activities }, { orderId }) => {
     // Activities return plain values (Result is unwrapped by the framework)
-    const { valid } = await context.activities.validateOrder({ orderId });
+    const { valid } = await activities.validateOrder({ orderId });
     
-    await context.activities.sendEmail({
+    await activities.sendEmail({
       to: 'admin@example.com',
       body: 'Order processed'
     });
