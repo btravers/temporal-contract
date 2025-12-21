@@ -41,20 +41,32 @@ pnpm add @temporal-contract/contract
 
 ### [@temporal-contract/worker](/api/worker)
 
-**Type-safe worker implementation with Result/Future pattern**
+**Type-safe worker implementation (uses @swan-io/boxed for activities)**
 
 - `declareActivitiesHandler()` - Implement activities with Result/Future pattern
 - `declareWorkflow()` - Implement workflows with typed context
 - Automatic input/output validation
-- Built on @temporal-contract/boxed
+- Activities use @swan-io/boxed, workflows use @temporal-contract/boxed
 
 ```bash
-pnpm add @temporal-contract/worker @temporal-contract/boxed
+pnpm add @temporal-contract/worker @swan-io/boxed @temporal-contract/boxed
+```
+
+### [@temporal-contract/worker-nestjs](/api/worker-nestjs)
+
+**NestJS integration for type-safe workers with dependency injection**
+
+- `TemporalModule` - Configure workers with NestJS DI
+- Full support for NestJS services in activities
+- Automatic worker lifecycle management
+
+```bash
+pnpm add @temporal-contract/worker-nestjs @swan-io/boxed
 ```
 
 ### [@temporal-contract/client](/api/client)
 
-**Type-safe client with Result/Future pattern for executing workflows**
+**Type-safe client for executing workflows (uses @swan-io/boxed)**
 
 - `TypedClient.create()` - Create type-safe workflow client
 - Full type inference from contract
@@ -62,17 +74,22 @@ pnpm add @temporal-contract/worker @temporal-contract/boxed
 - Type-safe workflow execution
 
 ```bash
-pnpm add @temporal-contract/client @temporal-contract/boxed
+pnpm add @temporal-contract/client @swan-io/boxed
 ```
 
 ### [@temporal-contract/boxed](/api/boxed)
 
-**Result and Future types for explicit error handling**
+**Temporal-compatible Result and Future types for workflows**
 
 - `Result<T, E>` - Explicit success/error handling
 - `Future<T>` - Async operations with Results
-- Temporal-compatible implementations
-- Interop with @swan-io/boxed
+- Temporal-compatible for deterministic execution
+- Same API as @swan-io/boxed
+
+::: tip Package Usage
+- Use **@swan-io/boxed** for activities and clients (better performance)
+- Use **@temporal-contract/boxed** for workflows (Temporal-compatible)
+:::
 
 ```bash
 pnpm add @temporal-contract/boxed
@@ -132,13 +149,22 @@ const contract = defineContract({
 
 ```typescript
 import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
-import { Future, Result } from '@temporal-contract/boxed';
+import { Future, Result } from '@swan-io/boxed';
 
 const handler = declareActivitiesHandler({
   contract,
   activities: {
     sendEmail: ({ to, body }) =>
-      Future.value(Result.Ok({ sent: true })),
+      Future.make(async (resolve) => {
+        try {
+          await emailService.send({ to, body });
+          resolve(Result.Ok({ sent: true }));
+        } catch (error) {
+          resolve(Result.Error(
+            new ActivityError('EMAIL_FAILED', 'Failed to send email', error)
+          ));
+        }
+      }),
     validateOrder: ({ orderId }) =>
       Future.value(Result.Ok({ valid: true }))
   }
@@ -149,17 +175,26 @@ const handler = declareActivitiesHandler({
 
 ```typescript
 import { declareWorkflow } from '@temporal-contract/worker/workflow';
+import { Result } from '@temporal-contract/boxed';
 
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract,
   implementation: async (context, { orderId }) => {
-    const { valid } = await context.activities.validateOrder({ orderId });
+    const validResult = await context.activities.validateOrder({ orderId });
+    
+    if (validResult.isError()) {
+      return Result.Error({ type: 'VALIDATION_FAILED', error: validResult.getError() });
+    }
+    
+    const { valid } = validResult.get();
+    
     await context.activities.sendEmail({
       to: 'admin@example.com',
       body: 'Order processed'
     });
-    return { success: valid };
+    
+    return Result.Ok({ success: valid });
   }
 });
 ```
@@ -191,14 +226,13 @@ const connection = await Connection.connect({
 
 const client = TypedClient.create(contract, { connection });
 
-// Returns Future<Result<T, E>>
-const resultFuture = client.executeWorkflow('processOrder', {
+// Execute workflow
+const result = await client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
   args: { orderId: 'ORD-123' }
 });
 
-// Await the Future and handle result
-const result = await resultFuture;
+// Handle result
 result.match({
   Ok: (output) => console.log('Success:', output),
   Error: (error) => console.error('Failed:', error)
@@ -237,27 +271,29 @@ type OrderOutput = InferOutput<typeof contract, 'processOrder'>;
 
 ```typescript
 import { TypedClient } from '@temporal-contract/client';
-import { Future, Result } from '@temporal-contract/boxed';
+import { Result } from '@swan-io/boxed';
 
-// Client returns Future<Result<T, E>>
-const resultFuture = client.executeWorkflow('processOrder', {
+// Client returns Result<T, E>
+const result = await client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
   args: { orderId: 'ORD-123' }
 });
 
 // Handle with match
-await resultFuture.tapOk((output) => {
-  console.log('Success:', output);
-}).tapError((error) => {
-  console.error('Failed:', error);
+result.match({
+  Ok: (output) => {
+    console.log('Success:', output);
+  },
+  Error: (error) => {
+    console.error('Failed:', error);
+  }
 });
 
-// Or await directly and throw on error
-try {
-  const output = await resultFuture.resultToPromise();
-  console.log('Success:', output);
-} catch (error) {
-  console.error('Failed:', error);
+// Or check manually
+if (result.isOk()) {
+  console.log('Success:', result.get());
+} else {
+  console.error('Failed:', result.getError());
 }
 ```
 
