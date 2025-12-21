@@ -11,7 +11,10 @@
       "@temporal-contract/boxed",
       "@temporal-contract/tsconfig"
     ],
-    ["@temporal-contract/worker-nestjs", "@temporal-contract/client-nestjs"]
+    [
+      "@temporal-contract/worker-nestjs",
+      "@temporal-contract/client-nestjs"
+    ]
   ],
   "linked": [],
   "access": "public",
