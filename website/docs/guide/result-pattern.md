@@ -178,7 +178,7 @@ export const processOrder = declareWorkflow({
       // Activity returns plain value (Result is unwrapped internally)
       const payment = await activities.processPayment({ amount: 100 });
       console.log('Payment succeeded:', payment.transactionId);
-      
+
       return { success: true, transactionId: payment.transactionId };
     } catch (error) {
       // Activity errors are thrown
@@ -203,18 +203,18 @@ export const processOrder = declareWorkflow({
     try {
       // Activities return plain values
       const payment = await activities.processPayment({ amount: 100 });
-      
+
       // Next activity only runs if payment succeeded
       await activities.sendEmail({
         to: 'customer@example.com',
         body: `Payment ${payment.transactionId} processed`
       });
-      
+
       // Update database
       await activities.updateDatabase({
         status: 'completed'
       });
-      
+
       return { success: true };
     } catch (error) {
       console.error('Workflow failed:', error);
@@ -349,29 +349,29 @@ export const processOrder = declareWorkflow({
   contract: orderContract,
   implementation: async ({ activities }, input) => {
     let paymentTransactionId: string | undefined;
-    
+
     try {
       // Step 1: Process payment
       const payment = await activities.processPayment({ amount: input.amount });
       paymentTransactionId = payment.transactionId;
-      
+
       // Step 2: Schedule shipment
       await activities.scheduleShipment({ orderId: input.orderId });
-      
+
       return { success: true, transactionId: paymentTransactionId };
     } catch (error) {
       // Payment succeeded but shipment failed - can handle specially
       if (paymentTransactionId) {
         // Rollback payment
         await activities.refundPayment({ transactionId: paymentTransactionId });
-        
+
         return {
           success: false,
           message: 'Shipment failed, payment refunded',
           completedSteps: { payment: paymentTransactionId }
         };
       }
-      
+
       return { success: false, message: 'Payment failed' };
     }
   }

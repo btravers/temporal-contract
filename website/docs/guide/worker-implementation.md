@@ -422,7 +422,7 @@ export const processOrder = declareWorkflow({
         customerId: input.customerId,
         amount: 100
       });
-      
+
       return {
         status: 'success',
         transactionId: payment.transactionId
@@ -430,7 +430,7 @@ export const processOrder = declareWorkflow({
     } catch (error) {
       // Activity errors are thrown and can be caught
       console.error('Payment failed:', error);
-      
+
       return {
         status: 'failed',
         transactionId: ''
