@@ -202,6 +202,55 @@ importers:
         specifier: 'catalog:'
         version: 4.2.1
 
+  packages/client-nestjs:
+    dependencies:
+      '@temporal-contract/client':
+        specifier: workspace:*
+        version: link:../client
+      '@temporal-contract/contract':
+        specifier: workspace:*
+        version: link:../contract
+    devDependencies:
+      '@nestjs/common':
+        specifier: 'catalog:'
+        version: 11.1.9(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: 'catalog:'
+        version: 11.1.9(@nestjs/common@11.1.9(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/testing':
+        specifier: 'catalog:'
+        version: 11.1.9(@nestjs/common@11.1.9(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.9(@nestjs/common@11.1.9(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))
+      '@temporal-contract/testing':
+        specifier: workspace:*
+        version: link:../testing
+      '@temporal-contract/tsconfig':
+        specifier: workspace:*
+        version: link:../../tools/tsconfig
+      '@temporalio/client':
+        specifier: 'catalog:'
+        version: 1.14.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.0.3
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 4.0.16(vitest@4.0.16(@types/node@25.0.3)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2))
+      reflect-metadata:
+        specifier: 'catalog:'
+        version: 0.2.2
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.18.1(oxc-resolver@11.16.0)(typescript@5.9.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.16(@types/node@25.0.3)(jiti@2.6.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
+      zod:
+        specifier: 'catalog:'
+        version: 4.2.1
+
   packages/contract:
     dependencies:
       '@standard-schema/spec':
