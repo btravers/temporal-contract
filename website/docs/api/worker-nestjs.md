@@ -69,6 +69,7 @@ Dynamic NestJS module for configuring Temporal workers.
 Synchronous configuration of the Temporal worker.
 
 **Parameters:**
+
 - `options`: Configuration options for the worker
   - `contract`: The temporal-contract definition
   - `activities`: Activity implementations from `declareActivitiesHandler`
@@ -77,6 +78,7 @@ Synchronous configuration of the Temporal worker.
   - `namespace?`: Temporal namespace (default: 'default')
 
 **Example:**
+
 ```typescript
 TemporalModule.forRoot({
   contract: myContract,
@@ -91,6 +93,7 @@ TemporalModule.forRoot({
 Asynchronous configuration of the Temporal worker with factory pattern.
 
 **Parameters:**
+
 - `options`: Async configuration options
   - `imports?`: Modules to import
   - `inject?`: Dependencies to inject into factory
@@ -98,6 +101,7 @@ Asynchronous configuration of the Temporal worker with factory pattern.
   - `name?`: Unique name for multiple workers
 
 **Example:**
+
 ```typescript
 TemporalModule.forRootAsync({
   imports: [ConfigModule],
@@ -131,6 +135,7 @@ Get the worker instance.
 **Throws:** Error if worker is not initialized
 
 **Example:**
+
 ```typescript
 @Injectable()
 export class MyService {

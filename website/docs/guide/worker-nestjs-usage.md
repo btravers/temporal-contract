@@ -202,7 +202,7 @@ export class ActivitiesProvider {
 
   createActivities() {
     const paymentGatewayUrl = this.configService.get('PAYMENT_GATEWAY_URL');
-    
+
     return declareActivitiesHandler({
       contract: myContract,
       activities: {
@@ -211,7 +211,7 @@ export class ActivitiesProvider {
             return Future.fromPromise(
               this.paymentService.charge(amount, paymentGatewayUrl)
             )
-              .mapError((err) => 
+              .mapError((err) =>
                 new ActivityError('PAYMENT_FAILED', err.message, err)
               )
               .mapOk((tx) => ({ transactionId: tx.id }));
@@ -303,7 +303,7 @@ Run multiple workers in the same NestJS application:
         activities: provider.createActivities(),
       }),
     }),
-    
+
     // Payment processing worker
     TemporalModule.forRootAsync({
       name: 'payments',
@@ -423,7 +423,7 @@ export class ActivitiesProvider {
             return Future.fromPromise(
               this.paymentService.processPayment(customerId, amount)
             )
-              .mapError((err) => 
+              .mapError((err) =>
                 new ActivityError('PAYMENT_FAILED', err.message, err)
               )
               .mapOk((tx) => ({ transactionId: tx.id }));

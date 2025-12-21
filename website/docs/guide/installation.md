@@ -52,6 +52,7 @@ yarn add zod @temporalio/client @temporalio/worker @temporalio/workflow
 :::
 
 ::: tip Package Usage
+
 - **@swan-io/boxed**: Used for activities and clients (battle-tested, excellent performance)
 - **@temporal-contract/boxed**: Used for workflows (Temporal-compatible, deterministic execution)
 

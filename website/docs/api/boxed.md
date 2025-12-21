@@ -26,16 +26,17 @@ graph LR
     A[Activities] -->|@swan-io/boxed| B[Result/Future API]
     C[Workflows] -->|@temporal-contract/boxed| B
     D[Clients] -->|@swan-io/boxed| B
-    
+
     style A fill:#10b981,stroke:#059669,color:#fff
     style C fill:#3b82f6,stroke:#1e40af,color:#fff
     style D fill:#8b5cf6,stroke:#6d28d9,color:#fff
 ```
 
 ::: tip When to Use Each Package
+
 - Use **@swan-io/boxed** for activities and clients (better performance, ecosystem support)
 - Use **@temporal-contract/boxed** for workflows (required for Temporal's deterministic execution)
-:::
+  :::
 
 ## Why Two Packages?
 

@@ -87,9 +87,10 @@ pnpm add @temporal-contract/client @swan-io/boxed
 - Same API as @swan-io/boxed
 
 ::: tip Package Usage
+
 - Use **@swan-io/boxed** for activities and clients (better performance)
 - Use **@temporal-contract/boxed** for workflows (Temporal-compatible)
-:::
+  :::
 
 ```bash
 pnpm add @temporal-contract/boxed
@@ -177,12 +178,12 @@ export const processOrder = declareWorkflow({
   implementation: async ({ activities }, { orderId }) => {
     // Activities return plain values (Result is unwrapped by the framework)
     const { valid } = await activities.validateOrder({ orderId });
-    
+
     await activities.sendEmail({
       to: 'admin@example.com',
       body: 'Order processed'
     });
-    
+
     // Return plain object (not Result - network serialization)
     return { success: valid };
   }

@@ -14,7 +14,7 @@ import { z } from 'zod';
 
 export const myContract = defineContract({
   taskQueue: 'my-task-queue',
-  
+
   // Global activities available to all workflows
   activities: {
     log: {
@@ -25,7 +25,7 @@ export const myContract = defineContract({
       output: z.void(),
     },
   },
-  
+
   // Workflow definitions
   workflows: {
     myWorkflow: {
@@ -37,7 +37,7 @@ export const myContract = defineContract({
         success: z.boolean(),
         transactionId: z.string().optional()
       }),
-      
+
       // Workflow-specific activities
       activities: {
         processPayment: {
@@ -85,6 +85,7 @@ activities: {
 ### Workflows
 
 Each workflow must define:
+
 - `input`: Zod schema for workflow parameters
 - `output`: Zod schema for workflow return value
 - `activities`: Workflow-specific activities (optional)
@@ -299,7 +300,7 @@ workflows: {
 ```typescript
 /**
  * Order processing workflow
- * 
+ *
  * Handles the complete order lifecycle including:
  * - Payment processing
  * - Inventory reservation

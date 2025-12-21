@@ -129,7 +129,7 @@ Pass standard Temporal workflow options:
 await client.executeWorkflow('processOrder', {
   workflowId: 'order-123',
   args: { orderId: 'ORD-123', customerId: 'CUST-456' },
-  
+
   // Standard Temporal options
   taskQueue: 'orders', // Override task queue
   workflowExecutionTimeout: '1 hour',

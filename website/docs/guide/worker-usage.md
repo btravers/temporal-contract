@@ -156,14 +156,14 @@ The workflow context provides typed access to activities:
 implementation: async ({ activities, info, sleep }, input) => {
   // Execute activities
   const result = await activities.someActivity(input);
-  
+
   // Access workflow info
   console.log('Workflow ID:', info.workflowId);
   console.log('Run ID:', info.runId);
-  
+
   // Use Temporal utilities
   await sleep('1 hour');
-  
+
   return { success: true };
 }
 ```
@@ -190,9 +190,9 @@ export const parentWorkflow = declareWorkflow({
     );
 
     // Child workflow returns plain values
-    return { 
-      success: true, 
-      transactionId: childOutput.transactionId 
+    return {
+      success: true,
+      transactionId: childOutput.transactionId
     };
   },
 });

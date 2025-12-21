@@ -16,7 +16,7 @@ graph LR
     A[Activities] -->|@swan-io/boxed| B[Result/Future]
     C[Workflows] -->|@temporal-contract/boxed| B
     D[Clients] -->|@swan-io/boxed| B
-    
+
     style A fill:#10b981,stroke:#059669,color:#fff
     style C fill:#3b82f6,stroke:#1e40af,color:#fff
     style D fill:#8b5cf6,stroke:#6d28d9,color:#fff
@@ -48,7 +48,7 @@ export const activities = declareActivitiesHandler({
   activities: {
     processPayment: ({ amount }) => {
       return Future.fromPromise(paymentGateway.charge(amount))
-        .mapError(error => 
+        .mapError(error =>
           new ActivityError(
             'PAYMENT_FAILED',
             error instanceof Error ? error.message : 'Payment failed',
@@ -60,7 +60,7 @@ export const activities = declareActivitiesHandler({
 
     sendEmail: ({ to, body }) => {
       return Future.fromPromise(emailService.send({ to, body }))
-        .mapError(error => 
+        .mapError(error =>
           new ActivityError(
             'EMAIL_FAILED',
             error instanceof Error ? error.message : 'Email failed',
