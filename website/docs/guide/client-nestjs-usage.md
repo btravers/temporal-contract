@@ -433,6 +433,7 @@ Mock the `TemporalClientService` in your tests:
 import { Test } from '@nestjs/testing';
 import { TemporalClientService } from '@temporal-contract/client-nestjs';
 import { Result } from '@swan-io/boxed';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 describe('OrderService', () => {
   let service: OrderService;
@@ -440,9 +441,9 @@ describe('OrderService', () => {
 
   beforeEach(async () => {
     mockClient = {
-      executeWorkflow: jest.fn(),
-      startWorkflow: jest.fn(),
-      getHandle: jest.fn(),
+      executeWorkflow: vi.fn(),
+      startWorkflow: vi.fn(),
+      getHandle: vi.fn(),
     };
 
     const mockTemporalClientService = {

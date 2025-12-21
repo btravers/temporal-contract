@@ -1,6 +1,6 @@
 {
   "name": "@temporal-contract/client-nestjs",
-  "version": "0.0.1",
+  "version": "0.0.7",
   "description": "NestJS integration for temporal-contract client",
   "keywords": [
     "client",
@@ -55,7 +55,6 @@
     "@nestjs/common": "catalog:",
     "@nestjs/core": "catalog:",
     "@nestjs/testing": "catalog:",
-    "@temporal-contract/testing": "workspace:*",
     "@temporal-contract/tsconfig": "workspace:*",
     "@temporalio/client": "catalog:",
     "@types/node": "catalog:",

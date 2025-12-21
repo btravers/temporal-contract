@@ -1,5 +1,4 @@
 import type { ContractDefinition } from "@temporal-contract/contract";
-import type { TypedClient } from "@temporal-contract/client";
 import type { Client } from "@temporalio/client";
 
 /**
@@ -17,15 +16,4 @@ export interface TemporalClientModuleOptions<
    * Temporal client instance or configuration to create one
    */
   client: Client;
-}
-
-/**
- * Injectable typed client wrapper
- * Provides access to the TypedClient instance
- */
-export interface InjectableTypedClient<TContract extends ContractDefinition = ContractDefinition> {
-  /**
-   * Get the typed client instance
-   */
-  getClient(): TypedClient<TContract>;
 }
