@@ -60,6 +60,7 @@ pnpm add @temporal-contract/contract @temporal-contract/worker @temporal-contrac
 
 - [Getting Started](https://btravers.github.io/temporal-contract/guide/getting-started)
 - [Core Concepts](https://btravers.github.io/temporal-contract/guide/core-concepts)
+- [AsyncAPI Compatibility](https://btravers.github.io/temporal-contract/guide/asyncapi-compatibility)
 - [Nexus Integration](https://btravers.github.io/temporal-contract/guide/nexus-integration) (Planned)
 - [API Reference](https://btravers.github.io/temporal-contract/api/)
 - [Examples](https://btravers.github.io/temporal-contract/examples/)
@@ -73,6 +74,19 @@ pnpm add @temporal-contract/contract @temporal-contract/worker @temporal-contrac
 | [@temporal-contract/client](./packages/client)     | Type-safe client for consuming workflows with Result/Future pattern  |
 | [@temporal-contract/boxed](./packages/boxed)       | Result and Future types for explicit error handling                  |
 | [@temporal-contract/testing](./packages/testing)   | Testing utilities for integration tests                              |
+
+## FAQ
+
+### Is temporal-contract compatible with AsyncAPI?
+
+While temporal-contract and AsyncAPI both define APIs for distributed systems, they serve fundamentally different architectural patterns:
+
+- **AsyncAPI** is for event-driven architectures with asynchronous messaging
+- **temporal-contract** is for workflow orchestration with durable execution
+
+They are not directly compatible but can complement each other in a hybrid architecture where events trigger workflows and workflows publish events.
+
+📖 **[Read the full analysis →](https://btravers.github.io/temporal-contract/guide/asyncapi-compatibility)**
 
 ## Contributing
 

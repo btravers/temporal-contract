@@ -39,6 +39,10 @@ export default withMermaid({
           text: "Advanced",
           items: [{ text: "Result Pattern", link: "/guide/result-pattern" }],
         },
+        {
+          text: "Comparisons",
+          items: [{ text: "AsyncAPI Compatibility", link: "/guide/asyncapi-compatibility" }],
+        },
       ],
       "/api/": [
         {
