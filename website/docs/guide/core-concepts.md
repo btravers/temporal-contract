@@ -100,12 +100,17 @@ import { declareWorkflow } from '@temporal-contract/worker/workflow';
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract,
-  implementation: async (context, input) => {
+  implementation: async ({ activities }, input) => {
     // input is typed as { orderId: string, amount: number }
     // return type must match { success: boolean, transactionId: string }
+
+    const payment = await activities.processPayment({
+      amount: input.amount
+    });
+
     return {
       success: true,
-      transactionId: 'txn-123'
+      transactionId: payment.transactionId
     };
   }
 });

@@ -1,30 +1,44 @@
 # @temporal-contract/boxed
 
-Custom `Future` and `Result` implementation for Temporal workflows, providing type-safe error handling.
+Temporal-compatible `Future` and `Result` implementation for workflows, providing type-safe error handling compatible with Temporal's deterministic execution model.
 
 ## Installation
 
 ```bash
+# For workflows (Temporal-compatible)
 pnpm add @temporal-contract/boxed
+
+# For activities and clients (recommended)
+pnpm add @swan-io/boxed
 ```
 
 ## Overview
 
-The `@temporal-contract/boxed` package provides Temporal-compatible implementations of the Result/Future patterns. These types are specifically designed to work with Temporal's deterministic execution model.
+temporal-contract uses two Result/Future implementations:
+
+- **[@swan-io/boxed](https://github.com/swan-io/boxed)** for **activities and clients** - Battle-tested with excellent performance
+- **@temporal-contract/boxed** for **workflows** - Temporal-compatible for deterministic execution
+
+Both packages provide the **same API**, making it easy to work with both.
 
 ```mermaid
 graph LR
-    A[Result Pattern] --> C[Explicit Errors]
-    B[Future Pattern] --> D[Async Operations]
-    C --> E[Type-safe Error Handling]
-    D --> E
+    A[Activities] -->|@swan-io/boxed| B[Result/Future API]
+    C[Workflows] -->|@temporal-contract/boxed| B
+    D[Clients] -->|@swan-io/boxed| B
 
-    style A fill:#3b82f6,stroke:#1e40af,color:#fff
-    style B fill:#10b981,stroke:#059669,color:#fff
-    style E fill:#8b5cf6,stroke:#6d28d9,color:#fff
+    style A fill:#10b981,stroke:#059669,color:#fff
+    style C fill:#3b82f6,stroke:#1e40af,color:#fff
+    style D fill:#8b5cf6,stroke:#6d28d9,color:#fff
 ```
 
-## Why This Package?
+::: tip When to Use Each Package
+
+- Use **@swan-io/boxed** for activities and clients (better performance, ecosystem support)
+- Use **@temporal-contract/boxed** for workflows (required for Temporal's deterministic execution)
+  :::
+
+## Why Two Packages?
 
 The `@swan-io/boxed` library doesn't work properly with Temporal workflows due to Temporal's deterministic execution requirements. This package provides a Temporal-compatible implementation with an identical API surface.
 
