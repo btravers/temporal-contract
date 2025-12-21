@@ -171,8 +171,8 @@ interface TemporalModuleOptions {
 
 ```typescript
 interface TemporalModuleAsyncOptions {
-  imports?: any[];
-  inject?: any[];
+  imports?: Type<any>[];
+  inject?: (string | symbol | Type<any>)[];
   useFactory: (...args: any[]) => Promise<TemporalModuleOptions> | TemporalModuleOptions;
   name?: string;
 }
@@ -200,10 +200,10 @@ export class ActivitiesProvider {
             return Future.fromPromise(
               this.paymentService.charge(customerId, amount)
             )
-              .mapOk((tx) => ({ transactionId: tx.id }))
               .mapError((err) =>
                 new ActivityError('PAYMENT_FAILED', err.message, err)
-              );
+              )
+              .mapOk((tx) => ({ transactionId: tx.id }));
           },
         },
       },

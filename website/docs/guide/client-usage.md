@@ -184,20 +184,15 @@ const refundResult = await client.executeWorkflow('processRefund', {
 ### Workflow Execution Errors
 
 ```typescript
-try {
-  const result = await client.executeWorkflow('processOrder', {
-    workflowId: 'order-123',
-    args: { orderId: 'ORD-123', customerId: 'CUST-456' },
-  });
-  
-  result.match({
-    Ok: (value) => console.log('Success:', value),
-    Error: (error) => console.error('Workflow returned error:', error),
-  });
-} catch (error) {
-  // Connection or validation errors
-  console.error('Failed to execute workflow:', error);
-}
+const result = await client.executeWorkflow('processOrder', {
+  workflowId: 'order-123',
+  args: { orderId: 'ORD-123', customerId: 'CUST-456' },
+});
+
+result.match({
+  Ok: (value) => console.log('Success:', value),
+  Error: (error) => console.error('Workflow returned error:', error),
+});
 ```
 
 ### Workflow Failures

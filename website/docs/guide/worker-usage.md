@@ -34,14 +34,14 @@ export const activities = declareActivitiesHandler({
     processOrder: {
       processPayment: ({ customerId, amount }) => {
         return Future.fromPromise(paymentService.charge(customerId, amount))
-          .mapOk((result) => ({ transactionId: result.id }))
           .mapError((error) =>
             new ActivityError(
               'PAYMENT_FAILED',
               error instanceof Error ? error.message : 'Payment processing failed',
               error
             )
-          );
+          )
+          .mapOk((result) => ({ transactionId: result.id }));
       },
     },
   },
@@ -59,14 +59,14 @@ import { myContract } from './contract';
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: myContract,
-  implementation: async (context, { orderId, customerId, amount }) => {
+  implementation: async ({ activities }, { orderId, customerId, amount }) => {
     // Activities return plain values (Result is unwrapped internally)
-    const payment = await context.activities.processPayment({
+    const payment = await activities.processPayment({
       customerId,
       amount,
     });
 
-    await context.activities.log({
+    await activities.log({
       level: 'info',
       message: `Order ${orderId} processed with transaction ${payment.transactionId}`,
     });
@@ -125,14 +125,14 @@ processPayment: ({ customerId, amount }) => {
   return Future.fromPromise(
     paymentService.charge(customerId, amount)
   )
-    .mapOk((transaction) => ({ transactionId: transaction.id }))
     .mapError((error) =>
       new ActivityError(
         'PAYMENT_FAILED', // Error code
         error instanceof Error ? error.message : 'Payment failed', // Message
         error // Original error
       )
-    );
+    )
+    .mapOk((transaction) => ({ transactionId: transaction.id }));
 }
 ```
 
@@ -296,8 +296,8 @@ Activities should use `Future.fromPromise` with `mapError` and `mapOk`:
 // ✅ Good - explicit error handling with Future.fromPromise
 processPayment: ({ amount }) => {
   return Future.fromPromise(paymentService.charge(amount))
-    .mapOk((tx) => ({ transactionId: tx.id }))
-    .mapError((err) => new ActivityError('PAYMENT_FAILED', err.message, err));
+    .mapError((err) => new ActivityError('PAYMENT_FAILED', err.message, err))
+    .mapOk((tx) => ({ transactionId: tx.id }));
 }
 
 // ❌ Avoid - using Future.make with try/catch
@@ -322,11 +322,11 @@ Activities internally use Result, but the framework unwraps them for network ser
 // Framework unwraps to plain DTO over network
 processPayment: ({ amount }) =>
   Future.fromPromise(paymentService.charge(amount))
-    .mapOk((tx) => ({ transactionId: tx.id }))
     .mapError((err) => new ActivityError('PAYMENT_FAILED', err.message, err))
+    .mapOk((tx) => ({ transactionId: tx.id }))
 
 // In workflow, you receive the plain value:
-const payment = await context.activities.processPayment({ amount: 100 });
+const payment = await activities.processPayment({ amount: 100 });
 // payment is { transactionId: string }, not Result
 ```
 
@@ -336,14 +336,14 @@ Workflows cannot return Result due to network serialization:
 
 ```typescript
 // ✅ Good - return plain object
-implementation: async (context, input) => {
-  const payment = await context.activities.processPayment({ amount: 100 });
+implementation: async ({ activities }, input) => {
+  const payment = await activities.processPayment({ amount: 100 });
   return { success: true, transactionId: payment.transactionId };
 }
 
 // ❌ Avoid - returning Result (will lose instance over network)
-implementation: async (context, input) => {
-  const payment = await context.activities.processPayment({ amount: 100 });
+implementation: async ({ activities }, input) => {
+  const payment = await activities.processPayment({ amount: 100 });
   return Result.Ok({ transactionId: payment.transactionId }); // Won't work!
 }
 ```

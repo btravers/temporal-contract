@@ -156,10 +156,10 @@ const handler = declareActivitiesHandler({
   activities: {
     sendEmail: ({ to, body }) =>
       Future.fromPromise(emailService.send({ to, body }))
-        .mapOk(() => ({ sent: true }))
         .mapError((error) =>
           new ActivityError('EMAIL_FAILED', 'Failed to send email', error)
-        ),
+        )
+        .mapOk(() => ({ sent: true })),
     validateOrder: ({ orderId }) =>
       Future.value(Result.Ok({ valid: true }))
   }

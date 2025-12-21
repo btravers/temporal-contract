@@ -48,26 +48,26 @@ export const activities = declareActivitiesHandler({
   activities: {
     processPayment: ({ amount }) => {
       return Future.fromPromise(paymentGateway.charge(amount))
-        .mapOk(txId => ({ transactionId: txId, success: true }))
         .mapError(error => 
           new ActivityError(
             'PAYMENT_FAILED',
             error instanceof Error ? error.message : 'Payment failed',
             error
           )
-        );
+        )
+        .mapOk(txId => ({ transactionId: txId, success: true }));
     },
 
     sendEmail: ({ to, body }) => {
       return Future.fromPromise(emailService.send({ to, body }))
-        .mapOk(() => ({ sent: true }))
         .mapError(error => 
           new ActivityError(
             'EMAIL_FAILED',
             error instanceof Error ? error.message : 'Email failed',
             error
           )
-        );
+        )
+        .mapOk(() => ({ sent: true }));
     }
   }
 });

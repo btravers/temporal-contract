@@ -50,28 +50,28 @@ export class ActivitiesProvider {
             return Future.fromPromise(
               this.paymentService.charge(customerId, amount)
             )
-              .mapOk((transaction) => ({ transactionId: transaction.id }))
               .mapError((error) =>
                 new ActivityError(
                   'PAYMENT_FAILED',
                   error instanceof Error ? error.message : 'Payment failed',
                   error
                 )
-              );
+              )
+              .mapOk((transaction) => ({ transactionId: transaction.id }));
           },
 
           sendNotification: ({ customerId, message }) => {
             return Future.fromPromise(
               this.notificationService.send(customerId, message)
             )
-              .mapOk(() => undefined)
               .mapError((error) =>
                 new ActivityError(
                   'NOTIFICATION_FAILED',
                   error instanceof Error ? error.message : 'Notification failed',
                   error
                 )
-              );
+              )
+              .mapOk(() => undefined);
           },
         },
       },
@@ -174,10 +174,10 @@ export class ActivitiesProvider {
             return Future.fromPromise(
               this.inventoryService.reserve(productId, quantity)
             )
-              .mapOk((reservation) => ({ reservationId: reservation.id }))
               .mapError((error) =>
                 new ActivityError('INVENTORY_UNAVAILABLE', error.message, error)
-              );
+              )
+              .mapOk((reservation) => ({ reservationId: reservation.id }));
           },
         },
       },
@@ -211,10 +211,10 @@ export class ActivitiesProvider {
             return Future.fromPromise(
               this.paymentService.charge(amount, paymentGatewayUrl)
             )
-              .mapOk((tx) => ({ transactionId: tx.id }))
               .mapError((err) => 
                 new ActivityError('PAYMENT_FAILED', err.message, err)
-              );
+              )
+              .mapOk((tx) => ({ transactionId: tx.id }));
           },
         },
       },
@@ -423,10 +423,10 @@ export class ActivitiesProvider {
             return Future.fromPromise(
               this.paymentService.processPayment(customerId, amount)
             )
-              .mapOk((tx) => ({ transactionId: tx.id }))
               .mapError((err) => 
                 new ActivityError('PAYMENT_FAILED', err.message, err)
-              );
+              )
+              .mapOk((tx) => ({ transactionId: tx.id }));
           },
         },
       },

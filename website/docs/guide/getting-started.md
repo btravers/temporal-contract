@@ -132,26 +132,26 @@ export const activities = declareActivitiesHandler({
     sendEmail: async ({ to, subject, body }) => {
       // Full type safety - parameters are automatically typed!
       return Future.fromPromise(emailService.send({ to, subject, body }))
-        .mapOk(() => ({ sent: true }))
         .mapError((error) =>
           new ActivityError(
             'EMAIL_FAILED',
             error instanceof Error ? error.message : 'Failed to send email',
             error
           )
-        );
+        )
+        .mapOk(() => ({ sent: true }));
     },
     processPayment: async ({ customerId, amount }) => {
       // TypeScript knows the exact types
       return Future.fromPromise(paymentGateway.charge(customerId, amount))
-        .mapOk((txId) => ({ transactionId: txId, success: true }))
         .mapError((error) =>
           new ActivityError(
             'PAYMENT_FAILED',
             error instanceof Error ? error.message : 'Payment failed',
             error
           )
-        );
+        )
+        .mapOk((txId) => ({ transactionId: txId, success: true }));
     },
   },
 });
