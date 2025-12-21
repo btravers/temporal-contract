@@ -209,14 +209,15 @@ await worker.run();
 ```typescript
 // client.ts
 import { TypedClient } from '@temporal-contract/client';
-import { Connection } from '@temporalio/client';
+import { Connection, Client } from '@temporalio/client';
 import { orderContract } from './contract';
 
 const connection = await Connection.connect({
   address: 'localhost:7233'
 });
 
-const client = TypedClient.create(orderContract, { connection });
+const temporalClient = new Client({ connection });
+const client = TypedClient.create(orderContract, temporalClient);
 
 // Fully typed workflow execution
 const result = await client.executeWorkflow('processOrder', {

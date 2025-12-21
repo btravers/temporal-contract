@@ -253,10 +253,12 @@ await worker.run(); // Worker is now listening!
 
 ```typescript [5. client.ts]
 import { TypedClient } from '@temporal-contract/client';
+import { Client } from '@temporalio/client';
 import { orderContract } from './contract';
 
 // ✅ Type-safe client calls
-const client = TypedClient.create(orderContract, { connection });
+const temporalClient = new Client({ connection });
+const client = TypedClient.create(orderContract, temporalClient);
 
 const result = await client.executeWorkflow('processOrder', {
   workflowId: 'order-123',

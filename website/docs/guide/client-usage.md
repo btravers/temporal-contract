@@ -15,7 +15,7 @@ pnpm add @temporal-contract/client @swan-io/boxed
 ## Basic Setup
 
 ```typescript
-import { Connection } from '@temporalio/client';
+import { Connection, Client } from '@temporalio/client';
 import { TypedClient } from '@temporal-contract/client';
 import { myContract } from './contract';
 
@@ -24,8 +24,9 @@ const connection = await Connection.connect({
   address: 'localhost:7233',
 });
 
-// Create typed client
-const client = TypedClient.create(myContract, { connection });
+// Create Temporal client and typed client
+const temporalClient = new Client({ connection });
+const client = TypedClient.create(myContract, temporalClient);
 ```
 
 ## Executing Workflows
@@ -265,9 +266,11 @@ import { orderContract } from './contracts/order';
 import { paymentContract } from './contracts/payment';
 import { inventoryContract } from './contracts/inventory';
 
-const orderClient = TypedClient.create(orderContract, { connection });
-const paymentClient = TypedClient.create(paymentContract, { connection });
-const inventoryClient = TypedClient.create(inventoryContract, { connection });
+const temporalClient = new Client({ connection });
+
+const orderClient = TypedClient.create(orderContract, temporalClient);
+const paymentClient = TypedClient.create(paymentContract, temporalClient);
+const inventoryClient = TypedClient.create(inventoryContract, temporalClient);
 
 // Each client is typed to its contract
 await orderClient.executeWorkflow('processOrder', { /* ... */ });

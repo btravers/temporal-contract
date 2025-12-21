@@ -50,7 +50,7 @@ export const activities = declareActivitiesHandler({
 
 ## Implementing Workflows
 
-Workflows return plain objects (not Result) due to network serialization. Activities called in workflows return plain values (Result is unwrapped by the framework):
+Workflows must use `@temporal-contract/boxed` for Temporal's deterministic execution requirements. They return plain objects (not Result) due to network serialization. Activities called in workflows return plain values (Result is unwrapped by the framework):
 
 ```typescript
 import { declareWorkflow } from '@temporal-contract/worker/workflow';

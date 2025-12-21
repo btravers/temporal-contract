@@ -208,13 +208,14 @@ await worker.run();
 
 ```typescript
 import { TypedClient } from '@temporal-contract/client';
-import { Connection } from '@temporalio/client';
+import { Connection, Client } from '@temporalio/client';
 
 const connection = await Connection.connect({
   address: 'localhost:7233'
 });
 
-const client = TypedClient.create(contract, { connection });
+const temporalClient = new Client({ connection });
+const client = TypedClient.create(contract, temporalClient);
 
 // Execute workflow
 const result = await client.executeWorkflow('processOrder', {
