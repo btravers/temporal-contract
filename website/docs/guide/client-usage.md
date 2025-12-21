@@ -314,12 +314,14 @@ describe('OrderService', () => {
 ```typescript
 // ✅ Good - single connection
 const connection = await Connection.connect({ address: 'localhost:7233' });
-const client = TypedClient.create(contract, { connection });
+const temporalClient = new Client({ connection });
+const client = TypedClient.create(contract, temporalClient);
 
 // ❌ Avoid - creating connections repeatedly
 for (const order of orders) {
   const connection = await Connection.connect({ address: 'localhost:7233' });
-  const client = TypedClient.create(contract, { connection });
+  const temporalClient = new Client({ connection });
+  const client = TypedClient.create(contract, temporalClient);
   await client.executeWorkflow(/* ... */);
 }
 ```
