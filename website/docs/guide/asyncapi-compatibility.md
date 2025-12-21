@@ -164,16 +164,24 @@ graph TB
 1. **AsyncAPI for Event Ingestion**
 
    ```yaml
-   # AsyncAPI describes incoming order events
+   # AsyncAPI 3.0 describes incoming order events
    channels:
      orderCreated:
-       subscribe:
-         message:
+       address: orders/created
+       messages:
+         OrderCreated:
            payload:
              type: object
              properties:
-               orderId: string
-               customerId: string
+               orderId:
+                 type: string
+               customerId:
+                 type: string
+   operations:
+     receiveOrderCreated:
+       action: receive
+       channel:
+         $ref: '#/channels/orderCreated'
    ```
 
 2. **temporal-contract for Orchestration**
@@ -181,14 +189,24 @@ graph TB
    ```typescript
    // temporal-contract orchestrates order processing
    export const orderContract = defineContract({
+     taskQueue: 'orders',
      workflows: {
        processOrder: {
          input: z.object({ orderId: z.string() }),
          output: z.object({ success: z.boolean() }),
          activities: {
-           processPayment: { /* ... */ },
-           reserveInventory: { /* ... */ },
-           createShipment: { /* ... */ }
+           processPayment: {
+             input: z.object({ amount: z.number() }),
+             output: z.object({ transactionId: z.string() })
+           },
+           reserveInventory: {
+             input: z.object({ items: z.array(itemSchema) }),
+             output: z.object({ reservationId: z.string() })
+           },
+           createShipment: {
+             input: z.object({ orderId: z.string() }),
+             output: z.object({ trackingNumber: z.string() })
+           }
          }
        }
      }
@@ -196,17 +214,26 @@ graph TB
    ```
 
 3. **AsyncAPI for Event Output**
+
    ```yaml
-   # AsyncAPI describes outgoing completion events
+   # AsyncAPI 3.0 describes outgoing completion events
    channels:
      orderCompleted:
-       publish:
-         message:
+       address: orders/completed
+       messages:
+         OrderCompleted:
            payload:
              type: object
              properties:
-               orderId: string
-               status: string
+               orderId:
+                 type: string
+               status:
+                 type: string
+   operations:
+     publishOrderCompleted:
+       action: send
+       channel:
+         $ref: '#/channels/orderCompleted'
    ```
 
 **In this architecture**:
@@ -245,13 +272,13 @@ graph TB
 
 While not directly compatible, here's how concepts loosely relate:
 
-| AsyncAPI            | temporal-contract      | Notes                                         |
-| ------------------- | ---------------------- | --------------------------------------------- |
-| Channel             | Task Queue             | Different semantics: pub/sub vs work queue    |
-| Message             | Activity Input/Output  | Messages are events; activities are RPC calls |
-| Subscribe Operation | Workflow Trigger       | Events can trigger workflow execution         |
-| Publish Operation   | Activity side-effect   | Workflows can publish events as side effects  |
-| Payload Schema      | Zod/Schema definitions | Both use schemas for validation               |
+| AsyncAPI            | temporal-contract      | Notes                                                                  |
+| ------------------- | ---------------------- | ---------------------------------------------------------------------- |
+| Channel             | Task Queue             | Fundamentally different: pub/sub messaging vs work distribution queues |
+| Message             | Activity Input/Output  | Messages are events; activities are RPC calls                          |
+| Subscribe Operation | Workflow Trigger       | Events can trigger workflow execution                                  |
+| Publish Operation   | Activity side-effect   | Workflows can publish events as side effects                           |
+| Payload Schema      | Zod/Schema definitions | Both use schemas for validation                                        |
 
 ## Theoretical AsyncAPI Generation
 
