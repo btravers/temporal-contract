@@ -12,7 +12,6 @@
     "@nestjs/common": "catalog:",
     "@nestjs/core": "catalog:",
     "@swan-io/boxed": "catalog:",
-    "@temporal-contract/boxed": "workspace:*",
     "@temporal-contract/sample-order-processing-contract": "workspace:*",
     "@temporal-contract/worker": "workspace:*",
     "@temporal-contract/worker-nestjs": "workspace:*",

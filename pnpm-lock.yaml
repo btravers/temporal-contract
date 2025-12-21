@@ -426,9 +426,6 @@ importers:
       '@swan-io/boxed':
         specifier: 'catalog:'
         version: 3.2.1(typescript@5.9.3)
-      '@temporal-contract/boxed':
-        specifier: workspace:*
-        version: link:../../packages/boxed
       '@temporal-contract/sample-order-processing-contract':
         specifier: workspace:*
         version: link:../order-processing-contract
@@ -490,9 +487,6 @@ importers:
       '@swan-io/boxed':
         specifier: 'catalog:'
         version: 3.2.1(typescript@5.9.3)
-      '@temporal-contract/boxed':
-        specifier: workspace:*
-        version: link:../../packages/boxed
       '@temporal-contract/sample-order-processing-contract':
         specifier: workspace:*
         version: link:../order-processing-contract
