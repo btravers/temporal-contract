@@ -75,10 +75,11 @@ describe("TemporalClientModule", () => {
       const service = module.get<TemporalClientService>(TemporalClientService);
       const client = service.getClient();
 
-      expect(client).toBeDefined();
-      expect(client.startWorkflow).toBeDefined();
-      expect(client.executeWorkflow).toBeDefined();
-      expect(client.getHandle).toBeDefined();
+      expect(client).toMatchObject({
+        startWorkflow: expect.any(Function),
+        executeWorkflow: expect.any(Function),
+        getHandle: expect.any(Function),
+      });
     });
   });
 
