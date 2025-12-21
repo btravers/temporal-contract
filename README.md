@@ -51,7 +51,14 @@ const result = await client.executeWorkflow('processOrder', {
 ## Installation
 
 ```bash
+# Core packages
 pnpm add @temporal-contract/contract @temporal-contract/worker @temporal-contract/client
+
+# For NestJS integration
+pnpm add @temporal-contract/worker-nestjs
+
+# Result/Future pattern (already included in worker/client via @swan-io/boxed)
+pnpm add @swan-io/boxed
 ```
 
 ## Documentation
@@ -60,19 +67,24 @@ pnpm add @temporal-contract/contract @temporal-contract/worker @temporal-contrac
 
 - [Getting Started](https://btravers.github.io/temporal-contract/guide/getting-started)
 - [Core Concepts](https://btravers.github.io/temporal-contract/guide/core-concepts)
-- [Nexus Integration](https://btravers.github.io/temporal-contract/guide/nexus-integration) (Planned)
+- [NestJS Integration](https://btravers.github.io/temporal-contract/guide/worker-nestjs-usage)
 - [API Reference](https://btravers.github.io/temporal-contract/api/)
 - [Examples](https://btravers.github.io/temporal-contract/examples/)
 
 ## Packages
 
-| Package                                            | Description                                                          |
-| -------------------------------------------------- | -------------------------------------------------------------------- |
-| [@temporal-contract/contract](./packages/contract) | Contract builder and type definitions                                |
-| [@temporal-contract/worker](./packages/worker)     | Type-safe worker with automatic validation and Result/Future pattern |
-| [@temporal-contract/client](./packages/client)     | Type-safe client for consuming workflows with Result/Future pattern  |
-| [@temporal-contract/boxed](./packages/boxed)       | Result and Future types for explicit error handling                  |
-| [@temporal-contract/testing](./packages/testing)   | Testing utilities for integration tests                              |
+| Package                                                      | Description                                                                        |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| [@temporal-contract/contract](./packages/contract)           | Contract builder and type definitions                                              |
+| [@temporal-contract/worker](./packages/worker)               | Type-safe worker with automatic validation (uses @swan-io/boxed for activities)   |
+| [@temporal-contract/worker-nestjs](./packages/worker-nestjs) | NestJS integration for type-safe workers with dependency injection                 |
+| [@temporal-contract/client](./packages/client)               | Type-safe client for consuming workflows (uses @swan-io/boxed)                     |
+| [@temporal-contract/boxed](./packages/boxed)                 | Temporal-compatible Result/Future types for workflows (alternative to @swan-io)    |
+| [@temporal-contract/testing](./packages/testing)             | Testing utilities for integration tests                                            |
+
+## Usage Patterns
+
+temporal-contract uses **[@swan-io/boxed](https://github.com/swan-io/boxed)** for activities and clients, providing excellent error handling with Result/Future patterns. For workflows that require Temporal's deterministic execution, use **@temporal-contract/boxed** which provides a compatible API.
 
 ## Contributing
 

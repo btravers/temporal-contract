@@ -122,7 +122,8 @@ Implement your activities and workflows with full type safety:
 
 ```typescript
 // activities.ts
-import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
+import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
+import { Future, Result } from '@swan-io/boxed';
 import { orderContract } from './contract';
 
 export const activities = declareActivitiesHandler({
@@ -130,13 +131,27 @@ export const activities = declareActivitiesHandler({
   activities: {
     sendEmail: async ({ to, subject, body }) => {
       // Full type safety - parameters are automatically typed!
-      await emailService.send({ to, subject, body });
-      return { sent: true };
+      return Future.fromPromise(emailService.send({ to, subject, body }))
+        .mapOk(() => ({ sent: true }))
+        .mapError((error) =>
+          new ActivityError(
+            'EMAIL_FAILED',
+            error instanceof Error ? error.message : 'Failed to send email',
+            error
+          )
+        );
     },
     processPayment: async ({ customerId, amount }) => {
       // TypeScript knows the exact types
-      const txId = await paymentGateway.charge(customerId, amount);
-      return { transactionId: txId, success: true };
+      return Future.fromPromise(paymentGateway.charge(customerId, amount))
+        .mapOk((txId) => ({ transactionId: txId, success: true }))
+        .mapError((error) =>
+          new ActivityError(
+            'PAYMENT_FAILED',
+            error instanceof Error ? error.message : 'Payment failed',
+            error
+          )
+        );
     },
   },
 });
@@ -145,6 +160,7 @@ export const activities = declareActivitiesHandler({
 ```typescript
 // workflows.ts
 import { declareWorkflow } from '@temporal-contract/worker/workflow';
+import { Result } from '@temporal-contract/boxed';
 import { orderContract } from './contract';
 
 export const processOrder = declareWorkflow({
@@ -157,16 +173,23 @@ export const processOrder = declareWorkflow({
       amount: 100
     });
 
+    if (payment.isError()) {
+      return Result.Error({
+        type: 'PAYMENT_FAILED',
+        error: payment.getError(),
+      });
+    }
+
     await context.activities.sendEmail({
       to: customerId,
       subject: 'Order Confirmed',
       body: `Order ${orderId} processed`,
     });
 
-    return {
-      status: payment.success ? 'success' : 'failed',
-      transactionId: payment.transactionId,
-    };
+    return Result.Ok({
+      status: payment.get().success ? 'success' : 'failed',
+      transactionId: payment.get().transactionId,
+    });
   },
 });
 ```

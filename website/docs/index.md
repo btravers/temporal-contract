@@ -159,18 +159,18 @@ export const orderContract = defineContract({
 ```
 
 ```typescript [2. activities.ts]
-import { Future, Result } from '@temporal-contract/boxed';
+import { Future, Result } from '@swan-io/boxed';
 import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
 import { orderContract } from './contract';
 
 // ✅ Implement activities with full type safety
-// Note: Replace paymentService and notificationService with your actual service implementations
+// Note: Activities use @swan-io/boxed for excellent performance
 export const activities = declareActivitiesHandler({
   contract: orderContract,
   activities: {
     processOrder: {
       processPayment: ({ customerId, amount }) => {
-        // Replace paymentService with your actual payment service
+        // Your actual payment service implementation
         return Future.fromPromise(
           paymentService.charge(customerId, amount)
         ).mapOk((transaction) => ({ transactionId: transaction.id }))
@@ -184,7 +184,7 @@ export const activities = declareActivitiesHandler({
       },
 
       sendNotification: ({ customerId, message }) => {
-        // Replace notificationService with your actual notification service
+        // Your actual notification service implementation
         return Future.fromPromise(
           notificationService.send(customerId, message)
         ).mapError((error) =>
@@ -202,25 +202,36 @@ export const activities = declareActivitiesHandler({
 
 ```typescript [3. workflow.ts]
 import { declareWorkflow } from '@temporal-contract/worker/workflow';
+import { Result } from '@temporal-contract/boxed';
 import { orderContract } from './contract';
 
 // ✅ Type-safe workflow orchestration
+// Note: Workflows use @temporal-contract/boxed for Temporal compatibility
 export const processOrder = declareWorkflow({
   workflowName: 'processOrder',
   contract: orderContract,
   implementation: async (context, { orderId, customerId, amount }) => {
     // Activities are fully typed!
-    const { transactionId } = await context.activities.processPayment({
+    const paymentResult = await context.activities.processPayment({
       customerId,
       amount,
     });
+
+    if (paymentResult.isError()) {
+      return Result.Error({
+        type: 'PAYMENT_FAILED',
+        error: paymentResult.getError(),
+      });
+    }
+
+    const { transactionId } = paymentResult.get();
 
     await context.activities.sendNotification({
       customerId,
       message: `Order ${orderId} confirmed!`,
     });
 
-    return { status: 'success', transactionId };
+    return Result.Ok({ status: 'success', transactionId });
   },
 });
 ```

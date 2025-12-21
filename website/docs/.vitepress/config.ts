@@ -28,28 +28,45 @@ export default withMermaid({
           ],
         },
         {
-          text: "Implementation",
+          text: "Usage",
           items: [
+            { text: "Defining Contracts", link: "/guide/defining-contracts" },
+            { text: "Client Usage", link: "/guide/client-usage" },
+            { text: "Worker Usage", link: "/guide/worker-usage" },
+          ],
+        },
+        {
+          text: "NestJS Integration",
+          items: [
+            { text: "NestJS Worker Usage", link: "/guide/worker-nestjs-usage" },
+          ],
+        },
+        {
+          text: "Advanced",
+          items: [
+            { text: "Result Pattern", link: "/guide/result-pattern" },
             { text: "Worker Implementation", link: "/guide/worker-implementation" },
             { text: "Entry Points Architecture", link: "/guide/entry-points" },
             { text: "Activity Handler Types", link: "/guide/activity-handlers" },
           ],
         },
-        {
-          text: "Advanced",
-          items: [{ text: "Result Pattern", link: "/guide/result-pattern" }],
-        },
       ],
       "/api/": [
         {
-          text: "Packages",
+          text: "Core Packages",
           items: [
             { text: "Overview", link: "/api/" },
             { text: "@temporal-contract/contract", link: "/api/contract" },
-            { text: "@temporal-contract/worker", link: "/api/worker" },
             { text: "@temporal-contract/client", link: "/api/client" },
+            { text: "@temporal-contract/worker", link: "/api/worker" },
             { text: "@temporal-contract/boxed", link: "/api/boxed" },
             { text: "@temporal-contract/testing", link: "/api/testing" },
+          ],
+        },
+        {
+          text: "NestJS Integration",
+          items: [
+            { text: "@temporal-contract/worker-nestjs", link: "/api/worker-nestjs" },
           ],
         },
       ],
