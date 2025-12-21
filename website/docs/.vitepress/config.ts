@@ -37,7 +37,10 @@ export default withMermaid({
         },
         {
           text: "NestJS Integration",
-          items: [{ text: "NestJS Worker Usage", link: "/guide/worker-nestjs-usage" }],
+          items: [
+            { text: "NestJS Client Usage", link: "/guide/client-nestjs-usage" },
+            { text: "NestJS Worker Usage", link: "/guide/worker-nestjs-usage" },
+          ],
         },
         {
           text: "Advanced",
@@ -63,7 +66,10 @@ export default withMermaid({
         },
         {
           text: "NestJS Integration",
-          items: [{ text: "@temporal-contract/worker-nestjs", link: "/api/worker-nestjs" }],
+          items: [
+            { text: "@temporal-contract/client-nestjs", link: "/api/client-nestjs" },
+            { text: "@temporal-contract/worker-nestjs", link: "/api/worker-nestjs" },
+          ],
         },
       ],
       "/examples/": [

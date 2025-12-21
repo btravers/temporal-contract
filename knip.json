@@ -23,6 +23,14 @@
       "entry": ["src/activity.ts", "src/workflow.ts", "src/__tests__/test.workflows.ts"],
       "project": ["src/**/*.ts"]
     },
+    "packages/worker-nestjs": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/client-nestjs": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"]
+    },
     "packages/testing": {
       "entry": ["src/extension.ts", "src/global-setup.ts"],
       "project": ["src/**/*.ts"]
