@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Future, Result } from "@temporal-contract/boxed";
+import { Future, Result } from "@swan-io/boxed";
 import { z } from "zod";
 import { ActivityDefinitionNotFoundError } from "./errors.js";
 import type { ContractDefinition } from "@temporal-contract/contract";
