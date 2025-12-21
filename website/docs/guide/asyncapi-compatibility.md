@@ -200,7 +200,12 @@ graph TB
              output: z.object({ transactionId: z.string() })
            },
            reserveInventory: {
-             input: z.object({ items: z.array(itemSchema) }),
+             input: z.object({
+               items: z.array(z.object({
+                 productId: z.string(),
+                 quantity: z.number()
+               }))
+             }),
              output: z.object({ reservationId: z.string() })
            },
            createShipment: {
@@ -294,8 +299,12 @@ channels:
     messages:
       WorkflowStarted:
         payload:
-          workflowId: string
-          workflowType: string
+          type: object
+          properties:
+            workflowId:
+              type: string
+            workflowType:
+              type: string
 ```
 
 **Limitation**: This describes Temporal's internal events, not the workflow business logic.
