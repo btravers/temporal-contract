@@ -35,24 +35,27 @@ This package is designed to be shared between:
 ### In Worker Application
 
 ```typescript
-import { orderProcessingContract } from '@temporal-contract/sample-order-processing-contract';
-import { declareWorkflow } from '@temporal-contract/worker/workflow';
+import { orderProcessingContract } from "@temporal-contract/sample-order-processing-contract";
+import { declareWorkflow } from "@temporal-contract/worker/workflow";
 
 // Implement the workflow
 export const processOrder = declareWorkflow({
-  workflowName: 'processOrder',
+  workflowName: "processOrder",
   contract: orderProcessingContract,
   implementation: async (context, order) => {
     // ... implementation
-  }
+  },
 });
 ```
 
 ### In Client Application
 
 ```typescript
-import { orderProcessingContract, Order } from '@temporal-contract/sample-order-processing-contract';
-import { TypedClient } from '@temporal-contract/client';
+import {
+  orderProcessingContract,
+  Order,
+} from "@temporal-contract/sample-order-processing-contract";
+import { TypedClient } from "@temporal-contract/client";
 
 // Create type-safe client
 const client = TypedClient.create(orderProcessingContract, {

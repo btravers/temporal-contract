@@ -14,11 +14,11 @@ pnpm add -D @temporal-contract/testing
 
 ```typescript
 // vitest.config.ts
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    globalSetup: '@temporal-contract/testing/global-setup',
+    globalSetup: "@temporal-contract/testing/global-setup",
     testTimeout: 60000,
   },
 });

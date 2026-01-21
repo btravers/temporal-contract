@@ -14,47 +14,48 @@ pnpm add @temporal-contract/worker @temporal-contract/contract @temporalio/workf
 
 ```typescript
 // activities.ts
-import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
-import { Future, Result } from '@swan-io/boxed';
+import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { Future, Result } from "@swan-io/boxed";
 
 export const activities = declareActivitiesHandler({
   contract: myContract,
   activities: {
     sendEmail: ({ to, body }) => {
       return Future.fromPromise(emailService.send({ to, body }))
-        .mapError((error) =>
-          new ActivityError(
-            'EMAIL_FAILED',
-            error instanceof Error ? error.message : 'Failed to send email',
-            error
-          )
+        .mapError(
+          (error) =>
+            new ActivityError(
+              "EMAIL_FAILED",
+              error instanceof Error ? error.message : "Failed to send email",
+              error,
+            ),
         )
         .mapOk(() => ({ sent: true }));
-    }
-  }
+    },
+  },
 });
 
 // workflows.ts
-import { declareWorkflow } from '@temporal-contract/worker/workflow';
+import { declareWorkflow } from "@temporal-contract/worker/workflow";
 
 export const processOrder = declareWorkflow({
-  workflowName: 'processOrder',
+  workflowName: "processOrder",
   contract: myContract,
   implementation: async ({ activities }, input) => {
     // Activities return plain values (Result is unwrapped internally)
-    await activities.sendEmail({ to: 'user@example.com', body: 'Done!' });
+    await activities.sendEmail({ to: "user@example.com", body: "Done!" });
     return { success: true };
-  }
+  },
 });
 
 // worker.ts
-import { Worker } from '@temporalio/worker';
-import { activities } from './activities';
-import myContract from './contract';
+import { Worker } from "@temporalio/worker";
+import { activities } from "./activities";
+import myContract from "./contract";
 
 async function run() {
   const worker = await Worker.create({
-    workflowsPath: require.resolve('./workflows'),
+    workflowsPath: require.resolve("./workflows"),
     activities,
     taskQueue: myContract.taskQueue,
   });
@@ -71,33 +72,37 @@ Execute child workflows with type-safe Future/Result pattern. Supports both same
 
 ```typescript
 // workflows.ts
-import { declareWorkflow } from '@temporal-contract/worker/workflow';
+import { declareWorkflow } from "@temporal-contract/worker/workflow";
 
 export const parentWorkflow = declareWorkflow({
-  workflowName: 'parentWorkflow',
+  workflowName: "parentWorkflow",
   contract: myContract,
   implementation: async ({ executeChildWorkflow }, input) => {
     // Execute child workflow from same contract and wait for result
-    const childResult = await executeChildWorkflow(myContract, 'processPayment', {
+    const childResult = await executeChildWorkflow(myContract, "processPayment", {
       workflowId: `payment-${input.orderId}`,
-      args: { amount: input.totalAmount }
+      args: { amount: input.totalAmount },
     });
 
     childResult.match({
-      Ok: (output) => console.log('Payment processed:', output),
-      Error: (error) => console.error('Payment failed:', error),
+      Ok: (output) => console.log("Payment processed:", output),
+      Error: (error) => console.error("Payment failed:", error),
     });
 
     // Execute child workflow from another contract (another worker)
-    const notificationResult = await executeChildWorkflow(notificationContract, 'sendNotification', {
-      workflowId: `notification-${input.orderId}`,
-      args: { message: 'Order received' }
-    });
+    const notificationResult = await executeChildWorkflow(
+      notificationContract,
+      "sendNotification",
+      {
+        workflowId: `notification-${input.orderId}`,
+        args: { message: "Order received" },
+      },
+    );
 
     // Or start child workflow without waiting
-    const handleResult = await startChildWorkflow(myContract, 'sendEmail', {
+    const handleResult = await startChildWorkflow(myContract, "sendEmail", {
       workflowId: `email-${input.orderId}`,
-      args: { to: 'user@example.com', body: 'Order received' }
+      args: { to: "user@example.com", body: "Order received" },
     });
 
     handleResult.match({
@@ -106,11 +111,11 @@ export const parentWorkflow = declareWorkflow({
         const result = await handle.result();
         // ...
       },
-      Error: (error) => console.error('Failed to start:', error),
+      Error: (error) => console.error("Failed to start:", error),
     });
 
     return { success: true };
-  }
+  },
 });
 ```
 

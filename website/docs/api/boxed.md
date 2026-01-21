@@ -49,7 +49,7 @@ The `Result` type represents the result of an operation that can succeed or fail
 ### Creating Results
 
 ```typescript
-import { Result } from '@temporal-contract/boxed';
+import { Result } from "@temporal-contract/boxed";
 
 // Create a successful result
 const success = Result.Ok(42);
@@ -71,13 +71,13 @@ const value = result.match({
 
 ```typescript
 // Transform success value
-const doubled = success.map(x => x * 2);
+const doubled = success.map((x) => x * 2);
 
 // Transform error value
-const recovered = failure.mapError(e => `Error: ${e}`);
+const recovered = failure.mapError((e) => `Error: ${e}`);
 
 // Chain operations
-const chained = result.flatMap(value => {
+const chained = result.flatMap((value) => {
   if (value > 0) return Result.Ok(value * 2);
   return Result.Error("Value must be positive");
 });
@@ -87,11 +87,11 @@ const chained = result.flatMap(value => {
 
 ```typescript
 if (result.isOk()) {
-  console.log('Success:', result.value);
+  console.log("Success:", result.value);
 }
 
 if (result.isError()) {
-  console.error('Error:', result.error);
+  console.error("Error:", result.error);
 }
 ```
 
@@ -102,13 +102,13 @@ The `Future` type wraps Promises with Result-based error handling.
 ### Creating Futures
 
 ```typescript
-import { Future, Result } from '@temporal-contract/boxed';
+import { Future, Result } from "@temporal-contract/boxed";
 
 // Create from value
 const future = Future.value(42);
 
 // Create from Promise
-const fromPromise = Future.fromPromise(fetch('/api/data'));
+const fromPromise = Future.fromPromise(fetch("/api/data"));
 
 // Create with executor
 const custom = Future.make<number>(async (resolve) => {
@@ -121,28 +121,26 @@ const custom = Future.make<number>(async (resolve) => {
 
 ```typescript
 // Transform value
-const doubled = future.map(x => x * 2);
+const doubled = future.map((x) => x * 2);
 
 // Chain futures
-const chained = future.flatMap(x => Future.value(x * 2));
+const chained = future.flatMap((x) => Future.value(x * 2));
 
 // Transform Ok/Error separately (for Future<Result<T, E>>)
-const handled = future
-  .mapOk(value => value * 2)
-  .mapError(error => new CustomError(error));
+const handled = future.mapOk((value) => value * 2).mapError((error) => new CustomError(error));
 ```
 
 ### Side Effects
 
 ```typescript
 // Execute side effect
-await future.tap(value => console.log('Value:', value));
+await future.tap((value) => console.log("Value:", value));
 
 // Execute on Ok
-await future.tapOk(value => console.log('Success:', value));
+await future.tapOk((value) => console.log("Success:", value));
 
 // Execute on Error
-await future.tapError(error => console.error('Failed:', error));
+await future.tapError((error) => console.error("Failed:", error));
 ```
 
 ### Combining Futures
@@ -162,8 +160,8 @@ const winner = await Future.race([future1, future2]);
 Activities should return `Future<Result<T, E>>` for explicit error handling:
 
 ```typescript
-import { Future, Result } from '@temporal-contract/boxed';
-import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
+import { Future, Result } from "@temporal-contract/boxed";
+import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
 
 export const activities = declareActivitiesHandler({
   contract,
@@ -174,9 +172,9 @@ export const activities = declareActivitiesHandler({
           const txId = await paymentService.charge(amount);
           resolve(Result.Ok({ transactionId: txId }));
         } catch (error) {
-          resolve(Result.Error(
-            new ActivityError('PAYMENT_FAILED', 'Failed to process payment', error)
-          ));
+          resolve(
+            Result.Error(new ActivityError("PAYMENT_FAILED", "Failed to process payment", error)),
+          );
         }
       });
     },
@@ -189,26 +187,28 @@ export const activities = declareActivitiesHandler({
 Workflows work with Results returned by activities:
 
 ```typescript
-import { declareWorkflow } from '@temporal-contract/worker/workflow';
-import { Result } from '@temporal-contract/boxed';
+import { declareWorkflow } from "@temporal-contract/worker/workflow";
+import { Result } from "@temporal-contract/boxed";
 
 export const workflow = declareWorkflow({
-  workflowName: 'processOrder',
+  workflowName: "processOrder",
   contract,
   implementation: async (context, input) => {
     const paymentResult = await context.activities.processPayment({
-      amount: input.amount
+      amount: input.amount,
     });
 
     return paymentResult.match({
-      Ok: (payment) => Result.Ok({
-        success: true,
-        transactionId: payment.transactionId
-      }),
-      Error: (error) => Result.Error({
-        type: 'PAYMENT_FAILED',
-        message: error.message
-      }),
+      Ok: (payment) =>
+        Result.Ok({
+          success: true,
+          transactionId: payment.transactionId,
+        }),
+      Error: (error) =>
+        Result.Error({
+          type: "PAYMENT_FAILED",
+          message: error.message,
+        }),
     });
   },
 });
@@ -255,7 +255,7 @@ import {
   toSwanResult,
   fromSwanFuture,
   toSwanFuture,
-} from '@temporal-contract/boxed/interop';
+} from "@temporal-contract/boxed/interop";
 
 // Convert from @swan-io/boxed
 const temporalResult = fromSwanResult(swanResult);

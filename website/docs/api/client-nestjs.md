@@ -19,17 +19,17 @@ pnpm add @temporal-contract/client-nestjs @swan-io/boxed
 ## Quick Example
 
 ```typescript
-import { Module, Injectable } from '@nestjs/common';
-import { TemporalClientModule, TemporalClientService } from '@temporal-contract/client-nestjs';
-import { Connection, Client } from '@temporalio/client';
-import { Future, Result } from '@swan-io/boxed';
-import { orderContract } from './contract';
+import { Module, Injectable } from "@nestjs/common";
+import { TemporalClientModule, TemporalClientService } from "@temporal-contract/client-nestjs";
+import { Connection, Client } from "@temporalio/client";
+import { Future, Result } from "@swan-io/boxed";
+import { orderContract } from "./contract";
 
 @Module({
   imports: [
     TemporalClientModule.forRootAsync({
       useFactory: async () => {
-        const connection = await Connection.connect({ address: 'localhost:7233' });
+        const connection = await Connection.connect({ address: "localhost:7233" });
         return {
           contract: orderContract,
           client: new Client({ connection }),
@@ -48,7 +48,7 @@ export class OrderService {
   async createOrder(orderId: string, customerId: string) {
     const client = this.temporalClient.getClient();
 
-    const result = await client.executeWorkflow('processOrder', {
+    const result = await client.executeWorkflow("processOrder", {
       workflowId: `order-${orderId}`,
       args: { orderId, customerId },
     });
@@ -84,13 +84,13 @@ Synchronous configuration of the Temporal client.
 **Example:**
 
 ```typescript
-const connection = await Connection.connect({ address: 'localhost:7233' });
+const connection = await Connection.connect({ address: "localhost:7233" });
 const client = new Client({ connection });
 
 TemporalClientModule.forRoot({
   contract: myContract,
   client: client,
-})
+});
 ```
 
 ##### `forRootAsync(options: TemporalClientModuleAsyncOptions): DynamicModule`
@@ -113,17 +113,17 @@ TemporalClientModule.forRootAsync({
   inject: [ConfigService],
   useFactory: async (config: ConfigService) => {
     const connection = await Connection.connect({
-      address: config.get('TEMPORAL_ADDRESS'),
+      address: config.get("TEMPORAL_ADDRESS"),
     });
     return {
       contract: myContract,
       client: new Client({
         connection,
-        namespace: config.get('TEMPORAL_NAMESPACE'),
+        namespace: config.get("TEMPORAL_NAMESPACE"),
       }),
     };
   },
-})
+});
 ```
 
 ### TemporalClientService
@@ -147,9 +147,11 @@ export class MyService {
 
   async executeWorkflow() {
     const client = this.temporalClient.getClient();
-    const result = await client.executeWorkflow('myWorkflow', {
-      workflowId: 'my-workflow-123',
-      args: { /* ... */ },
+    const result = await client.executeWorkflow("myWorkflow", {
+      workflowId: "my-workflow-123",
+      args: {
+        /* ... */
+      },
     });
     return result;
   }
@@ -179,7 +181,9 @@ interface TemporalClientModuleOptions {
 interface TemporalClientModuleAsyncOptions {
   imports?: Type<any>[];
   inject?: (string | symbol | Type<any>)[];
-  useFactory: (...args: any[]) => Promise<TemporalClientModuleOptions> | TemporalClientModuleOptions;
+  useFactory: (
+    ...args: any[]
+  ) => Promise<TemporalClientModuleOptions> | TemporalClientModuleOptions;
   name?: string;
 }
 ```
@@ -200,7 +204,7 @@ export class OrderService {
     this.logger.log(`Processing order ${orderId} for customer ${customerId}`);
 
     const client = this.temporalClient.getClient();
-    const result = await client.executeWorkflow('processOrder', {
+    const result = await client.executeWorkflow("processOrder", {
       workflowId: `order-${orderId}`,
       args: { orderId, customerId },
     });
@@ -229,7 +233,7 @@ export class OrderQueryService {
   async getOrderStatus(workflowId: string) {
     const client = this.temporalClient.getClient();
 
-    const handleResult = await client.getHandle('processOrder', workflowId);
+    const handleResult = await client.getHandle("processOrder", workflowId);
 
     return handleResult.match({
       Ok: async (handle) => {
@@ -250,7 +254,7 @@ export class OrderQueryService {
   async cancelOrder(workflowId: string) {
     const client = this.temporalClient.getClient();
 
-    const handleResult = await client.getHandle('processOrder', workflowId);
+    const handleResult = await client.getHandle("processOrder", workflowId);
 
     return handleResult.match({
       Ok: async (handle) => {
@@ -284,7 +288,7 @@ export class OrderClientService {
   }
 
   async processOrder(orderId: string) {
-    return this.client.executeWorkflow('processOrder', {
+    return this.client.executeWorkflow("processOrder", {
       workflowId: `order-${orderId}`,
       args: { orderId },
     });
@@ -300,7 +304,7 @@ export class PaymentClientService {
   }
 
   async processPayment(paymentId: string) {
-    return this.client.executeWorkflow('processPayment', {
+    return this.client.executeWorkflow("processPayment", {
       workflowId: `payment-${paymentId}`,
       args: { paymentId },
     });
@@ -313,12 +317,12 @@ export class PaymentClientService {
 Test your services with NestJS testing utilities:
 
 ```typescript
-import { Test } from '@nestjs/testing';
-import { TemporalClientService } from '@temporal-contract/client-nestjs';
-import { Result } from '@swan-io/boxed';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { Test } from "@nestjs/testing";
+import { TemporalClientService } from "@temporal-contract/client-nestjs";
+import { Result } from "@swan-io/boxed";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
-describe('OrderService', () => {
+describe("OrderService", () => {
   let service: OrderService;
   let mockClient: any;
 
@@ -345,31 +349,29 @@ describe('OrderService', () => {
     service = module.get<OrderService>(OrderService);
   });
 
-  it('should process order successfully', async () => {
+  it("should process order successfully", async () => {
     mockClient.executeWorkflow.mockResolvedValue(
-      Result.Ok({ status: 'completed', transactionId: 'tx-123' })
+      Result.Ok({ status: "completed", transactionId: "tx-123" }),
     );
 
-    const result = await service.processOrder('ORD-123', 'CUST-456');
+    const result = await service.processOrder("ORD-123", "CUST-456");
 
-    expect(result.status).toBe('completed');
+    expect(result.status).toBe("completed");
     expect(mockClient.executeWorkflow).toHaveBeenCalledWith(
-      'processOrder',
+      "processOrder",
       expect.objectContaining({
-        workflowId: 'order-ORD-123',
-        args: { orderId: 'ORD-123', customerId: 'CUST-456' },
-      })
+        workflowId: "order-ORD-123",
+        args: { orderId: "ORD-123", customerId: "CUST-456" },
+      }),
     );
   });
 
-  it('should handle workflow errors', async () => {
-    mockClient.executeWorkflow.mockResolvedValue(
-      Result.Error(new Error('Workflow failed'))
-    );
+  it("should handle workflow errors", async () => {
+    mockClient.executeWorkflow.mockResolvedValue(Result.Error(new Error("Workflow failed")));
 
-    await expect(
-      service.processOrder('ORD-123', 'CUST-456')
-    ).rejects.toThrow('Order processing failed');
+    await expect(service.processOrder("ORD-123", "CUST-456")).rejects.toThrow(
+      "Order processing failed",
+    );
   });
 });
 ```

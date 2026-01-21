@@ -9,18 +9,18 @@ Contracts are the foundation of temporal-contract. They define the interface for
 ## Basic Contract Structure
 
 ```typescript
-import { defineContract } from '@temporal-contract/contract';
-import { z } from 'zod';
+import { defineContract } from "@temporal-contract/contract";
+import { z } from "zod";
 
 export const myContract = defineContract({
-  taskQueue: 'my-task-queue',
+  taskQueue: "my-task-queue",
 
   // Global activities available to all workflows
   activities: {
     log: {
       input: z.object({
-        level: z.enum(['info', 'warn', 'error']),
-        message: z.string()
+        level: z.enum(["info", "warn", "error"]),
+        message: z.string(),
       }),
       output: z.void(),
     },
@@ -31,11 +31,11 @@ export const myContract = defineContract({
     myWorkflow: {
       input: z.object({
         userId: z.string(),
-        amount: z.number().positive()
+        amount: z.number().positive(),
       }),
       output: z.object({
         success: z.boolean(),
-        transactionId: z.string().optional()
+        transactionId: z.string().optional(),
       }),
 
       // Workflow-specific activities
@@ -43,10 +43,10 @@ export const myContract = defineContract({
         processPayment: {
           input: z.object({
             userId: z.string(),
-            amount: z.number()
+            amount: z.number(),
           }),
           output: z.object({
-            transactionId: z.string()
+            transactionId: z.string(),
           }),
         },
       },
@@ -62,7 +62,7 @@ export const myContract = defineContract({
 The task queue name that workers will listen on:
 
 ```typescript
-taskQueue: 'orders'
+taskQueue: "orders";
 ```
 
 ### Global Activities
@@ -124,11 +124,11 @@ All inputs and outputs are validated using Zod schemas:
 
 ```typescript
 input: z.object({
-  email: z.string().email(),           // Email validation
-  age: z.number().int().positive(),    // Integer validation
-  status: z.enum(['active', 'inactive']), // Enum validation
+  email: z.string().email(), // Email validation
+  age: z.number().int().positive(), // Integer validation
+  status: z.enum(["active", "inactive"]), // Enum validation
   metadata: z.record(z.string()).optional(), // Optional fields
-})
+});
 ```
 
 ## Type Inference
@@ -141,14 +141,14 @@ const contract = defineContract({
     processOrder: {
       input: z.object({
         orderId: z.string(),
-        amount: z.number()
+        amount: z.number(),
       }),
       output: z.object({
-        success: z.boolean()
+        success: z.boolean(),
       }),
-      activities: {}
-    }
-  }
+      activities: {},
+    },
+  },
 });
 
 // Types are automatically inferred:
@@ -168,27 +168,31 @@ const AddressSchema = z.object({
 });
 
 const OrderSchema = z.object({
-  items: z.array(z.object({
-    productId: z.string(),
-    quantity: z.number().int().positive(),
-  })).min(1),
+  items: z
+    .array(
+      z.object({
+        productId: z.string(),
+        quantity: z.number().int().positive(),
+      }),
+    )
+    .min(1),
   shippingAddress: AddressSchema,
   billingAddress: AddressSchema.optional(),
   total: z.number().positive(),
 });
 
 export const orderContract = defineContract({
-  taskQueue: 'orders',
+  taskQueue: "orders",
   workflows: {
     processOrder: {
       input: OrderSchema,
       output: z.object({
         orderId: z.string(),
-        status: z.enum(['pending', 'completed', 'failed']),
+        status: z.enum(["pending", "completed", "failed"]),
       }),
-      activities: {}
-    }
-  }
+      activities: {},
+    },
+  },
 });
 ```
 
@@ -199,16 +203,16 @@ Define schemas once and reuse them:
 ```typescript
 const PaymentInput = z.object({
   amount: z.number().positive(),
-  currency: z.enum(['USD', 'EUR', 'GBP']),
+  currency: z.enum(["USD", "EUR", "GBP"]),
 });
 
 const PaymentOutput = z.object({
   transactionId: z.string(),
-  status: z.enum(['success', 'failed']),
+  status: z.enum(["success", "failed"]),
 });
 
 export const contract = defineContract({
-  taskQueue: 'payments',
+  taskQueue: "payments",
   workflows: {
     processPayment: {
       input: PaymentInput,
@@ -230,22 +234,28 @@ A contract can define multiple workflows:
 
 ```typescript
 export const ecommerceContract = defineContract({
-  taskQueue: 'ecommerce',
+  taskQueue: "ecommerce",
   workflows: {
     processOrder: {
       input: z.object({ orderId: z.string() }),
       output: z.object({ success: z.boolean() }),
-      activities: { /* ... */ }
+      activities: {
+        /* ... */
+      },
     },
     processRefund: {
       input: z.object({ orderId: z.string(), reason: z.string() }),
       output: z.object({ refunded: z.boolean() }),
-      activities: { /* ... */ }
+      activities: {
+        /* ... */
+      },
     },
     updateInventory: {
       input: z.object({ productId: z.string(), delta: z.number() }),
       output: z.object({ newQuantity: z.number() }),
-      activities: { /* ... */ }
+      activities: {
+        /* ... */
+      },
     },
   },
 });
@@ -260,22 +270,34 @@ Group related workflows in the same contract:
 ```typescript
 // ✅ Good - related workflows together
 export const orderContract = defineContract({
-  taskQueue: 'orders',
+  taskQueue: "orders",
   workflows: {
-    createOrder: { /* ... */ },
-    cancelOrder: { /* ... */ },
-    updateOrder: { /* ... */ },
-  }
+    createOrder: {
+      /* ... */
+    },
+    cancelOrder: {
+      /* ... */
+    },
+    updateOrder: {
+      /* ... */
+    },
+  },
 });
 
 // ❌ Avoid - mixing unrelated workflows
 export const contract = defineContract({
-  taskQueue: 'everything',
+  taskQueue: "everything",
   workflows: {
-    processOrder: { /* ... */ },
-    sendEmail: { /* ... */ },
-    generateReport: { /* ... */ },
-  }
+    processOrder: {
+      /* ... */
+    },
+    sendEmail: {
+      /* ... */
+    },
+    generateReport: {
+      /* ... */
+    },
+  },
 });
 ```
 

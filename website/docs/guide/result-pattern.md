@@ -39,37 +39,39 @@ pnpm add @temporal-contract/boxed
 Activities use `@swan-io/boxed` for excellent performance and ecosystem compatibility:
 
 ```typescript
-import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
-import { Future, Result } from '@swan-io/boxed';
-import { orderContract } from './contract';
+import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { Future, Result } from "@swan-io/boxed";
+import { orderContract } from "./contract";
 
 export const activities = declareActivitiesHandler({
   contract: orderContract,
   activities: {
     processPayment: ({ amount }) => {
       return Future.fromPromise(paymentGateway.charge(amount))
-        .mapError(error =>
-          new ActivityError(
-            'PAYMENT_FAILED',
-            error instanceof Error ? error.message : 'Payment failed',
-            error
-          )
+        .mapError(
+          (error) =>
+            new ActivityError(
+              "PAYMENT_FAILED",
+              error instanceof Error ? error.message : "Payment failed",
+              error,
+            ),
         )
-        .mapOk(txId => ({ transactionId: txId, success: true }));
+        .mapOk((txId) => ({ transactionId: txId, success: true }));
     },
 
     sendEmail: ({ to, body }) => {
       return Future.fromPromise(emailService.send({ to, body }))
-        .mapError(error =>
-          new ActivityError(
-            'EMAIL_FAILED',
-            error instanceof Error ? error.message : 'Email failed',
-            error
-          )
+        .mapError(
+          (error) =>
+            new ActivityError(
+              "EMAIL_FAILED",
+              error instanceof Error ? error.message : "Email failed",
+              error,
+            ),
         )
         .mapOk(() => ({ sent: true }));
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -78,12 +80,12 @@ export const activities = declareActivitiesHandler({
 Workflows require `@temporal-contract/boxed` for Temporal's deterministic execution:
 
 ```typescript
-import { declareWorkflow } from '@temporal-contract/worker/workflow';
-import { Result } from '@temporal-contract/boxed';
-import { orderContract } from './contract';
+import { declareWorkflow } from "@temporal-contract/worker/workflow";
+import { Result } from "@temporal-contract/boxed";
+import { orderContract } from "./contract";
 
 export const processOrder = declareWorkflow({
-  workflowName: 'processOrder',
+  workflowName: "processOrder",
   contract: orderContract,
   implementation: async ({ activities }, { orderId, amount }) => {
     // Process payment - activities return plain values
@@ -91,15 +93,15 @@ export const processOrder = declareWorkflow({
 
     // Send confirmation email
     await activities.sendEmail({
-      to: 'customer@example.com',
-      body: `Order ${orderId} confirmed`
+      to: "customer@example.com",
+      body: `Order ${orderId} confirmed`,
     });
 
     return {
       success: true,
-      transactionId: payment.transactionId
+      transactionId: payment.transactionId,
     };
-  }
+  },
 });
 ```
 
@@ -108,26 +110,26 @@ export const processOrder = declareWorkflow({
 Clients use `@swan-io/boxed` to handle workflow results:
 
 ```typescript
-import { TypedClient } from '@temporal-contract/client';
-import { Result } from '@swan-io/boxed';
-import { Client } from '@temporalio/client';
-import { orderContract } from './contract';
+import { TypedClient } from "@temporal-contract/client";
+import { Result } from "@swan-io/boxed";
+import { Client } from "@temporalio/client";
+import { orderContract } from "./contract";
 
 const temporalClient = new Client({ connection });
 
 const client = TypedClient.create(orderContract, temporalClient);
-const result = await client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
-  args: { orderId: 'ORD-123', amount: 100 },
+const result = await client.executeWorkflow("processOrder", {
+  workflowId: "order-123",
+  args: { orderId: "ORD-123", amount: 100 },
 });
 
 // Handle result with pattern matching
 result.match({
   Ok: (value) => {
-    console.log('Order processed:', value.transactionId);
+    console.log("Order processed:", value.transactionId);
   },
   Error: (error) => {
-    console.error('Order failed:', error);
+    console.error("Order failed:", error);
   },
 });
 ```
@@ -171,21 +173,21 @@ Activities return plain values when called from workflows. If an activity fails,
 
 ```typescript
 export const processOrder = declareWorkflow({
-  workflowName: 'processOrder',
+  workflowName: "processOrder",
   contract: orderContract,
   implementation: async ({ activities }, input) => {
     try {
       // Activity returns plain value (Result is unwrapped internally)
       const payment = await activities.processPayment({ amount: 100 });
-      console.log('Payment succeeded:', payment.transactionId);
+      console.log("Payment succeeded:", payment.transactionId);
 
       return { success: true, transactionId: payment.transactionId };
     } catch (error) {
       // Activity errors are thrown
-      console.error('Payment failed:', error);
-      return { success: false, transactionId: '' };
+      console.error("Payment failed:", error);
+      return { success: false, transactionId: "" };
     }
-  }
+  },
 });
 ```
 
@@ -198,7 +200,7 @@ When calling multiple activities, use standard async/await with try/catch:
 
 ```typescript
 export const processOrder = declareWorkflow({
-  workflowName: 'processOrder',
+  workflowName: "processOrder",
   contract: orderContract,
   implementation: async ({ activities }, input) => {
     try {
@@ -207,21 +209,21 @@ export const processOrder = declareWorkflow({
 
       // Next activity only runs if payment succeeded
       await activities.sendEmail({
-        to: 'customer@example.com',
-        body: `Payment ${payment.transactionId} processed`
+        to: "customer@example.com",
+        body: `Payment ${payment.transactionId} processed`,
       });
 
       // Update database
       await activities.updateDatabase({
-        status: 'completed'
+        status: "completed",
       });
 
       return { success: true };
     } catch (error) {
-      console.error('Workflow failed:', error);
+      console.error("Workflow failed:", error);
       return { success: false };
     }
-  }
+  },
 });
 ```
 
@@ -231,27 +233,25 @@ Define typed errors in your activities:
 
 ```typescript
 type PaymentError =
-  | { type: 'InsufficientFunds' }
-  | { type: 'CardDeclined' }
-  | { type: 'NetworkError', message: string };
+  | { type: "InsufficientFunds" }
+  | { type: "CardDeclined" }
+  | { type: "NetworkError"; message: string };
 
-type EmailError =
-  | { type: 'InvalidEmail' }
-  | { type: 'ServiceUnavailable' };
+type EmailError = { type: "InvalidEmail" } | { type: "ServiceUnavailable" };
 
 // Activities return Future with typed errors
 processPayment: ({ amount }) => {
   return Future.fromPromise(paymentGateway.charge(amount))
-    .mapError<ActivityError>(error => {
+    .mapError<ActivityError>((error) => {
       // Wrap domain errors in ActivityError for Temporal retry policies
       return new ActivityError(
-        'PAYMENT_FAILED',
-        error instanceof Error ? error.message : 'Payment failed',
-        error
+        "PAYMENT_FAILED",
+        error instanceof Error ? error.message : "Payment failed",
+        error,
       );
     })
     .mapOk((txId) => ({ transactionId: txId }));
-}
+};
 ```
 
 ## Benefits
@@ -264,15 +264,13 @@ Activities use the Result pattern internally, while workflows use try/catch:
 // Activity implementation (uses Result pattern)
 const processPayment = ({ amount }) => {
   return Future.fromPromise(paymentGateway.charge(amount))
-    .mapError((error) =>
-      new ActivityError('PAYMENT_FAILED', 'Payment failed', error)
-    )
+    .mapError((error) => new ActivityError("PAYMENT_FAILED", "Payment failed", error))
     .mapOk((txId) => ({ transactionId: txId }));
 };
 
 // Workflow (uses standard try/catch for activities)
 export const processOrder = declareWorkflow({
-  workflowName: 'processOrder',
+  workflowName: "processOrder",
   contract: myContract,
   implementation: async ({ activities }, input) => {
     try {
@@ -283,7 +281,7 @@ export const processOrder = declareWorkflow({
       // Handle activity error
       return { success: false };
     }
-  }
+  },
 });
 ```
 
@@ -295,9 +293,7 @@ Activities explicitly return Results instead of throwing:
 // ✅ Clear - activity returns Future<Result>
 const processPayment = ({ amount }) => {
   return Future.fromPromise(paymentGateway.charge(amount))
-    .mapError((error) =>
-      new ActivityError('PAYMENT_FAILED', 'Payment failed', error)
-    )
+    .mapError((error) => new ActivityError("PAYMENT_FAILED", "Payment failed", error))
     .mapOk((txId) => ({ transactionId: txId }));
 };
 
@@ -333,9 +329,7 @@ const processOrder = ({ orderId }) => {
     .flatMap((validId) => fetchOrder(validId))
     .flatMap((order) => processPayment(order))
     .flatMap((payment) => updateDatabase(payment))
-    .mapError((error) =>
-      new ActivityError('ORDER_FAILED', 'Order processing failed', error)
-    );
+    .mapError((error) => new ActivityError("ORDER_FAILED", "Order processing failed", error));
   // Stops at first error
 };
 ```
@@ -346,7 +340,7 @@ Track partial success in complex workflows using try/catch blocks:
 
 ```typescript
 export const processOrder = declareWorkflow({
-  workflowName: 'processOrder',
+  workflowName: "processOrder",
   contract: orderContract,
   implementation: async ({ activities }, input) => {
     let paymentTransactionId: string | undefined;
@@ -368,14 +362,14 @@ export const processOrder = declareWorkflow({
 
         return {
           success: false,
-          message: 'Shipment failed, payment refunded',
-          completedSteps: { payment: paymentTransactionId }
+          message: "Shipment failed, payment refunded",
+          completedSteps: { payment: paymentTransactionId },
         };
       }
 
-      return { success: false, message: 'Payment failed' };
+      return { success: false, message: "Payment failed" };
     }
-  }
+  },
 });
 ```
 
@@ -386,27 +380,29 @@ Child workflows use the same Future/Result pattern for consistent error handling
 ### Execute and Wait
 
 ```typescript
-import { declareWorkflow } from '@temporal-contract/worker/workflow';
+import { declareWorkflow } from "@temporal-contract/worker/workflow";
 
 export const parentWorkflow = declareWorkflow({
-  workflowName: 'parentWorkflow',
+  workflowName: "parentWorkflow",
   contract: myContract,
   implementation: async ({ executeChildWorkflow }, input) => {
     // Execute child workflow and wait for result
-    const result = await executeChildWorkflow(myContract, 'processPayment', {
+    const result = await executeChildWorkflow(myContract, "processPayment", {
       workflowId: `payment-${input.orderId}`,
-      args: { amount: input.totalAmount }
+      args: { amount: input.totalAmount },
     });
 
     return result.match({
-      Ok: (output) => Result.Ok({
-        success: true,
-        transactionId: output.transactionId
-      }),
-      Error: (error) => Result.Error({
-        type: 'ChildWorkflowFailed',
-        error
-      }),
+      Ok: (output) =>
+        Result.Ok({
+          success: true,
+          transactionId: output.transactionId,
+        }),
+      Error: (error) =>
+        Result.Error({
+          type: "ChildWorkflowFailed",
+          error,
+        }),
     });
   },
 });
@@ -416,13 +412,13 @@ export const parentWorkflow = declareWorkflow({
 
 ```typescript
 export const parentWorkflow = declareWorkflow({
-  workflowName: 'parentWorkflow',
+  workflowName: "parentWorkflow",
   contract: myContract,
   implementation: async ({ startChildWorkflow }, input) => {
     // Start child workflow without waiting
-    const handleResult = await startChildWorkflow(myContract, 'sendNotification', {
+    const handleResult = await startChildWorkflow(myContract, "sendNotification", {
       workflowId: `notification-${input.orderId}`,
-      args: { message: 'Order received' }
+      args: { message: "Order received" },
     });
 
     handleResult.match({
@@ -432,7 +428,7 @@ export const parentWorkflow = declareWorkflow({
         const result = await handle.result();
       },
       Error: (error) => {
-        console.error('Failed to start child:', error);
+        console.error("Failed to start child:", error);
       },
     });
 
@@ -446,28 +442,25 @@ export const parentWorkflow = declareWorkflow({
 Invoke workflows from different contracts/workers:
 
 ```typescript
-import { orderContract, notificationContract } from './contracts';
+import { orderContract, notificationContract } from "./contracts";
 
 export const orderWorkflow = declareWorkflow({
-  workflowName: 'processOrder',
+  workflowName: "processOrder",
   contract: orderContract,
   implementation: async ({ executeChildWorkflow }, input) => {
     // Child workflow from another contract
-    const notifyResult = await executeChildWorkflow(
-      notificationContract,
-      'sendOrderConfirmation',
-      {
-        workflowId: `notify-${input.orderId}`,
-        args: { orderId: input.orderId }
-      }
-    );
+    const notifyResult = await executeChildWorkflow(notificationContract, "sendOrderConfirmation", {
+      workflowId: `notify-${input.orderId}`,
+      args: { orderId: input.orderId },
+    });
 
     return notifyResult.match({
-      Ok: () => Result.Ok({ status: 'completed' }),
-      Error: (error) => Result.Error({
-        type: 'NotificationFailed',
-        error
-      }),
+      Ok: () => Result.Ok({ status: "completed" }),
+      Error: (error) =>
+        Result.Error({
+          type: "NotificationFailed",
+          error,
+        }),
     });
   },
 });

@@ -13,18 +13,20 @@ pnpm add @temporal-contract/contract zod
 ## Quick Example
 
 ```typescript
-import { defineContract } from '@temporal-contract/contract';
-import { z } from 'zod';
+import { defineContract } from "@temporal-contract/contract";
+import { z } from "zod";
 
 export const myContract = defineContract({
-  taskQueue: 'orders',
+  taskQueue: "orders",
   workflows: {
     processOrder: {
       input: z.object({ orderId: z.string() }),
       output: z.object({ success: z.boolean() }),
-      activities: { /* ... */ }
-    }
-  }
+      activities: {
+        /* ... */
+      },
+    },
+  },
 });
 ```
 

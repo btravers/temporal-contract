@@ -19,12 +19,12 @@ pnpm add @temporal-contract/worker-nestjs @swan-io/boxed
 ## Quick Example
 
 ```typescript
-import { Module } from '@nestjs/common';
-import { TemporalModule } from '@temporal-contract/worker-nestjs';
-import { NativeConnection } from '@temporalio/worker';
-import { Future, Result } from '@swan-io/boxed';
-import { ActivityError, declareActivitiesHandler } from '@temporal-contract/worker/activity';
-import { orderContract } from './contract';
+import { Module } from "@nestjs/common";
+import { TemporalModule } from "@temporal-contract/worker-nestjs";
+import { NativeConnection } from "@temporalio/worker";
+import { Future, Result } from "@swan-io/boxed";
+import { ActivityError, declareActivitiesHandler } from "@temporal-contract/worker/activity";
+import { orderContract } from "./contract";
 
 @Module({
   imports: [
@@ -36,19 +36,15 @@ import { orderContract } from './contract';
           activities: {
             processOrder: {
               processPayment: ({ customerId, amount }) => {
-                return Future.fromPromise(
-                  Promise.resolve({ transactionId: 'txn_123' })
-                )
-                  .mapError((error) =>
-                    new ActivityError('PAYMENT_FAILED', 'Payment failed', error)
-                  )
+                return Future.fromPromise(Promise.resolve({ transactionId: "txn_123" }))
+                  .mapError((error) => new ActivityError("PAYMENT_FAILED", "Payment failed", error))
                   .mapOk((value) => value);
               },
             },
           },
         }),
-        connection: await NativeConnection.connect({ address: 'localhost:7233' }),
-        workflowsPath: require.resolve('./workflows'),
+        connection: await NativeConnection.connect({ address: "localhost:7233" }),
+        workflowsPath: require.resolve("./workflows"),
       }),
     }),
   ],
@@ -82,10 +78,10 @@ Synchronous configuration of the Temporal worker.
 ```typescript
 TemporalModule.forRoot({
   contract: myContract,
-  connection: await NativeConnection.connect({ address: 'localhost:7233' }),
-  workflowsPath: require.resolve('./workflows'),
+  connection: await NativeConnection.connect({ address: "localhost:7233" }),
+  workflowsPath: require.resolve("./workflows"),
   activities: myActivities,
-})
+});
 ```
 
 ##### `forRootAsync(options: TemporalModuleAsyncOptions): DynamicModule`
@@ -106,18 +102,15 @@ Asynchronous configuration of the Temporal worker with factory pattern.
 TemporalModule.forRootAsync({
   imports: [ConfigModule],
   inject: [ConfigService, ActivitiesProvider],
-  useFactory: async (
-    config: ConfigService,
-    activitiesProvider: ActivitiesProvider
-  ) => ({
+  useFactory: async (config: ConfigService, activitiesProvider: ActivitiesProvider) => ({
     contract: myContract,
     connection: await NativeConnection.connect({
-      address: config.get('TEMPORAL_ADDRESS'),
+      address: config.get("TEMPORAL_ADDRESS"),
     }),
-    workflowsPath: require.resolve('./workflows'),
+    workflowsPath: require.resolve("./workflows"),
     activities: activitiesProvider.createActivities(),
   }),
-})
+});
 ```
 
 ### TemporalService
@@ -199,12 +192,8 @@ export class ActivitiesProvider {
         processOrder: {
           processPayment: ({ customerId, amount }) => {
             this.logger.log(`Processing payment for ${customerId}`);
-            return Future.fromPromise(
-              this.paymentService.charge(customerId, amount)
-            )
-              .mapError((err) =>
-                new ActivityError('PAYMENT_FAILED', err.message, err)
-              )
+            return Future.fromPromise(this.paymentService.charge(customerId, amount))
+              .mapError((err) => new ActivityError("PAYMENT_FAILED", err.message, err))
               .mapOk((tx) => ({ transactionId: tx.id }));
           },
         },
@@ -222,22 +211,22 @@ Run multiple workers in the same application:
 @Module({
   imports: [
     TemporalModule.forRootAsync({
-      name: 'orders',
+      name: "orders",
       inject: [OrderActivitiesProvider],
       useFactory: async (provider: OrderActivitiesProvider) => ({
         contract: orderContract,
-        connection: await NativeConnection.connect({ address: 'localhost:7233' }),
-        workflowsPath: require.resolve('./order-workflows'),
+        connection: await NativeConnection.connect({ address: "localhost:7233" }),
+        workflowsPath: require.resolve("./order-workflows"),
         activities: provider.createActivities(),
       }),
     }),
     TemporalModule.forRootAsync({
-      name: 'payments',
+      name: "payments",
       inject: [PaymentActivitiesProvider],
       useFactory: async (provider: PaymentActivitiesProvider) => ({
         contract: paymentContract,
-        connection: await NativeConnection.connect({ address: 'localhost:7233' }),
-        workflowsPath: require.resolve('./payment-workflows'),
+        connection: await NativeConnection.connect({ address: "localhost:7233" }),
+        workflowsPath: require.resolve("./payment-workflows"),
         activities: provider.createActivities(),
       }),
     }),
@@ -251,9 +240,9 @@ export class AppModule {}
 Test your activities with NestJS testing utilities:
 
 ```typescript
-import { Test } from '@nestjs/testing';
+import { Test } from "@nestjs/testing";
 
-describe('ActivitiesProvider', () => {
+describe("ActivitiesProvider", () => {
   let provider: ActivitiesProvider;
 
   beforeEach(async () => {
@@ -263,7 +252,7 @@ describe('ActivitiesProvider', () => {
         {
           provide: PaymentService,
           useValue: {
-            charge: jest.fn().mockResolvedValue({ id: 'tx-123' }),
+            charge: jest.fn().mockResolvedValue({ id: "tx-123" }),
           },
         },
       ],
@@ -272,7 +261,7 @@ describe('ActivitiesProvider', () => {
     provider = module.get<ActivitiesProvider>(ActivitiesProvider);
   });
 
-  it('should create activities', () => {
+  it("should create activities", () => {
     const activities = provider.createActivities();
     expect(activities.activities.processOrder.processPayment).toBeDefined();
   });

@@ -124,7 +124,7 @@ export class ActivitiesProvider {
         processOrder: {
           processPayment: ({ customerId, amount }) => {
             return Future.fromPromise(
-              this.processPaymentUseCase.execute(customerId, amount)
+              this.processPaymentUseCase.execute(customerId, amount),
             ).mapError(/* ... */);
           },
         },

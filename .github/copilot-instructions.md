@@ -42,10 +42,10 @@ This document provides AI-assisted code review rules and coding guidelines for t
 
    ```typescript
    // ❌ Bad
-   export function processData(data: any) { }
+   export function processData(data: any) {}
 
    // ✅ Good
-   export function processData<T>(data: unknown): Result<T, Error> { }
+   export function processData<T>(data: unknown): Result<T, Error> {}
    ```
 
 2. **Generic Type Parameters**
@@ -54,12 +54,10 @@ This document provides AI-assisted code review rules and coding guidelines for t
 
    ```typescript
    // ❌ Bad
-   function process<T>(item: T) { }
+   function process<T>(item: T) {}
 
    // ✅ Good
-   function processWorkflow<TWorkflow extends WorkflowDefinition>(
-     workflow: TWorkflow
-   ): void { }
+   function processWorkflow<TWorkflow extends WorkflowDefinition>(workflow: TWorkflow): void {}
    ```
 
 3. **Type Inference**
@@ -94,11 +92,11 @@ When you need to suppress a specific oxlint rule, use the inline comment syntax:
 
 ```typescript
 // ❌ Bad - Empty pattern triggers lint warning
-async ({}, use) => { }
+async ({}, use) => {};
 
 // ✅ Good - Explicitly disable the rule
 // oxlint-disable-next-line no-empty-pattern
-async ({}, use) => { }
+async ({}, use) => {};
 ```
 
 **When to use:**
@@ -146,8 +144,8 @@ async ({}, use) => { }
     * ```
     */
    export function defineContract<TContract extends ContractDefinition>(
-     definition: TContract
-   ): TContract { }
+     definition: TContract,
+   ): TContract {}
    ````
 
 4. **Naming Conventions**
@@ -202,15 +200,19 @@ async ({}, use) => { }
 
    ```typescript
    const contract = defineContract({
-     taskQueue: 'orders',
+     taskQueue: "orders",
      workflows: {
        processOrder: {
          input: z.object({ orderId: z.string() }),
          output: z.object({ success: z.boolean() }),
-         activities: { /* workflow-specific */ }
-       }
+         activities: {
+           /* workflow-specific */
+         },
+       },
      },
-     activities: { /* global activities */ }
+     activities: {
+       /* global activities */
+     },
    });
    ```
 
@@ -227,8 +229,8 @@ async ({}, use) => { }
 
    ```typescript
    // ✅ Good
-   export const processOrder = workflow.create(contract, 'processOrder', async (ctx, input) => {
-     const result = await ctx.activity('validateOrder', { orderId: input.orderId });
+   export const processOrder = workflow.create(contract, "processOrder", async (ctx, input) => {
+     const result = await ctx.activity("validateOrder", { orderId: input.orderId });
      if (result.isError()) {
        return new Error(result.error);
      }
@@ -254,13 +256,13 @@ async ({}, use) => { }
    ```typescript
    // ❌ Bad
    function process(data: string): string {
-     if (!data) throw new Error('Invalid data');
+     if (!data) throw new Error("Invalid data");
      return data.toUpperCase();
    }
 
    // ✅ Good
    function process(data: string): Result<string, string> {
-     if (!data) return new Error('Invalid data');
+     if (!data) return new Error("Invalid data");
      return new Ok(data.toUpperCase());
    }
    ```
@@ -278,13 +280,11 @@ async ({}, use) => { }
    export class ActivityDefinitionNotFoundError extends WorkerError {
      constructor(
        public readonly activityName: string,
-       public readonly availableDefinitions: readonly string[] = []
+       public readonly availableDefinitions: readonly string[] = [],
      ) {
-       const available = availableDefinitions.length > 0
-         ? availableDefinitions.join(", ")
-         : "none";
+       const available = availableDefinitions.length > 0 ? availableDefinitions.join(", ") : "none";
        super(
-         `Activity definition not found for: "${activityName}". Available activities: ${available}`
+         `Activity definition not found for: "${activityName}". Available activities: ${available}`,
        );
        this.name = "ActivityDefinitionNotFoundError";
        if (Error.captureStackTrace) {
@@ -319,7 +319,9 @@ async ({}, use) => { }
      describe("specific function/method", () => {
        it("should do something specific", () => {
          // GIVEN
-         const input = { /* ... */ };
+         const input = {
+           /* ... */
+         };
 
          // WHEN
          const result = functionUnderTest(input);
@@ -441,7 +443,7 @@ async ({}, use) => { }
 
    ```typescript
    // ❌ Never do this
-   function process(data: any): any { }
+   function process(data: any): any {}
    ```
 
 2. **Throwing exceptions in workflows**
@@ -449,12 +451,12 @@ async ({}, use) => { }
    ```typescript
    // ❌ Bad - breaks Result pattern
    export const workflow = async () => {
-     throw new Error('Something failed');
+     throw new Error("Something failed");
    };
 
    // ✅ Good - use Result pattern
    export const workflow = async (): Promise<Result<Output, Error>> => {
-     return new Error('Something failed');
+     return new Error("Something failed");
    };
    ```
 
@@ -463,7 +465,9 @@ async ({}, use) => { }
    ```typescript
    // ❌ Bad - no validation
    const activity = {
-     handler: async (input) => { /* ... */ }
+     handler: async (input) => {
+       /* ... */
+     },
    };
 
    // ✅ Good - with contract validation
@@ -471,9 +475,9 @@ async ({}, use) => { }
      activities: {
        processData: {
          input: z.object({ id: z.string() }),
-         output: z.object({ success: z.boolean() })
-       }
-     }
+         output: z.object({ success: z.boolean() }),
+       },
+     },
    });
    ```
 

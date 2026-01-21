@@ -123,21 +123,21 @@ samples/
 All examples start with a contract:
 
 ```typescript
-import { defineContract } from '@temporal-contract/contract';
-import { z } from 'zod';
+import { defineContract } from "@temporal-contract/contract";
+import { z } from "zod";
 
 export const orderContract = defineContract({
-  taskQueue: 'orders',
+  taskQueue: "orders",
 
   activities: {
     sendEmail: {
       input: z.object({
         to: z.string().email(),
         subject: z.string(),
-        body: z.string()
+        body: z.string(),
       }),
-      output: z.object({ sent: z.boolean() })
-    }
+      output: z.object({ sent: z.boolean() }),
+    },
   },
 
   workflows: {
@@ -145,34 +145,36 @@ export const orderContract = defineContract({
       input: z.object({
         orderId: z.string(),
         customerId: z.string(),
-        items: z.array(z.object({
-          sku: z.string(),
-          quantity: z.number().positive()
-        }))
+        items: z.array(
+          z.object({
+            sku: z.string(),
+            quantity: z.number().positive(),
+          }),
+        ),
       }),
       output: z.object({
         success: z.boolean(),
-        transactionId: z.string().optional()
+        transactionId: z.string().optional(),
       }),
 
       activities: {
         validateInventory: {
           input: z.object({ items: z.array(z.any()) }),
-          output: z.object({ available: z.boolean() })
+          output: z.object({ available: z.boolean() }),
         },
         processPayment: {
           input: z.object({
             customerId: z.string(),
-            amount: z.number()
+            amount: z.number(),
           }),
           output: z.object({
             transactionId: z.string(),
-            success: z.boolean()
-          })
-        }
-      }
-    }
-  }
+            success: z.boolean(),
+          }),
+        },
+      },
+    },
+  },
 });
 ```
 
@@ -181,11 +183,11 @@ export const orderContract = defineContract({
 Clean, typed activity implementations with Result/Future pattern:
 
 ```typescript
-import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
-import { Future, Result } from '@temporal-contract/boxed';
-import { orderContract } from '../contracts/order.contract';
-import { emailService } from '../infrastructure/email.service';
-import { paymentService } from '../infrastructure/payment.service';
+import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { Future, Result } from "@temporal-contract/boxed";
+import { orderContract } from "../contracts/order.contract";
+import { emailService } from "../infrastructure/email.service";
+import { paymentService } from "../infrastructure/payment.service";
 
 export const activities = declareActivitiesHandler({
   contract: orderContract,
@@ -196,9 +198,7 @@ export const activities = declareActivitiesHandler({
           await emailService.send({ to, subject, body });
           resolve(Result.Ok({ sent: true }));
         } catch (error) {
-          resolve(Result.Error(
-            new ActivityError('EMAIL_FAILED', 'Failed to send email', error)
-          ));
+          resolve(Result.Error(new ActivityError("EMAIL_FAILED", "Failed to send email", error)));
         }
       });
     },
@@ -209,9 +209,11 @@ export const activities = declareActivitiesHandler({
           const available = await inventoryService.checkAvailability(items);
           resolve(Result.Ok({ available }));
         } catch (error) {
-          resolve(Result.Error(
-            new ActivityError('INVENTORY_CHECK_FAILED', 'Failed to check inventory', error)
-          ));
+          resolve(
+            Result.Error(
+              new ActivityError("INVENTORY_CHECK_FAILED", "Failed to check inventory", error),
+            ),
+          );
         }
       });
     },
@@ -220,18 +222,20 @@ export const activities = declareActivitiesHandler({
       return Future.make(async (resolve) => {
         try {
           const result = await paymentService.charge(customerId, amount);
-          resolve(Result.Ok({
-            transactionId: result.id,
-            success: result.status === 'success'
-          }));
+          resolve(
+            Result.Ok({
+              transactionId: result.id,
+              success: result.status === "success",
+            }),
+          );
         } catch (error) {
-          resolve(Result.Error(
-            new ActivityError('PAYMENT_FAILED', 'Failed to process payment', error)
-          ));
+          resolve(
+            Result.Error(new ActivityError("PAYMENT_FAILED", "Failed to process payment", error)),
+          );
         }
       });
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -240,11 +244,11 @@ export const activities = declareActivitiesHandler({
 Type-safe workflow with full autocomplete:
 
 ```typescript
-import { declareWorkflow } from '@temporal-contract/worker/workflow';
-import { orderContract } from '../contracts/order.contract';
+import { declareWorkflow } from "@temporal-contract/worker/workflow";
+import { orderContract } from "../contracts/order.contract";
 
 export const processOrder = declareWorkflow({
-  workflowName: 'processOrder',
+  workflowName: "processOrder",
   contract: orderContract,
   implementation: async (context, { orderId, customerId, items }) => {
     // Validate inventory
@@ -253,8 +257,8 @@ export const processOrder = declareWorkflow({
     if (!inventory.available) {
       await context.activities.sendEmail({
         to: customerId,
-        subject: 'Order Failed',
-        body: 'Items not available'
+        subject: "Order Failed",
+        body: "Items not available",
       });
       return { success: false };
     }
@@ -265,14 +269,14 @@ export const processOrder = declareWorkflow({
     // Process payment
     const payment = await context.activities.processPayment({
       customerId,
-      amount: total
+      amount: total,
     });
 
     if (!payment.success) {
       await context.activities.sendEmail({
         to: customerId,
-        subject: 'Payment Failed',
-        body: 'Unable to process payment'
+        subject: "Payment Failed",
+        body: "Unable to process payment",
       });
       return { success: false };
     }
@@ -280,15 +284,15 @@ export const processOrder = declareWorkflow({
     // Send confirmation
     await context.activities.sendEmail({
       to: customerId,
-      subject: 'Order Confirmed',
-      body: `Order ${orderId} confirmed. Transaction: ${payment.transactionId}`
+      subject: "Order Confirmed",
+      body: `Order ${orderId} confirmed. Transaction: ${payment.transactionId}`,
     });
 
     return {
       success: true,
-      transactionId: payment.transactionId
+      transactionId: payment.transactionId,
     };
-  }
+  },
 });
 ```
 

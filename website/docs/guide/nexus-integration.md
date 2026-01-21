@@ -55,13 +55,13 @@ You can use Nexus with the raw Temporal SDK while waiting for temporal-contract 
 ```typescript
 // payment-service/nexus.ts
 export const paymentService = {
-  name: 'PaymentService',
+  name: "PaymentService",
   operations: {
     processPayment: async (ctx, input: { amount: number; customerId: string }) => {
       // Implementation
       return {
         transactionId: crypto.randomUUID(),
-        status: 'success' as const
+        status: "success" as const,
       };
     },
   },
@@ -72,13 +72,13 @@ export const paymentService = {
 
 ```typescript
 // payment-service/worker.ts
-import { Worker } from '@temporalio/worker';
-import { paymentService } from './nexus';
+import { Worker } from "@temporalio/worker";
+import { paymentService } from "./nexus";
 
 const worker = await Worker.create({
-  taskQueue: 'payments',
+  taskQueue: "payments",
   nexusServices: [paymentService],
-  workflowsPath: require.resolve('./workflows'),
+  workflowsPath: require.resolve("./workflows"),
   activities,
 });
 ```
@@ -87,20 +87,16 @@ const worker = await Worker.create({
 
 ```typescript
 // order-service/workflows.ts
-import { nexus } from '@temporalio/workflow';
+import { nexus } from "@temporalio/workflow";
 
 export async function processOrderWorkflow(order: Order) {
   // Call payment service in different namespace
-  const payment = await nexus.invoke(
-    'PaymentService',
-    'processPayment',
-    {
-      amount: order.total,
-      customerId: order.customerId,
-    }
-  );
+  const payment = await nexus.invoke("PaymentService", "processPayment", {
+    amount: order.total,
+    customerId: order.customerId,
+  });
 
-  if (payment.status === 'success') {
+  if (payment.status === "success") {
     // Continue order processing
   }
 }
@@ -117,11 +113,11 @@ The goal is to bring type safety and validation to Nexus operations:
 ### Proposed Contract API
 
 ```typescript
-import { defineContract } from '@temporal-contract/contract';
-import { z } from 'zod';
+import { defineContract } from "@temporal-contract/contract";
+import { z } from "zod";
 
 export const paymentContract = defineContract({
-  taskQueue: 'payments',
+  taskQueue: "payments",
 
   workflows: {
     // ... existing workflows
@@ -138,7 +134,7 @@ export const paymentContract = defineContract({
           }),
           output: z.object({
             transactionId: z.string(),
-            status: z.enum(['success', 'failed']),
+            status: z.enum(["success", "failed"]),
           }),
         },
       },
@@ -150,7 +146,7 @@ export const paymentContract = defineContract({
 ### Proposed Handler API
 
 ```typescript
-import { createNexusHandlers } from '@temporal-contract/worker';
+import { createNexusHandlers } from "@temporal-contract/worker";
 
 export const nexusHandlers = createNexusHandlers(paymentContract, {
   PaymentService: {
@@ -163,7 +159,7 @@ export const nexusHandlers = createNexusHandlers(paymentContract, {
       // ✅ Return value validated against schema
       return {
         transactionId: payment.id,
-        status: 'success',
+        status: "success",
       };
     },
   },
@@ -173,22 +169,22 @@ export const nexusHandlers = createNexusHandlers(paymentContract, {
 ### Proposed Client API
 
 ```typescript
-import { createNexusClient } from '@temporal-contract/client';
+import { createNexusClient } from "@temporal-contract/client";
 
 const nexusClient = createNexusClient<typeof paymentContract>(connection, {
-  namespace: 'payments-ns',
+  namespace: "payments-ns",
 });
 
 // ✅ Fully typed invocation
-const result = await nexusClient.invoke('PaymentService', 'processPayment', {
+const result = await nexusClient.invoke("PaymentService", "processPayment", {
   amount: 100,
-  customerId: 'cust-123',
+  customerId: "cust-123",
 });
 
 // ❌ TypeScript error - caught at compile time
-await nexusClient.invoke('PaymentService', 'processPayment', {
+await nexusClient.invoke("PaymentService", "processPayment", {
   amount: -50, // Error: must be positive
-  customerId: 'invalid', // Error: must be UUID
+  customerId: "invalid", // Error: must be UUID
 });
 ```
 
