@@ -20,12 +20,12 @@ Create a provider that uses NestJS services to implement activities:
 
 ```typescript
 // activities.provider.ts
-import { Injectable } from '@nestjs/common';
-import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
-import { Future, Result } from '@swan-io/boxed';
-import { myContract } from './contract';
-import { PaymentService } from './services/payment.service';
-import { NotificationService } from './services/notification.service';
+import { Injectable } from "@nestjs/common";
+import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { Future, Result } from "@swan-io/boxed";
+import { myContract } from "./contract";
+import { PaymentService } from "./services/payment.service";
+import { NotificationService } from "./services/notification.service";
 
 @Injectable()
 export class ActivitiesProvider {
@@ -47,29 +47,27 @@ export class ActivitiesProvider {
         // Workflow-specific activities with DI
         processOrder: {
           processPayment: ({ customerId, amount }) => {
-            return Future.fromPromise(
-              this.paymentService.charge(customerId, amount)
-            )
-              .mapError((error) =>
-                new ActivityError(
-                  'PAYMENT_FAILED',
-                  error instanceof Error ? error.message : 'Payment failed',
-                  error
-                )
+            return Future.fromPromise(this.paymentService.charge(customerId, amount))
+              .mapError(
+                (error) =>
+                  new ActivityError(
+                    "PAYMENT_FAILED",
+                    error instanceof Error ? error.message : "Payment failed",
+                    error,
+                  ),
               )
               .mapOk((transaction) => ({ transactionId: transaction.id }));
           },
 
           sendNotification: ({ customerId, message }) => {
-            return Future.fromPromise(
-              this.notificationService.send(customerId, message)
-            )
-              .mapError((error) =>
-                new ActivityError(
-                  'NOTIFICATION_FAILED',
-                  error instanceof Error ? error.message : 'Notification failed',
-                  error
-                )
+            return Future.fromPromise(this.notificationService.send(customerId, message))
+              .mapError(
+                (error) =>
+                  new ActivityError(
+                    "NOTIFICATION_FAILED",
+                    error instanceof Error ? error.message : "Notification failed",
+                    error,
+                  ),
               )
               .mapOk(() => undefined);
           },
@@ -86,13 +84,13 @@ Use `TemporalModule.forRootAsync` to configure the worker with your activities:
 
 ```typescript
 // app.module.ts
-import { Module } from '@nestjs/common';
-import { TemporalModule } from '@temporal-contract/worker-nestjs';
-import { NativeConnection } from '@temporalio/worker';
-import { myContract } from './contract';
-import { ActivitiesProvider } from './activities.provider';
-import { PaymentService } from './services/payment.service';
-import { NotificationService } from './services/notification.service';
+import { Module } from "@nestjs/common";
+import { TemporalModule } from "@temporal-contract/worker-nestjs";
+import { NativeConnection } from "@temporalio/worker";
+import { myContract } from "./contract";
+import { ActivitiesProvider } from "./activities.provider";
+import { PaymentService } from "./services/payment.service";
+import { NotificationService } from "./services/notification.service";
 
 @Module({
   imports: [
@@ -102,18 +100,14 @@ import { NotificationService } from './services/notification.service';
       useFactory: async (activitiesProvider: ActivitiesProvider) => ({
         contract: myContract,
         connection: await NativeConnection.connect({
-          address: 'localhost:7233',
+          address: "localhost:7233",
         }),
-        workflowsPath: require.resolve('./workflows'),
+        workflowsPath: require.resolve("./workflows"),
         activities: activitiesProvider.createActivities(),
       }),
     }),
   ],
-  providers: [
-    ActivitiesProvider,
-    PaymentService,
-    NotificationService,
-  ],
+  providers: [ActivitiesProvider, PaymentService, NotificationService],
 })
 export class AppModule {}
 ```
@@ -124,8 +118,8 @@ The worker starts automatically when the NestJS application initializes:
 
 ```typescript
 // main.ts
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
@@ -134,15 +128,15 @@ async function bootstrap() {
 
   // Graceful shutdown
   const shutdown = async () => {
-    console.log('Shutting down...');
+    console.log("Shutting down...");
     await app.close(); // Worker shuts down automatically
     process.exit(0);
   };
 
-  process.on('SIGTERM', shutdown);
-  process.on('SIGINT', shutdown);
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
 
-  console.log('Worker started successfully');
+  console.log("Worker started successfully");
 }
 
 bootstrap();
@@ -171,12 +165,8 @@ export class ActivitiesProvider {
         processOrder: {
           checkInventory: ({ productId, quantity }) => {
             this.logger.log(`Checking inventory for ${productId}`);
-            return Future.fromPromise(
-              this.inventoryService.reserve(productId, quantity)
-            )
-              .mapError((error) =>
-                new ActivityError('INVENTORY_UNAVAILABLE', error.message, error)
-              )
+            return Future.fromPromise(this.inventoryService.reserve(productId, quantity))
+              .mapError((error) => new ActivityError("INVENTORY_UNAVAILABLE", error.message, error))
               .mapOk((reservation) => ({ reservationId: reservation.id }));
           },
         },
@@ -191,7 +181,7 @@ export class ActivitiesProvider {
 Access configuration values:
 
 ```typescript
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class ActivitiesProvider {
@@ -201,19 +191,15 @@ export class ActivitiesProvider {
   ) {}
 
   createActivities() {
-    const paymentGatewayUrl = this.configService.get('PAYMENT_GATEWAY_URL');
+    const paymentGatewayUrl = this.configService.get("PAYMENT_GATEWAY_URL");
 
     return declareActivitiesHandler({
       contract: myContract,
       activities: {
         processOrder: {
           processPayment: ({ amount }) => {
-            return Future.fromPromise(
-              this.paymentService.charge(amount, paymentGatewayUrl)
-            )
-              .mapError((err) =>
-                new ActivityError('PAYMENT_FAILED', err.message, err)
-              )
+            return Future.fromPromise(this.paymentService.charge(amount, paymentGatewayUrl))
+              .mapError((err) => new ActivityError("PAYMENT_FAILED", err.message, err))
               .mapOk((tx) => ({ transactionId: tx.id }));
           },
         },
@@ -232,10 +218,10 @@ Use `forRoot` for simple, synchronous configuration:
 ```typescript
 TemporalModule.forRoot({
   contract: myContract,
-  connection: await NativeConnection.connect({ address: 'localhost:7233' }),
-  workflowsPath: require.resolve('./workflows'),
+  connection: await NativeConnection.connect({ address: "localhost:7233" }),
+  workflowsPath: require.resolve("./workflows"),
   activities: activitiesProvider.createActivities(),
-})
+});
 ```
 
 ### Asynchronous Configuration
@@ -246,19 +232,16 @@ Use `forRootAsync` for configuration that requires async setup or DI:
 TemporalModule.forRootAsync({
   imports: [ConfigModule],
   inject: [ConfigService, ActivitiesProvider],
-  useFactory: async (
-    config: ConfigService,
-    activitiesProvider: ActivitiesProvider
-  ) => ({
+  useFactory: async (config: ConfigService, activitiesProvider: ActivitiesProvider) => ({
     contract: myContract,
     connection: await NativeConnection.connect({
-      address: config.get('TEMPORAL_ADDRESS'),
+      address: config.get("TEMPORAL_ADDRESS"),
     }),
-    namespace: config.get('TEMPORAL_NAMESPACE'),
-    workflowsPath: require.resolve('./workflows'),
+    namespace: config.get("TEMPORAL_NAMESPACE"),
+    workflowsPath: require.resolve("./workflows"),
     activities: activitiesProvider.createActivities(),
   }),
-})
+});
 ```
 
 ## Worker Lifecycle
@@ -271,8 +254,8 @@ The `TemporalService` manages the worker lifecycle automatically:
 You can access the worker instance if needed:
 
 ```typescript
-import { Injectable } from '@nestjs/common';
-import { TemporalService } from '@temporal-contract/worker-nestjs';
+import { Injectable } from "@nestjs/common";
+import { TemporalService } from "@temporal-contract/worker-nestjs";
 
 @Injectable()
 export class MyService {
@@ -294,24 +277,24 @@ Run multiple workers in the same NestJS application:
   imports: [
     // Order processing worker
     TemporalModule.forRootAsync({
-      name: 'orders',
+      name: "orders",
       inject: [OrderActivitiesProvider],
       useFactory: async (provider: OrderActivitiesProvider) => ({
         contract: orderContract,
-        connection: await NativeConnection.connect({ address: 'localhost:7233' }),
-        workflowsPath: require.resolve('./order-workflows'),
+        connection: await NativeConnection.connect({ address: "localhost:7233" }),
+        workflowsPath: require.resolve("./order-workflows"),
         activities: provider.createActivities(),
       }),
     }),
 
     // Payment processing worker
     TemporalModule.forRootAsync({
-      name: 'payments',
+      name: "payments",
       inject: [PaymentActivitiesProvider],
       useFactory: async (provider: PaymentActivitiesProvider) => ({
         contract: paymentContract,
-        connection: await NativeConnection.connect({ address: 'localhost:7233' }),
-        workflowsPath: require.resolve('./payment-workflows'),
+        connection: await NativeConnection.connect({ address: "localhost:7233" }),
+        workflowsPath: require.resolve("./payment-workflows"),
         activities: provider.createActivities(),
       }),
     }),
@@ -326,11 +309,11 @@ export class AppModule {}
 Test your activities with NestJS testing utilities:
 
 ```typescript
-import { Test } from '@nestjs/testing';
-import { ActivitiesProvider } from './activities.provider';
-import { PaymentService } from './services/payment.service';
+import { Test } from "@nestjs/testing";
+import { ActivitiesProvider } from "./activities.provider";
+import { PaymentService } from "./services/payment.service";
 
-describe('ActivitiesProvider', () => {
+describe("ActivitiesProvider", () => {
   let provider: ActivitiesProvider;
   let paymentService: PaymentService;
 
@@ -351,20 +334,20 @@ describe('ActivitiesProvider', () => {
     paymentService = module.get<PaymentService>(PaymentService);
   });
 
-  it('should process payment', async () => {
-    jest.spyOn(paymentService, 'charge').mockResolvedValue({
-      id: 'tx-123',
+  it("should process payment", async () => {
+    jest.spyOn(paymentService, "charge").mockResolvedValue({
+      id: "tx-123",
     });
 
     const activities = provider.createActivities();
     const result = await activities.activities.processOrder.processPayment({
-      customerId: 'CUST-123',
+      customerId: "CUST-123",
       amount: 100,
     });
 
     const value = await result;
     expect(value.isOk()).toBe(true);
-    expect(value.get()).toEqual({ transactionId: 'tx-123' });
+    expect(value.get()).toEqual({ transactionId: "tx-123" });
   });
 });
 ```
@@ -420,12 +403,8 @@ export class ActivitiesProvider {
       activities: {
         processOrder: {
           processPayment: ({ customerId, amount }) => {
-            return Future.fromPromise(
-              this.paymentService.processPayment(customerId, amount)
-            )
-              .mapError((err) =>
-                new ActivityError('PAYMENT_FAILED', err.message, err)
-              )
+            return Future.fromPromise(this.paymentService.processPayment(customerId, amount))
+              .mapError((err) => new ActivityError("PAYMENT_FAILED", err.message, err))
               .mapOk((tx) => ({ transactionId: tx.id }));
           },
         },
@@ -444,15 +423,15 @@ Ensure the connection is properly awaited:
 ```typescript
 // ✅ Correct
 useFactory: async () => ({
-  connection: await NativeConnection.connect({ address: 'localhost:7233' }),
+  connection: await NativeConnection.connect({ address: "localhost:7233" }),
   // ...
-})
+});
 
 // ❌ Wrong
 useFactory: () => ({
-  connection: NativeConnection.connect({ address: 'localhost:7233' }),
+  connection: NativeConnection.connect({ address: "localhost:7233" }),
   // ...
-})
+});
 ```
 
 ### Activities Not Found
@@ -460,7 +439,7 @@ useFactory: () => ({
 Verify the workflowsPath is correct:
 
 ```typescript
-workflowsPath: require.resolve('./workflows')  // Relative to this file
+workflowsPath: require.resolve("./workflows"); // Relative to this file
 ```
 
 ## See Also

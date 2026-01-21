@@ -27,12 +27,12 @@ All activities must be provided upfront in the module configuration. Use `declar
 
 ```typescript
 // app.module.ts
-import { Module } from '@nestjs/common';
-import { TemporalModule } from '@temporal-contract/worker-nestjs';
-import { NativeConnection } from '@temporalio/worker';
-import { Future, Result } from '@temporal-contract/boxed';
-import { ActivityError, declareActivitiesHandler } from '@temporal-contract/worker/activity';
-import { orderProcessingContract } from './contract';
+import { Module } from "@nestjs/common";
+import { TemporalModule } from "@temporal-contract/worker-nestjs";
+import { NativeConnection } from "@temporalio/worker";
+import { Future, Result } from "@temporal-contract/boxed";
+import { ActivityError, declareActivitiesHandler } from "@temporal-contract/worker/activity";
+import { orderProcessingContract } from "./contract";
 
 @Module({
   imports: [
@@ -54,19 +54,19 @@ import { orderProcessingContract } from './contract';
                 return Future.make(async (resolve) => {
                   try {
                     // Implementation
-                    resolve(Result.Ok({ transactionId: 'txn_123' }));
+                    resolve(Result.Ok({ transactionId: "txn_123" }));
                   } catch (error) {
-                    resolve(Result.Error(
-                      new ActivityError('PAYMENT_FAILED', 'Payment failed', error)
-                    ));
+                    resolve(
+                      Result.Error(new ActivityError("PAYMENT_FAILED", "Payment failed", error)),
+                    );
                   }
                 });
               },
             },
           },
         }),
-        connection: await NativeConnection.connect({ address: 'localhost:7233' }),
-        workflowsPath: require.resolve('./workflows'),
+        connection: await NativeConnection.connect({ address: "localhost:7233" }),
+        workflowsPath: require.resolve("./workflows"),
       }),
     }),
   ],
@@ -80,8 +80,8 @@ The worker starts automatically when the NestJS application initializes and shut
 
 ```typescript
 // main.ts
-import { NestFactory } from '@nestjs/common';
-import { AppModule } from './app.module';
+import { NestFactory } from "@nestjs/common";
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
@@ -89,11 +89,11 @@ async function bootstrap() {
   // Worker starts automatically during module initialization
 
   // Handle graceful shutdown
-  process.on('SIGTERM', async () => {
+  process.on("SIGTERM", async () => {
     await app.close(); // Worker shuts down automatically
   });
 
-  process.on('SIGINT', async () => {
+  process.on("SIGINT", async () => {
     await app.close();
   });
 }

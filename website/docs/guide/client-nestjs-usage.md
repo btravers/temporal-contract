@@ -20,18 +20,18 @@ Use `TemporalClientModule.forRootAsync` to configure the client:
 
 ```typescript
 // app.module.ts
-import { Module } from '@nestjs/common';
-import { TemporalClientModule } from '@temporal-contract/client-nestjs';
-import { Connection, Client } from '@temporalio/client';
-import { myContract } from './contract';
-import { OrderService } from './order.service';
+import { Module } from "@nestjs/common";
+import { TemporalClientModule } from "@temporal-contract/client-nestjs";
+import { Connection, Client } from "@temporalio/client";
+import { myContract } from "./contract";
+import { OrderService } from "./order.service";
 
 @Module({
   imports: [
     TemporalClientModule.forRootAsync({
       useFactory: async () => {
         const connection = await Connection.connect({
-          address: 'localhost:7233',
+          address: "localhost:7233",
         });
         return {
           contract: myContract,
@@ -51,8 +51,8 @@ Inject `TemporalClientService` to access the typed client:
 
 ```typescript
 // order.service.ts
-import { Injectable } from '@nestjs/common';
-import { TemporalClientService } from '@temporal-contract/client-nestjs';
+import { Injectable } from "@nestjs/common";
+import { TemporalClientService } from "@temporal-contract/client-nestjs";
 
 @Injectable()
 export class OrderService {
@@ -61,7 +61,7 @@ export class OrderService {
   async createOrder(orderId: string, customerId: string) {
     const client = this.temporalClient.getClient();
 
-    const result = await client.executeWorkflow('processOrder', {
+    const result = await client.executeWorkflow("processOrder", {
       workflowId: `order-${orderId}`,
       args: { orderId, customerId },
     });
@@ -84,14 +84,14 @@ export class OrderService {
 
 ```typescript
 // main.ts
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   await app.listen(3000);
-  console.log('Application started on port 3000');
+  console.log("Application started on port 3000");
 }
 
 bootstrap();
@@ -104,7 +104,7 @@ bootstrap();
 Access configuration values in the factory:
 
 ```typescript
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule, ConfigService } from "@nestjs/config";
 
 @Module({
   imports: [
@@ -114,13 +114,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       inject: [ConfigService],
       useFactory: async (config: ConfigService) => {
         const connection = await Connection.connect({
-          address: config.get('TEMPORAL_ADDRESS', 'localhost:7233'),
+          address: config.get("TEMPORAL_ADDRESS", "localhost:7233"),
         });
         return {
           contract: myContract,
           client: new Client({
             connection,
-            namespace: config.get('TEMPORAL_NAMESPACE', 'default'),
+            namespace: config.get("TEMPORAL_NAMESPACE", "default"),
           }),
         };
       },
@@ -146,7 +146,7 @@ export class OrderService {
     this.logger.log(`Processing order ${orderId}`);
 
     const client = this.temporalClient.getClient();
-    const result = await client.executeWorkflow('processOrder', {
+    const result = await client.executeWorkflow("processOrder", {
       workflowId: `order-${orderId}`,
       args: { orderId, customerId },
     });
@@ -172,13 +172,13 @@ export class OrderService {
 Use `forRoot` for simple, synchronous configuration:
 
 ```typescript
-const connection = await Connection.connect({ address: 'localhost:7233' });
+const connection = await Connection.connect({ address: "localhost:7233" });
 const client = new Client({ connection });
 
 TemporalClientModule.forRoot({
   contract: myContract,
   client: client,
-})
+});
 ```
 
 ### Asynchronous Configuration
@@ -191,14 +191,14 @@ TemporalClientModule.forRootAsync({
   inject: [ConfigService],
   useFactory: async (config: ConfigService) => {
     const connection = await Connection.connect({
-      address: config.get('TEMPORAL_ADDRESS'),
+      address: config.get("TEMPORAL_ADDRESS"),
     });
     return {
       contract: myContract,
       client: new Client({ connection }),
     };
   },
-})
+});
 ```
 
 ## Working with Workflows
@@ -213,10 +213,10 @@ export class OrderService {
   async executeOrder(orderId: string) {
     const client = this.temporalClient.getClient();
 
-    const result = await client.executeWorkflow('processOrder', {
+    const result = await client.executeWorkflow("processOrder", {
       workflowId: `order-${orderId}`,
       args: { orderId },
-      workflowExecutionTimeout: '1 hour',
+      workflowExecutionTimeout: "1 hour",
     });
 
     return result.match({
@@ -239,7 +239,7 @@ export class OrderService {
   async startOrder(orderId: string) {
     const client = this.temporalClient.getClient();
 
-    const handleResult = await client.startWorkflow('processOrder', {
+    const handleResult = await client.startWorkflow("processOrder", {
       workflowId: `order-${orderId}`,
       args: { orderId },
     });
@@ -247,7 +247,7 @@ export class OrderService {
     return handleResult.match({
       Ok: (handle) => ({
         workflowId: handle.workflowId,
-        message: 'Workflow started',
+        message: "Workflow started",
       }),
       Error: (error) => {
         throw new Error(`Failed to start workflow: ${error.message}`);
@@ -267,7 +267,7 @@ export class OrderQueryService {
   async getOrderStatus(workflowId: string) {
     const client = this.temporalClient.getClient();
 
-    const handleResult = await client.getHandle('processOrder', workflowId);
+    const handleResult = await client.getHandle("processOrder", workflowId);
 
     return handleResult.match({
       Ok: async (handle) => {
@@ -297,7 +297,7 @@ export class OrderSignalService {
   async cancelOrder(workflowId: string, reason: string) {
     const client = this.temporalClient.getClient();
 
-    const handleResult = await client.getHandle('processOrder', workflowId);
+    const handleResult = await client.getHandle("processOrder", workflowId);
 
     return handleResult.match({
       Ok: async (handle) => {
@@ -322,10 +322,10 @@ export class OrderSignalService {
 ### REST API Example
 
 ```typescript
-import { Controller, Post, Get, Body, Param } from '@nestjs/common';
-import { OrderService } from './order.service';
+import { Controller, Post, Get, Body, Param } from "@nestjs/common";
+import { OrderService } from "./order.service";
 
-@Controller('orders')
+@Controller("orders")
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
@@ -334,13 +334,13 @@ export class OrderController {
     return this.orderService.createOrder(body.orderId, body.customerId);
   }
 
-  @Get(':workflowId/status')
-  async getStatus(@Param('workflowId') workflowId: string) {
+  @Get(":workflowId/status")
+  async getStatus(@Param("workflowId") workflowId: string) {
     return this.orderService.getOrderStatus(workflowId);
   }
 
-  @Post(':workflowId/cancel')
-  async cancelOrder(@Param('workflowId') workflowId: string) {
+  @Post(":workflowId/cancel")
+  async cancelOrder(@Param("workflowId") workflowId: string) {
     return this.orderService.cancelOrder(workflowId);
   }
 }
@@ -354,13 +354,13 @@ Create the connection once and reuse it:
 
 ```typescript
 // connection.provider.ts
-import { Connection } from '@temporalio/client';
+import { Connection } from "@temporalio/client";
 
 export const TemporalConnectionProvider = {
-  provide: 'TEMPORAL_CONNECTION',
+  provide: "TEMPORAL_CONNECTION",
   useFactory: async () => {
     return Connection.connect({
-      address: 'localhost:7233',
+      address: "localhost:7233",
     });
   },
 };
@@ -369,7 +369,7 @@ export const TemporalConnectionProvider = {
 @Module({
   imports: [
     TemporalClientModule.forRootAsync({
-      inject: ['TEMPORAL_CONNECTION'],
+      inject: ["TEMPORAL_CONNECTION"],
       useFactory: async (connection: Connection) => {
         return {
           contract: myContract,
@@ -398,7 +398,7 @@ export class OrderClientService {
   }
 
   async processOrder(orderId: string) {
-    return this.client.executeWorkflow('processOrder', {
+    return this.client.executeWorkflow("processOrder", {
       workflowId: `order-${orderId}`,
       args: { orderId },
     });
@@ -415,7 +415,7 @@ export class PaymentClientService {
   }
 
   async processPayment(paymentId: string) {
-    return this.client.executeWorkflow('processPayment', {
+    return this.client.executeWorkflow("processPayment", {
       workflowId: `payment-${paymentId}`,
       args: { paymentId },
     });
@@ -430,12 +430,12 @@ export class PaymentClientService {
 Mock the `TemporalClientService` in your tests:
 
 ```typescript
-import { Test } from '@nestjs/testing';
-import { TemporalClientService } from '@temporal-contract/client-nestjs';
-import { Result } from '@swan-io/boxed';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { Test } from "@nestjs/testing";
+import { TemporalClientService } from "@temporal-contract/client-nestjs";
+import { Result } from "@swan-io/boxed";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
-describe('OrderService', () => {
+describe("OrderService", () => {
   let service: OrderService;
   let mockClient: any;
 
@@ -463,36 +463,34 @@ describe('OrderService', () => {
     service = module.get<OrderService>(OrderService);
   });
 
-  it('should create order successfully', async () => {
+  it("should create order successfully", async () => {
     mockClient.executeWorkflow.mockResolvedValue(
       Result.Ok({
-        status: 'completed',
-        transactionId: 'tx-123',
-      })
+        status: "completed",
+        transactionId: "tx-123",
+      }),
     );
 
-    const result = await service.createOrder('ORD-123', 'CUST-456');
+    const result = await service.createOrder("ORD-123", "CUST-456");
 
     expect(result.success).toBe(true);
-    expect(result.transactionId).toBe('tx-123');
+    expect(result.transactionId).toBe("tx-123");
     expect(mockClient.executeWorkflow).toHaveBeenCalledWith(
-      'processOrder',
+      "processOrder",
       expect.objectContaining({
-        workflowId: 'order-ORD-123',
-        args: { orderId: 'ORD-123', customerId: 'CUST-456' },
-      })
+        workflowId: "order-ORD-123",
+        args: { orderId: "ORD-123", customerId: "CUST-456" },
+      }),
     );
   });
 
-  it('should handle workflow errors', async () => {
-    mockClient.executeWorkflow.mockResolvedValue(
-      Result.Error(new Error('Payment failed'))
-    );
+  it("should handle workflow errors", async () => {
+    mockClient.executeWorkflow.mockResolvedValue(Result.Error(new Error("Payment failed")));
 
-    const result = await service.createOrder('ORD-123', 'CUST-456');
+    const result = await service.createOrder("ORD-123", "CUST-456");
 
     expect(result.success).toBe(false);
-    expect(result.error).toBe('Payment failed');
+    expect(result.error).toBe("Payment failed");
   });
 });
 ```
@@ -524,7 +522,9 @@ The `TemporalClientModule` is global by default, so it's available in all module
 @Module({
   imports: [
     TemporalClientModule.forRootAsync({
-      useFactory: async () => ({ /* ... */ }),
+      useFactory: async () => ({
+        /* ... */
+      }),
     }),
   ],
 })
@@ -565,7 +565,7 @@ export class OrderService {
 
     // Execute workflow
     const client = this.temporalClient.getClient();
-    return client.executeWorkflow('processOrder', {
+    return client.executeWorkflow("processOrder", {
       workflowId: `order-${orderId}`,
       args: { orderId, items },
     });
@@ -586,7 +586,7 @@ export class OrderService {
   async createOrder(orderId: string) {
     const client = this.temporalClient.getClient();
 
-    const result = await client.executeWorkflow('processOrder', {
+    const result = await client.executeWorkflow("processOrder", {
       workflowId: `order-${orderId}`,
       args: { orderId },
     });
@@ -617,17 +617,17 @@ Ensure the connection is properly awaited in the factory:
 useFactory: async () => ({
   contract: myContract,
   client: new Client({
-    connection: await Connection.connect({ address: 'localhost:7233' }),
+    connection: await Connection.connect({ address: "localhost:7233" }),
   }),
-})
+});
 
 // ❌ Wrong
 useFactory: () => ({
   contract: myContract,
   client: new Client({
-    connection: Connection.connect({ address: 'localhost:7233' }),
+    connection: Connection.connect({ address: "localhost:7233" }),
   }),
-})
+});
 ```
 
 ### Client Not Available
@@ -637,7 +637,9 @@ Make sure `TemporalClientModule` is imported in your root module:
 ```typescript
 @Module({
   imports: [
-    TemporalClientModule.forRootAsync({ /* ... */ }),
+    TemporalClientModule.forRootAsync({
+      /* ... */
+    }),
   ],
 })
 export class AppModule {}

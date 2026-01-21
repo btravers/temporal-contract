@@ -15,13 +15,17 @@ pnpm add @temporal-contract/contract zod
 Define a type-safe contract for Temporal workflows.
 
 ```typescript
-import { defineContract } from '@temporal-contract/contract';
-import { z } from 'zod';
+import { defineContract } from "@temporal-contract/contract";
+import { z } from "zod";
 
 const contract = defineContract({
-  taskQueue: 'my-queue',
-  activities: { /* ... */ },
-  workflows: { /* ... */ }
+  taskQueue: "my-queue",
+  activities: {
+    /* ... */
+  },
+  workflows: {
+    /* ... */
+  },
 });
 ```
 
@@ -36,8 +40,8 @@ import type {
   ActivityDefinition,
   SignalDefinition,
   QueryDefinition,
-  UpdateDefinition
-} from '@temporal-contract/contract';
+  UpdateDefinition,
+} from "@temporal-contract/contract";
 ```
 
 ## Utility Types
@@ -48,8 +52,8 @@ Extract metadata from contracts:
 import type {
   InferWorkflowNames,
   InferActivityNames,
-  InferContractWorkflows
-} from '@temporal-contract/contract';
+  InferContractWorkflows,
+} from "@temporal-contract/contract";
 
 // Extract workflow names as union type
 type WorkflowNames = InferWorkflowNames<typeof myContract>;

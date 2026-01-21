@@ -11,35 +11,37 @@ temporal-contract provides type utilities to extract activity handler types from
 Instead of defining activity implementations inline, you can extract types for reuse:
 
 ```typescript
-import type { ActivityHandlers } from '@temporal-contract/worker/activity';
-import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
-import { Future, Result } from '@swan-io/boxed';
-import { orderContract } from './contract';
+import type { ActivityHandlers } from "@temporal-contract/worker/activity";
+import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { Future, Result } from "@swan-io/boxed";
+import { orderContract } from "./contract";
 
 // Extract all activity handler types from contract
 type OrderActivityHandlers = ActivityHandlers<typeof orderContract>;
 
 // Implement activities with explicit types using Future/Result pattern
-const sendEmail: OrderActivityHandlers['sendEmail'] = ({ to, body }) => {
+const sendEmail: OrderActivityHandlers["sendEmail"] = ({ to, body }) => {
   return Future.fromPromise(emailService.send({ to, body }))
-    .mapError((error) =>
-      new ActivityError(
-        'EMAIL_FAILED',
-        error instanceof Error ? error.message : 'Failed to send email',
-        error
-      )
+    .mapError(
+      (error) =>
+        new ActivityError(
+          "EMAIL_FAILED",
+          error instanceof Error ? error.message : "Failed to send email",
+          error,
+        ),
     )
     .mapOk(() => ({ sent: true }));
 };
 
-const processPayment: OrderActivityHandlers['processPayment'] = ({ amount }) => {
+const processPayment: OrderActivityHandlers["processPayment"] = ({ amount }) => {
   return Future.fromPromise(paymentGateway.charge(amount))
-    .mapError((error) =>
-      new ActivityError(
-        'PAYMENT_FAILED',
-        error instanceof Error ? error.message : 'Payment failed',
-        error
-      )
+    .mapError(
+      (error) =>
+        new ActivityError(
+          "PAYMENT_FAILED",
+          error instanceof Error ? error.message : "Payment failed",
+          error,
+        ),
     )
     .mapOk((txId) => ({ transactionId: txId }));
 };
@@ -49,8 +51,8 @@ export const activities = declareActivitiesHandler({
   contract: orderContract,
   activities: {
     sendEmail,
-    processPayment
-  }
+    processPayment,
+  },
 });
 ```
 
@@ -61,7 +63,7 @@ export const activities = declareActivitiesHandler({
 Extract all activity handler types from a contract:
 
 ```typescript
-import type { ActivityHandlers } from '@temporal-contract/worker/activity';
+import type { ActivityHandlers } from "@temporal-contract/worker/activity";
 
 type MyActivities = ActivityHandlers<typeof myContract>;
 // {
@@ -75,8 +77,8 @@ type MyActivities = ActivityHandlers<typeof myContract>;
 Extract specific activity types:
 
 ```typescript
-type SendEmailHandler = ActivityHandlers<typeof contract>['sendEmail'];
-type ProcessPaymentHandler = ActivityHandlers<typeof contract>['processPayment'];
+type SendEmailHandler = ActivityHandlers<typeof contract>["sendEmail"];
+type ProcessPaymentHandler = ActivityHandlers<typeof contract>["processPayment"];
 
 const sendEmail: SendEmailHandler = async ({ to, body }) => {
   // Implementation
@@ -92,21 +94,22 @@ Implement activities in separate files:
 
 ```typescript
 // activities/email.ts
-import type { ActivityHandlers } from '@temporal-contract/worker/activity';
-import { ActivityError } from '@temporal-contract/worker/activity';
-import { Future, Result } from '@swan-io/boxed';
-import { orderContract } from '../contracts/order.contract';
+import type { ActivityHandlers } from "@temporal-contract/worker/activity";
+import { ActivityError } from "@temporal-contract/worker/activity";
+import { Future, Result } from "@swan-io/boxed";
+import { orderContract } from "../contracts/order.contract";
 
 type Handlers = ActivityHandlers<typeof orderContract>;
 
-export const sendEmail: Handlers['sendEmail'] = ({ to, body }) => {
+export const sendEmail: Handlers["sendEmail"] = ({ to, body }) => {
   return Future.fromPromise(emailService.send({ to, body }))
-    .mapError((error) =>
-      new ActivityError(
-        'EMAIL_FAILED',
-        error instanceof Error ? error.message : 'Failed to send email',
-        error
-      )
+    .mapError(
+      (error) =>
+        new ActivityError(
+          "EMAIL_FAILED",
+          error instanceof Error ? error.message : "Failed to send email",
+          error,
+        ),
     )
     .mapOk(() => ({ sent: true }));
 };
@@ -114,21 +117,22 @@ export const sendEmail: Handlers['sendEmail'] = ({ to, body }) => {
 
 ```typescript
 // activities/payment.ts
-import type { ActivityHandlers } from '@temporal-contract/worker/activity';
-import { ActivityError } from '@temporal-contract/worker/activity';
-import { Future, Result } from '@swan-io/boxed';
-import { orderContract } from '../contracts/order.contract';
+import type { ActivityHandlers } from "@temporal-contract/worker/activity";
+import { ActivityError } from "@temporal-contract/worker/activity";
+import { Future, Result } from "@swan-io/boxed";
+import { orderContract } from "../contracts/order.contract";
 
 type Handlers = ActivityHandlers<typeof orderContract>;
 
-export const processPayment: Handlers['processPayment'] = ({ amount }) => {
+export const processPayment: Handlers["processPayment"] = ({ amount }) => {
   return Future.fromPromise(paymentGateway.charge(amount))
-    .mapError((error) =>
-      new ActivityError(
-        'PAYMENT_FAILED',
-        error instanceof Error ? error.message : 'Payment failed',
-        error
-      )
+    .mapError(
+      (error) =>
+        new ActivityError(
+          "PAYMENT_FAILED",
+          error instanceof Error ? error.message : "Payment failed",
+          error,
+        ),
     )
     .mapOk((txId) => ({ transactionId: txId }));
 };
@@ -136,17 +140,17 @@ export const processPayment: Handlers['processPayment'] = ({ amount }) => {
 
 ```typescript
 // activities/index.ts
-import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
-import { orderContract } from '../contracts/order.contract';
-import { sendEmail } from './email';
-import { processPayment } from './payment';
+import { declareActivitiesHandler } from "@temporal-contract/worker/activity";
+import { orderContract } from "../contracts/order.contract";
+import { sendEmail } from "./email";
+import { processPayment } from "./payment";
 
 export const activities = declareActivitiesHandler({
   contract: orderContract,
   activities: {
     sendEmail,
-    processPayment
-  }
+    processPayment,
+  },
 });
 ```
 
@@ -155,13 +159,11 @@ export const activities = declareActivitiesHandler({
 Create factory functions with typed activities:
 
 ```typescript
-import type { ActivityHandlers } from '@temporal-contract/worker/activity';
+import type { ActivityHandlers } from "@temporal-contract/worker/activity";
 
 type Handlers = ActivityHandlers<typeof orderContract>;
 
-export const createEmailActivity = (
-  emailService: EmailService
-): Handlers['sendEmail'] => {
+export const createEmailActivity = (emailService: EmailService): Handlers["sendEmail"] => {
   return async ({ to, body }) => {
     await emailService.send({ to, body });
     return { sent: true };
@@ -169,8 +171,8 @@ export const createEmailActivity = (
 };
 
 export const createPaymentActivity = (
-  paymentGateway: PaymentGateway
-): Handlers['processPayment'] => {
+  paymentGateway: PaymentGateway,
+): Handlers["processPayment"] => {
   return async ({ amount }) => {
     const txId = await paymentGateway.charge(amount);
     return { transactionId: txId };
@@ -188,8 +190,8 @@ export const activities = declareActivitiesHandler({
   contract: orderContract,
   activities: {
     sendEmail: createEmailActivity(emailService),
-    processPayment: createPaymentActivity(paymentGateway)
-  }
+    processPayment: createPaymentActivity(paymentGateway),
+  },
 });
 ```
 
@@ -198,23 +200,23 @@ export const activities = declareActivitiesHandler({
 Mock activities with correct types:
 
 ```typescript
-import type { ActivityHandlers } from '@temporal-contract/worker/activity';
-import { Future, Result } from '@swan-io/boxed';
+import type { ActivityHandlers } from "@temporal-contract/worker/activity";
+import { Future, Result } from "@swan-io/boxed";
 
 type Handlers = ActivityHandlers<typeof orderContract>;
 
 // Create mock activities for testing
 const mockActivities: Handlers = {
   sendEmail: ({ to, body }) => Future.value(Result.Ok({ sent: true })),
-  processPayment: ({ amount }) => Future.value(Result.Ok({ transactionId: 'TEST-TXN' }))
+  processPayment: ({ amount }) => Future.value(Result.Ok({ transactionId: "TEST-TXN" })),
 };
 
 // Use in tests
-describe('processOrder', () => {
-  it('should process payment', async () => {
+describe("processOrder", () => {
+  it("should process payment", async () => {
     const context = createMockContext(mockActivities);
     const result = await processOrder.implementation(context, {
-      orderId: 'ORD-123'
+      orderId: "ORD-123",
     });
     expect(result.success).toBe(true);
   });
@@ -228,15 +230,12 @@ describe('processOrder', () => {
 Wrap activities with middleware:
 
 ```typescript
-import type { ActivityHandlers } from '@temporal-contract/worker/activity';
+import type { ActivityHandlers } from "@temporal-contract/worker/activity";
 
 type Handlers = ActivityHandlers<typeof orderContract>;
 
 // Create logging middleware
-function withLogging<T extends (...args: any[]) => any>(
-  name: string,
-  fn: T
-): T {
+function withLogging<T extends (...args: any[]) => any>(name: string, fn: T): T {
   return (async (...args: any[]) => {
     console.log(`[${name}] Starting`, args);
     try {
@@ -251,13 +250,10 @@ function withLogging<T extends (...args: any[]) => any>(
 }
 
 // Apply to activities
-const sendEmail: Handlers['sendEmail'] = withLogging(
-  'sendEmail',
-  async ({ to, body }) => {
-    await emailService.send({ to, body });
-    return { sent: true };
-  }
-);
+const sendEmail: Handlers["sendEmail"] = withLogging("sendEmail", async ({ to, body }) => {
+  await emailService.send({ to, body });
+  return { sent: true };
+});
 ```
 
 ### Retry Logic
@@ -265,10 +261,7 @@ const sendEmail: Handlers['sendEmail'] = withLogging(
 Add retry logic to activities:
 
 ```typescript
-function withRetry<T extends (...args: any[]) => Promise<any>>(
-  fn: T,
-  maxRetries = 3
-): T {
+function withRetry<T extends (...args: any[]) => Promise<any>>(fn: T, maxRetries = 3): T {
   return (async (...args: any[]) => {
     let lastError;
     for (let i = 0; i < maxRetries; i++) {
@@ -277,7 +270,7 @@ function withRetry<T extends (...args: any[]) => Promise<any>>(
       } catch (error) {
         lastError = error;
         if (i < maxRetries - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+          await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
         }
       }
     }
@@ -285,13 +278,10 @@ function withRetry<T extends (...args: any[]) => Promise<any>>(
   }) as T;
 }
 
-const processPayment: Handlers['processPayment'] = withRetry(
-  async ({ amount }) => {
-    const txId = await paymentGateway.charge(amount);
-    return { transactionId: txId };
-  },
-  3
-);
+const processPayment: Handlers["processPayment"] = withRetry(async ({ amount }) => {
+  const txId = await paymentGateway.charge(amount);
+  return { transactionId: txId };
+}, 3);
 ```
 
 ### Caching Pattern
@@ -303,7 +293,7 @@ const cache = new Map<string, any>();
 
 function withCache<T extends (input: any) => Promise<any>>(
   fn: T,
-  keyFn: (input: any) => string
+  keyFn: (input: any) => string,
 ): T {
   return (async (input: any) => {
     const key = keyFn(input);
@@ -316,12 +306,12 @@ function withCache<T extends (input: any) => Promise<any>>(
   }) as T;
 }
 
-const validateInventory: Handlers['validateInventory'] = withCache(
+const validateInventory: Handlers["validateInventory"] = withCache(
   async ({ orderId }) => {
     const available = await inventoryDB.check(orderId);
     return { available };
   },
-  ({ orderId }) => orderId
+  ({ orderId }) => orderId,
 );
 ```
 
@@ -334,10 +324,14 @@ Always extract types for better maintainability:
 ```typescript
 // ✅ Good
 type Handlers = ActivityHandlers<typeof contract>;
-const sendEmail: Handlers['sendEmail'] = async ({ to, body }) => { /* ... */ };
+const sendEmail: Handlers["sendEmail"] = async ({ to, body }) => {
+  /* ... */
+};
 
 // ❌ Avoid inline typing
-const sendEmail = async ({ to, body }: { to: string, body: string }) => { /* ... */ };
+const sendEmail = async ({ to, body }: { to: string; body: string }) => {
+  /* ... */
+};
 ```
 
 ### 2. Organize by Domain
@@ -360,7 +354,7 @@ Make activities testable and configurable:
 
 ```typescript
 export const createActivities = (services: Services) => {
-  const sendEmail: Handlers['sendEmail'] = async ({ to, body }) => {
+  const sendEmail: Handlers["sendEmail"] = async ({ to, body }) => {
     await services.email.send({ to, body });
     return { sent: true };
   };

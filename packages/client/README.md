@@ -13,17 +13,17 @@ pnpm add @temporal-contract/client @temporal-contract/contract @temporalio/clien
 ## Quick Example
 
 ```typescript
-import { TypedClient } from '@temporal-contract/client';
-import { Connection, Client } from '@temporalio/client';
+import { TypedClient } from "@temporal-contract/client";
+import { Connection, Client } from "@temporalio/client";
 
-const connection = await Connection.connect({ address: 'localhost:7233' });
+const connection = await Connection.connect({ address: "localhost:7233" });
 const temporalClient = new Client({ connection });
 const client = TypedClient.create(myContract, temporalClient);
 
 // Execute workflow (fully typed!)
-const result = await client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
-  args: { orderId: 'ORD-123' }
+const result = await client.executeWorkflow("processOrder", {
+  workflowId: "order-123",
+  args: { orderId: "ORD-123" },
 });
 ```
 

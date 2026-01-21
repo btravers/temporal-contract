@@ -19,7 +19,7 @@ pnpm add @temporal-contract/boxed
 The `Result` type provides explicit error handling without exceptions:
 
 ```typescript
-import { Result } from '@temporal-contract/boxed';
+import { Result } from "@temporal-contract/boxed";
 
 // Create results
 const success = Result.Ok(42);
@@ -32,8 +32,8 @@ const value = success.match({
 });
 
 // Transformations
-const doubled = success.map(x => x * 2);
-const recovered = failure.mapError(e => `Error: ${e}`);
+const doubled = success.map((x) => x * 2);
+const recovered = failure.mapError((e) => `Error: ${e}`);
 ```
 
 ### Future Pattern
@@ -41,21 +41,21 @@ const recovered = failure.mapError(e => `Error: ${e}`);
 The `Future` type wraps Promises with Result-based error handling:
 
 ```typescript
-import { Future, Result } from '@temporal-contract/boxed';
+import { Future, Result } from "@temporal-contract/boxed";
 
 // Create futures
 const future = Future.value(42);
-const fromPromise = Future.fromPromise(fetch('/api/data'));
+const fromPromise = Future.fromPromise(fetch("/api/data"));
 
 // Transform values
-const doubled = future.map(x => x * 2);
-const chained = future.flatMap(x => Future.value(x * 2));
+const doubled = future.map((x) => x * 2);
+const chained = future.flatMap((x) => Future.value(x * 2));
 
 // Work with Results in Futures
 const result = await Future.fromPromise(asyncOperation());
 result.match({
-  Ok: (value) => console.log('Success:', value),
-  Error: (error) => console.error('Failed:', error),
+  Ok: (value) => console.log("Success:", value),
+  Error: (error) => console.error("Failed:", error),
 });
 ```
 
@@ -66,13 +66,14 @@ result.match({
 Activities return `Future<Result<T, ActivityError>>` for explicit error handling:
 
 ```typescript
-import { Future, Result } from '@temporal-contract/boxed';
-import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
+import { Future, Result } from "@temporal-contract/boxed";
+import { declareActivitiesHandler } from "@temporal-contract/worker/activity";
 
 export const activities = declareActivitiesHandler(contract, {
   processPayment: async (args) => {
-    return Future.fromPromise(paymentService.charge(args))
-      .mapError(error => new ActivityError('PAYMENT_FAILED', error.message));
+    return Future.fromPromise(paymentService.charge(args)).mapError(
+      (error) => new ActivityError("PAYMENT_FAILED", error.message),
+    );
   },
 });
 ```
@@ -80,7 +81,7 @@ export const activities = declareActivitiesHandler(contract, {
 ### Workflows
 
 ```typescript
-import { Result } from '@temporal-contract/boxed';
+import { Result } from "@temporal-contract/boxed";
 
 export const workflow = declareWorkflow(contract, (ctx) => ({
   async execute(input) {
@@ -88,8 +89,8 @@ export const workflow = declareWorkflow(contract, (ctx) => ({
 
     if (payment.isError()) {
       return Result.Error({
-        type: 'PAYMENT_FAILED',
-        error: payment.error
+        type: "PAYMENT_FAILED",
+        error: payment.error,
       });
     }
 
@@ -107,7 +108,7 @@ This package provides bi-directional interoperability with `@swan-io/boxed` for 
 Our `Result` and `Future` types implement the same interface as `@swan-io/boxed`, making them compatible by default:
 
 ```typescript
-import { Result, Future } from '@temporal-contract/boxed';
+import { Result, Future } from "@temporal-contract/boxed";
 
 // Your types are already compatible with @swan-io/boxed consumers
 const result = Result.Ok(42);
@@ -129,7 +130,7 @@ processSwanResult(result); // ✅ Works directly
 For cases where you need explicit conversion, use the interop module:
 
 ```typescript
-import { Result, Future } from '@temporal-contract/boxed';
+import { Result, Future } from "@temporal-contract/boxed";
 import {
   fromSwanResult,
   toSwanResult,
@@ -137,7 +138,7 @@ import {
   toSwanFuture,
   fromSwanFutureResult,
   toSwanFutureResult,
-} from '@temporal-contract/boxed/interop';
+} from "@temporal-contract/boxed/interop";
 
 // Convert from @swan-io/boxed to @temporal-contract/boxed
 const swanResult = externalLibrary.getSomething();

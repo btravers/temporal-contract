@@ -121,7 +121,7 @@ The server will be available at `localhost:7233`.
 
 ```yaml
 # docker-compose.yml
-version: '3.8'
+version: "3.8"
 services:
   temporal:
     image: temporalio/auto-setup:latest
@@ -188,22 +188,22 @@ Create a simple test to verify everything works:
 
 ```typescript
 // test-installation.ts
-import { defineContract } from '@temporal-contract/contract';
-import { z } from 'zod';
+import { defineContract } from "@temporal-contract/contract";
+import { z } from "zod";
 
 const testContract = defineContract({
-  taskQueue: 'test',
+  taskQueue: "test",
   workflows: {
     hello: {
       input: z.object({ name: z.string() }),
       output: z.object({ greeting: z.string() }),
-      activities: {}
-    }
-  }
+      activities: {},
+    },
+  },
 });
 
-console.log('✅ temporal-contract installed successfully!');
-console.log('Contract task queue:', testContract.taskQueue);
+console.log("✅ temporal-contract installed successfully!");
+console.log("Contract task queue:", testContract.taskQueue);
 ```
 
 Run it:

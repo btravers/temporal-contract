@@ -22,14 +22,20 @@ graph TB
 
 ```typescript
 const contract = defineContract({
-  taskQueue: 'my-queue',
+  taskQueue: "my-queue",
   workflows: {
     myWorkflow: {
-      input: z.object({ /* ... */ }),
-      output: z.object({ /* ... */ }),
-      activities: { /* ... */ }
-    }
-  }
+      input: z.object({
+        /* ... */
+      }),
+      output: z.object({
+        /* ... */
+      }),
+      activities: {
+        /* ... */
+      },
+    },
+  },
 });
 ```
 
@@ -69,24 +75,26 @@ sequenceDiagram
 The contract defines the shape of your workflows using Zod schemas:
 
 ```typescript
-import { defineContract } from '@temporal-contract/contract';
-import { z } from 'zod';
+import { defineContract } from "@temporal-contract/contract";
+import { z } from "zod";
 
 const contract = defineContract({
-  taskQueue: 'orders',
+  taskQueue: "orders",
   workflows: {
     processOrder: {
       input: z.object({
         orderId: z.string(),
-        amount: z.number().positive()
+        amount: z.number().positive(),
       }),
       output: z.object({
         success: z.boolean(),
-        transactionId: z.string()
+        transactionId: z.string(),
       }),
-      activities: { /* ... */ }
-    }
-  }
+      activities: {
+        /* ... */
+      },
+    },
+  },
 });
 ```
 
@@ -95,24 +103,24 @@ const contract = defineContract({
 Implementations receive fully typed parameters and must return correctly typed results:
 
 ```typescript
-import { declareWorkflow } from '@temporal-contract/worker/workflow';
+import { declareWorkflow } from "@temporal-contract/worker/workflow";
 
 export const processOrder = declareWorkflow({
-  workflowName: 'processOrder',
+  workflowName: "processOrder",
   contract,
   implementation: async ({ activities }, input) => {
     // input is typed as { orderId: string, amount: number }
     // return type must match { success: boolean, transactionId: string }
 
     const payment = await activities.processPayment({
-      amount: input.amount
+      amount: input.amount,
     });
 
     return {
       success: true,
-      transactionId: payment.transactionId
+      transactionId: payment.transactionId,
     };
-  }
+  },
 });
 ```
 
@@ -121,14 +129,14 @@ export const processOrder = declareWorkflow({
 The client provides type-safe workflow execution:
 
 ```typescript
-import { TypedClient } from '@temporal-contract/client';
+import { TypedClient } from "@temporal-contract/client";
 
 const client = TypedClient.create(contract, { connection });
 
 // TypeScript knows the exact argument types
-const result = await client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
-  args: { orderId: 'ORD-123', amount: 100 }
+const result = await client.executeWorkflow("processOrder", {
+  workflowId: "order-123",
+  args: { orderId: "ORD-123", amount: 100 },
 });
 
 // result is fully typed!
@@ -145,21 +153,23 @@ Activities available to **all workflows** in the contract:
 
 ```typescript
 const contract = defineContract({
-  taskQueue: 'orders',
+  taskQueue: "orders",
 
   // Global activities
   activities: {
     sendEmail: {
       input: z.object({ to: z.string(), body: z.string() }),
-      output: z.object({ sent: z.boolean() })
+      output: z.object({ sent: z.boolean() }),
     },
     logEvent: {
       input: z.object({ event: z.string(), data: z.any() }),
-      output: z.object({ logged: z.boolean() })
-    }
+      output: z.object({ logged: z.boolean() }),
+    },
   },
 
-  workflows: { /* ... */ }
+  workflows: {
+    /* ... */
+  },
 });
 ```
 
@@ -169,7 +179,7 @@ Activities scoped to a **specific workflow**:
 
 ```typescript
 const contract = defineContract({
-  taskQueue: 'orders',
+  taskQueue: "orders",
   workflows: {
     processOrder: {
       input: z.object({ orderId: z.string() }),
@@ -179,15 +189,15 @@ const contract = defineContract({
       activities: {
         validateInventory: {
           input: z.object({ orderId: z.string() }),
-          output: z.object({ available: z.boolean() })
+          output: z.object({ available: z.boolean() }),
         },
         chargePayment: {
           input: z.object({ amount: z.number() }),
-          output: z.object({ transactionId: z.string() })
-        }
-      }
-    }
-  }
+          output: z.object({ transactionId: z.string() }),
+        },
+      },
+    },
+  },
 });
 ```
 
@@ -211,9 +221,9 @@ graph LR
 
 ```typescript
 // If validation fails, you get a clear error
-const result = await client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
-  args: { orderId: 123 }  // ❌ Error: orderId must be a string
+const result = await client.executeWorkflow("processOrder", {
+  workflowId: "order-123",
+  args: { orderId: 123 }, // ❌ Error: orderId must be a string
 });
 ```
 
@@ -232,10 +242,12 @@ TypeScript automatically infers types from your Zod schemas:
 // Define once
 const schema = z.object({
   orderId: z.string(),
-  items: z.array(z.object({
-    sku: z.string(),
-    quantity: z.number()
-  }))
+  items: z.array(
+    z.object({
+      sku: z.string(),
+      quantity: z.number(),
+    }),
+  ),
 });
 
 // TypeScript knows the exact type:
@@ -257,22 +269,26 @@ You can compose contracts for better organization:
 const emailActivities = {
   sendEmail: {
     input: z.object({ to: z.string(), body: z.string() }),
-    output: z.object({ sent: z.boolean() })
-  }
+    output: z.object({ sent: z.boolean() }),
+  },
 };
 
 // Contract 1
 const ordersContract = defineContract({
-  taskQueue: 'orders',
+  taskQueue: "orders",
   activities: emailActivities,
-  workflows: { /* ... */ }
+  workflows: {
+    /* ... */
+  },
 });
 
 // Contract 2 (reusing activities)
 const shipmentsContract = defineContract({
-  taskQueue: 'shipments',
+  taskQueue: "shipments",
   activities: emailActivities,
-  workflows: { /* ... */ }
+  workflows: {
+    /* ... */
+  },
 });
 ```
 
@@ -285,22 +301,32 @@ Define focused contracts for specific domains:
 ```typescript
 // ✅ Good - focused contract
 const ordersContract = defineContract({
-  taskQueue: 'orders',
+  taskQueue: "orders",
   workflows: {
-    processOrder: { /* ... */ },
-    cancelOrder: { /* ... */ }
-  }
+    processOrder: {
+      /* ... */
+    },
+    cancelOrder: {
+      /* ... */
+    },
+  },
 });
 
 // ❌ Avoid - too broad
 const everythingContract = defineContract({
-  taskQueue: 'everything',
+  taskQueue: "everything",
   workflows: {
-    processOrder: { /* ... */ },
-    sendEmail: { /* ... */ },
-    updateInventory: { /* ... */ },
+    processOrder: {
+      /* ... */
+    },
+    sendEmail: {
+      /* ... */
+    },
+    updateInventory: {
+      /* ... */
+    },
     // ... 50 more workflows
-  }
+  },
 });
 ```
 
@@ -311,17 +337,17 @@ Make your schemas self-documenting:
 ```typescript
 // ✅ Good
 input: z.object({
-  orderId: z.string().uuid().describe('Unique order identifier'),
-  amount: z.number().positive().describe('Order amount in cents'),
-  customerId: z.string().email().describe('Customer email address')
-})
+  orderId: z.string().uuid().describe("Unique order identifier"),
+  amount: z.number().positive().describe("Order amount in cents"),
+  customerId: z.string().email().describe("Customer email address"),
+});
 
 // ❌ Avoid
 input: z.object({
   id: z.string(),
   amt: z.number(),
-  cid: z.string()
-})
+  cid: z.string(),
+});
 ```
 
 ### 3. Validate Early
@@ -331,10 +357,10 @@ Use Zod's refinements for complex validation:
 ```typescript
 input: z.object({
   startDate: z.date(),
-  endDate: z.date()
-}).refine(data => data.endDate > data.startDate, {
-  message: "End date must be after start date"
-})
+  endDate: z.date(),
+}).refine((data) => data.endDate > data.startDate, {
+  message: "End date must be after start date",
+});
 ```
 
 ## What's Next?

@@ -22,14 +22,14 @@ pnpm add @temporal-contract/worker @temporal-contract/boxed
 For implementing activities:
 
 ```typescript
-import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
+import { declareActivitiesHandler } from "@temporal-contract/worker/activity";
 import type {
   WorkerInferInput,
   WorkerInferOutput,
   WorkerInferActivity,
   ActivityHandler,
-  WorkflowActivityHandler
-} from '@temporal-contract/worker/activity';
+  WorkflowActivityHandler,
+} from "@temporal-contract/worker/activity";
 ```
 
 ### `@temporal-contract/worker/workflow`
@@ -37,14 +37,14 @@ import type {
 For implementing workflows:
 
 ```typescript
-import { declareWorkflow } from '@temporal-contract/worker/workflow';
+import { declareWorkflow } from "@temporal-contract/worker/workflow";
 import type {
   WorkerInferWorkflow,
   WorkerInferSignal,
   WorkerInferQuery,
   WorkerInferUpdate,
-  WorkflowContext
-} from '@temporal-contract/worker/workflow';
+  WorkflowContext,
+} from "@temporal-contract/worker/workflow";
 ```
 
 ### Workflow Context
@@ -53,22 +53,22 @@ The workflow context provides access to activities and child workflows:
 
 ```typescript
 export const myWorkflow = declareWorkflow({
-  workflowName: 'myWorkflow',
+  workflowName: "myWorkflow",
   contract: myContract,
   implementation: async (context, input) => {
     // Access activities
-    await context.activities.sendEmail({ to: 'user@example.com' });
+    await context.activities.sendEmail({ to: "user@example.com" });
 
     // Execute child workflow
-    const result = await context.executeChildWorkflow(myContract, 'childWorkflow', {
-      workflowId: 'child-123',
-      args: { data: input.data }
+    const result = await context.executeChildWorkflow(myContract, "childWorkflow", {
+      workflowId: "child-123",
+      args: { data: input.data },
     });
 
     // Start child workflow without waiting
-    const handle = await context.startChildWorkflow(myContract, 'backgroundTask', {
-      workflowId: 'task-123',
-      args: { taskId: input.taskId }
+    const handle = await context.startChildWorkflow(myContract, "backgroundTask", {
+      workflowId: "task-123",
+      args: { taskId: input.taskId },
     });
 
     return { success: true };
@@ -83,18 +83,18 @@ export const myWorkflow = declareWorkflow({
 Extract input and output types from definitions (worker perspective):
 
 ```typescript
-import type { WorkerInferInput, WorkerInferOutput } from '@temporal-contract/worker/activity';
+import type { WorkerInferInput, WorkerInferOutput } from "@temporal-contract/worker/activity";
 
 const activityDef = {
   input: z.object({ orderId: z.string() }),
-  output: z.object({ success: z.boolean() })
+  output: z.object({ success: z.boolean() }),
 };
 
 // Worker receives parsed input (z.output)
-type Input = WorkerInferInput<typeof activityDef>;  // { orderId: string }
+type Input = WorkerInferInput<typeof activityDef>; // { orderId: string }
 
 // Worker returns raw output (z.input)
-type Output = WorkerInferOutput<typeof activityDef>;  // { success: boolean }
+type Output = WorkerInferOutput<typeof activityDef>; // { success: boolean }
 ```
 
 ### Handler Types
@@ -102,11 +102,11 @@ type Output = WorkerInferOutput<typeof activityDef>;  // { success: boolean }
 Extract handler function signatures:
 
 ```typescript
-import type { WorkerInferActivity } from '@temporal-contract/worker/activity';
+import type { WorkerInferActivity } from "@temporal-contract/worker/activity";
 
 const activityDef = {
   input: z.object({ orderId: z.string() }),
-  output: z.object({ success: z.boolean() })
+  output: z.object({ success: z.boolean() }),
 };
 
 // Activity handler signature
@@ -121,8 +121,8 @@ Extract types for entire contracts:
 ```typescript
 import type {
   WorkerInferActivities,
-  WorkerInferWorkflows
-} from '@temporal-contract/worker/activity';
+  WorkerInferWorkflows,
+} from "@temporal-contract/worker/activity";
 
 // All activities from contract
 type Activities = WorkerInferActivities<typeof myContract>;
@@ -136,17 +136,13 @@ type Workflows = WorkerInferWorkflows<typeof myContract>;
 Type-safe activity handler extraction:
 
 ```typescript
-import type { ActivityHandler, WorkflowActivityHandler } from '@temporal-contract/worker/activity';
+import type { ActivityHandler, WorkflowActivityHandler } from "@temporal-contract/worker/activity";
 
 // Global activity handler
-type LogHandler = ActivityHandler<typeof myContract, 'log'>;
+type LogHandler = ActivityHandler<typeof myContract, "log">;
 
 // Workflow-specific activity handler
-type PaymentHandler = WorkflowActivityHandler<
-  typeof myContract,
-  'processOrder',
-  'processPayment'
->;
+type PaymentHandler = WorkflowActivityHandler<typeof myContract, "processOrder", "processPayment">;
 ```
 
 ## API Reference

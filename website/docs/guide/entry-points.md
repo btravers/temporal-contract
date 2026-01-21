@@ -79,17 +79,17 @@ Define your contract in a separate package that can be shared:
 
 ```typescript
 // contract-package/src/contract.ts
-import { defineContract } from '@temporal-contract/contract';
-import { z } from 'zod';
+import { defineContract } from "@temporal-contract/contract";
+import { z } from "zod";
 
 export const orderContract = defineContract({
-  taskQueue: 'orders',
+  taskQueue: "orders",
 
   activities: {
     sendEmail: {
       input: z.object({ to: z.string(), body: z.string() }),
-      output: z.object({ sent: z.boolean() })
-    }
+      output: z.object({ sent: z.boolean() }),
+    },
   },
 
   workflows: {
@@ -99,17 +99,17 @@ export const orderContract = defineContract({
       activities: {
         processPayment: {
           input: z.object({ amount: z.number() }),
-          output: z.object({ transactionId: z.string() })
-        }
-      }
-    }
-  }
+          output: z.object({ transactionId: z.string() }),
+        },
+      },
+    },
+  },
 });
 ```
 
 ```typescript
 // contract-package/src/index.ts
-export { orderContract } from './contract.js';
+export { orderContract } from "./contract.js";
 // Export schemas and types as needed
 ```
 
@@ -119,8 +119,8 @@ Create a single activities handler in your worker application:
 
 ```typescript
 // worker-application/src/activities/index.ts
-import { declareActivitiesHandler } from '@temporal-contract/worker/activity';
-import { orderContract } from 'contract-package';
+import { declareActivitiesHandler } from "@temporal-contract/worker/activity";
+import { orderContract } from "contract-package";
 
 export const activities = declareActivitiesHandler({
   contract: orderContract,
@@ -132,8 +132,8 @@ export const activities = declareActivitiesHandler({
     processPayment: async ({ amount }) => {
       const txId = await paymentGateway.charge(amount);
       return { transactionId: txId };
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -143,24 +143,24 @@ Create separate workflow files in your worker application:
 
 ```typescript
 // worker-application/src/workflows/order.workflow.ts
-import { declareWorkflow } from '@temporal-contract/worker/workflow';
-import { orderContract } from 'contract-package';
+import { declareWorkflow } from "@temporal-contract/worker/workflow";
+import { orderContract } from "contract-package";
 
 export const processOrder = declareWorkflow({
-  workflowName: 'processOrder',
+  workflowName: "processOrder",
   contract: orderContract,
   implementation: async ({ activities }, { orderId }) => {
     const payment = await activities.processPayment({
-      amount: 100
+      amount: 100,
     });
 
     await activities.sendEmail({
-      to: 'customer@example.com',
-      body: `Order ${orderId} processed`
+      to: "customer@example.com",
+      body: `Order ${orderId} processed`,
     });
 
     return { success: true };
-  }
+  },
 });
 ```
 
@@ -170,12 +170,12 @@ Wire everything together in your worker application:
 
 ```typescript
 // worker-application/src/worker.ts
-import { Worker } from '@temporalio/worker';
-import { activities } from './activities';
+import { Worker } from "@temporalio/worker";
+import { activities } from "./activities";
 
 const worker = await Worker.create({
   // Workflows loaded from path (Temporal requirement)
-  workflowsPath: require.resolve('./workflows/order.workflow'),
+  workflowsPath: require.resolve("./workflows/order.workflow"),
 
   // Activities loaded directly
   activities: activities.activities,
@@ -193,30 +193,30 @@ Use the contract in a separate client application (can be in a different codebas
 
 ```typescript
 // client-application/src/client.ts
-import { Connection } from '@temporalio/client';
-import { TypedClient } from '@temporal-contract/client';
-import { orderContract } from 'contract-package';
+import { Connection } from "@temporalio/client";
+import { TypedClient } from "@temporal-contract/client";
+import { orderContract } from "contract-package";
 
 // Connect to Temporal server
 const connection = await Connection.connect({
-  address: 'localhost:7233',
+  address: "localhost:7233",
 });
 
 // Create type-safe client from contract
 const client = TypedClient.create(orderContract, {
   connection,
-  namespace: 'default',
+  namespace: "default",
 });
 
 // Start workflow with full type safety
-const handle = await client.startWorkflow('processOrder', {
-  workflowId: 'order-123',
-  args: { orderId: 'ORD-123' }  // ✅ Type-checked!
+const handle = await client.startWorkflow("processOrder", {
+  workflowId: "order-123",
+  args: { orderId: "ORD-123" }, // ✅ Type-checked!
 });
 
 // Wait for result (also type-checked)
 const result = await handle.result();
-console.log(result.success);  // ✅ TypeScript knows the shape
+console.log(result.success); // ✅ TypeScript knows the shape
 ```
 
 ## Multiple Workflows
@@ -225,15 +225,15 @@ For multiple workflows, export them all from a single file:
 
 ```typescript
 // workflows/index.ts
-export * from './order.workflow';
-export * from './shipment.workflow';
-export * from './refund.workflow';
+export * from "./order.workflow";
+export * from "./shipment.workflow";
+export * from "./refund.workflow";
 ```
 
 ```typescript
 // worker.ts
 const worker = await Worker.create({
-  workflowsPath: require.resolve('./workflows'),
+  workflowsPath: require.resolve("./workflows"),
   activities: activities.activities,
   taskQueue: activities.contract.taskQueue,
 });
@@ -251,9 +251,9 @@ const contract = defineContract({
   activities: {
     processPayment: {
       input: z.object({ amount: z.number() }),
-      output: z.object({ transactionId: z.string() })
-    }
-  }
+      output: z.object({ transactionId: z.string() }),
+    },
+  },
 });
 
 // Activities handler must match
@@ -262,10 +262,10 @@ declareActivitiesHandler({
   activities: {
     processPayment: async ({ amount }) => {
       // ✅ amount is number
-      return { transactionId: 'TXN-123' };
+      return { transactionId: "TXN-123" };
       // ✅ Must return { transactionId: string }
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -274,17 +274,17 @@ declareActivitiesHandler({
 ```typescript
 // Workflow context is typed from contract
 declareWorkflow({
-  workflowName: 'processOrder',
+  workflowName: "processOrder",
   contract,
   implementation: async ({ activities }, input) => {
     // ✅ TypeScript knows processPayment exists
     const result = await activities.processPayment({
-      amount: 100  // ✅ Type checked
+      amount: 100, // ✅ Type checked
     });
 
     // ✅ result.transactionId is string
     console.log(result.transactionId);
-  }
+  },
 });
 ```
 
@@ -327,13 +327,13 @@ Activities and workflows can be tested independently:
 ```typescript
 // Test activities directly
 const result = await activities.activities.processPayment({
-  amount: 100
+  amount: 100,
 });
 
 // Test workflows with mock context
 const workflow = processOrder.implementation;
 const mockContext = createMockContext();
-await workflow(mockContext, { orderId: 'ORD-123' });
+await workflow(mockContext, { orderId: "ORD-123" });
 ```
 
 ### 7. Organization
@@ -352,18 +352,18 @@ Clear separation of concerns:
 // activities/shared.ts
 export const sharedActivities = {
   sendEmail: async ({ to, body }) => ({ sent: true }),
-  logEvent: async ({ event }) => ({ logged: true })
+  logEvent: async ({ event }) => ({ logged: true }),
 };
 
 // activities/order.ts
-import { sharedActivities } from './shared';
+import { sharedActivities } from "./shared";
 
 export const orderActivities = declareActivitiesHandler({
   contract: orderContract,
   activities: {
     ...sharedActivities,
-    processPayment: async ({ amount }) => ({ transactionId: 'TXN' })
-  }
+    processPayment: async ({ amount }) => ({ transactionId: "TXN" }),
+  },
 });
 ```
 
@@ -372,19 +372,19 @@ export const orderActivities = declareActivitiesHandler({
 ```typescript
 // activities/index.ts
 const baseActivities = {
-  validateInput: async ({ data }) => ({ valid: true })
+  validateInput: async ({ data }) => ({ valid: true }),
 };
 
 const paymentActivities = {
-  processPayment: async ({ amount }) => ({ transactionId: 'TXN' })
+  processPayment: async ({ amount }) => ({ transactionId: "TXN" }),
 };
 
 export const activities = declareActivitiesHandler({
   contract: orderContract,
   activities: {
     ...baseActivities,
-    ...paymentActivities
-  }
+    ...paymentActivities,
+  },
 });
 ```
 

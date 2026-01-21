@@ -114,18 +114,18 @@ pnpm add -D @temporal-contract/testing
 ### Contract Definition
 
 ```typescript
-import { defineContract } from '@temporal-contract/contract';
-import { z } from 'zod';
+import { defineContract } from "@temporal-contract/contract";
+import { z } from "zod";
 
 const contract = defineContract({
-  taskQueue: 'my-queue',
+  taskQueue: "my-queue",
 
   // Global activities
   activities: {
     sendEmail: {
       input: z.object({ to: z.string(), body: z.string() }),
-      output: z.object({ sent: z.boolean() })
-    }
+      output: z.object({ sent: z.boolean() }),
+    },
   },
 
   // Workflows
@@ -138,68 +138,65 @@ const contract = defineContract({
       activities: {
         validateOrder: {
           input: z.object({ orderId: z.string() }),
-          output: z.object({ valid: z.boolean() })
-        }
-      }
-    }
-  }
+          output: z.object({ valid: z.boolean() }),
+        },
+      },
+    },
+  },
 });
 ```
 
 ### Activity Implementation
 
 ```typescript
-import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
-import { Future, Result } from '@swan-io/boxed';
+import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { Future, Result } from "@swan-io/boxed";
 
 const handler = declareActivitiesHandler({
   contract,
   activities: {
     sendEmail: ({ to, body }) =>
       Future.fromPromise(emailService.send({ to, body }))
-        .mapError((error) =>
-          new ActivityError('EMAIL_FAILED', 'Failed to send email', error)
-        )
+        .mapError((error) => new ActivityError("EMAIL_FAILED", "Failed to send email", error))
         .mapOk(() => ({ sent: true })),
-    validateOrder: ({ orderId }) =>
-      Future.value(Result.Ok({ valid: true }))
-  }
+    validateOrder: ({ orderId }) => Future.value(Result.Ok({ valid: true })),
+  },
 });
 ```
 
 ### Workflow Implementation
 
 ```typescript
-import { declareWorkflow } from '@temporal-contract/worker/workflow';
+import { declareWorkflow } from "@temporal-contract/worker/workflow";
 
 export const processOrder = declareWorkflow({
-  workflowName: 'processOrder',
+  workflowName: "processOrder",
   contract,
   implementation: async ({ activities }, { orderId }) => {
     // Activities return plain values (Result is unwrapped by the framework)
     const { valid } = await activities.validateOrder({ orderId });
 
     await activities.sendEmail({
-      to: 'admin@example.com',
-      body: 'Order processed'
+      to: "admin@example.com",
+      body: "Order processed",
     });
 
     // Return plain object (not Result - network serialization)
     return { success: valid };
-  }
+  },
 });
 ```
 
 ### Worker Setup
 
 ```typescript
-import { Worker } from '@temporalio/worker';
-import { handler } from './activities';
+import { Worker } from "@temporalio/worker";
+import { handler } from "./activities";
 
 const worker = await Worker.create({
-  workflowsPath: require.resolve('./workflows'),
+  workflowsPath: require.resolve("./workflows"),
   activities: handler.activities,
-  taskQueue: handler.contract.taskQueue
+  taskQueue: handler.contract.taskQueue,
 });
 
 await worker.run();
@@ -208,26 +205,26 @@ await worker.run();
 ### Client Usage
 
 ```typescript
-import { TypedClient } from '@temporal-contract/client';
-import { Connection, Client } from '@temporalio/client';
+import { TypedClient } from "@temporal-contract/client";
+import { Connection, Client } from "@temporalio/client";
 
 const connection = await Connection.connect({
-  address: 'localhost:7233'
+  address: "localhost:7233",
 });
 
 const temporalClient = new Client({ connection });
 const client = TypedClient.create(contract, temporalClient);
 
 // Execute workflow
-const result = await client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
-  args: { orderId: 'ORD-123' }
+const result = await client.executeWorkflow("processOrder", {
+  workflowId: "order-123",
+  args: { orderId: "ORD-123" },
 });
 
 // Handle result
 result.match({
-  Ok: (output) => console.log('Success:', output),
-  Error: (error) => console.error('Failed:', error)
+  Ok: (output) => console.log("Success:", output),
+  Error: (error) => console.error("Failed:", error),
 });
 ```
 
@@ -236,25 +233,25 @@ result.match({
 ### Contract Types
 
 ```typescript
-import type { Contract, WorkflowDefinition } from '@temporal-contract/contract';
+import type { Contract, WorkflowDefinition } from "@temporal-contract/contract";
 
 // Extract contract type
 type MyContract = typeof contract;
 
 // Extract workflow definition
-type OrderWorkflow = MyContract['workflows']['processOrder'];
+type OrderWorkflow = MyContract["workflows"]["processOrder"];
 ```
 
 ### Inferred Types
 
 ```typescript
-import type { InferInput, InferOutput } from '@temporal-contract/contract';
+import type { InferInput, InferOutput } from "@temporal-contract/contract";
 
 // Infer input type from workflow
-type OrderInput = InferInput<typeof contract, 'processOrder'>;
+type OrderInput = InferInput<typeof contract, "processOrder">;
 
 // Infer output type from workflow
-type OrderOutput = InferOutput<typeof contract, 'processOrder'>;
+type OrderOutput = InferOutput<typeof contract, "processOrder">;
 ```
 
 ## Error Handling
@@ -262,30 +259,30 @@ type OrderOutput = InferOutput<typeof contract, 'processOrder'>;
 ### Result Pattern
 
 ```typescript
-import { TypedClient } from '@temporal-contract/client';
-import { Result } from '@swan-io/boxed';
+import { TypedClient } from "@temporal-contract/client";
+import { Result } from "@swan-io/boxed";
 
 // Client returns Result<T, E>
-const result = await client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
-  args: { orderId: 'ORD-123' }
+const result = await client.executeWorkflow("processOrder", {
+  workflowId: "order-123",
+  args: { orderId: "ORD-123" },
 });
 
 // Handle with match
 result.match({
   Ok: (output) => {
-    console.log('Success:', output);
+    console.log("Success:", output);
   },
   Error: (error) => {
-    console.error('Failed:', error);
-  }
+    console.error("Failed:", error);
+  },
 });
 
 // Or check manually
 if (result.isOk()) {
-  console.log('Success:', result.get());
+  console.log("Success:", result.get());
 } else {
-  console.error('Failed:', result.getError());
+  console.error("Failed:", result.getError());
 }
 ```
 

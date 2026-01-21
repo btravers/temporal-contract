@@ -15,13 +15,13 @@ pnpm add @temporal-contract/client @swan-io/boxed
 ## Basic Setup
 
 ```typescript
-import { Connection, Client } from '@temporalio/client';
-import { TypedClient } from '@temporal-contract/client';
-import { myContract } from './contract';
+import { Connection, Client } from "@temporalio/client";
+import { TypedClient } from "@temporal-contract/client";
+import { myContract } from "./contract";
 
 // Connect to Temporal
 const connection = await Connection.connect({
-  address: 'localhost:7233',
+  address: "localhost:7233",
 });
 
 // Create Temporal client and typed client
@@ -36,11 +36,11 @@ const client = TypedClient.create(myContract, temporalClient);
 Execute a workflow and wait for completion using the Result/Future pattern:
 
 ```typescript
-const future = client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
+const future = client.executeWorkflow("processOrder", {
+  workflowId: "order-123",
   args: {
-    orderId: 'ORD-123',
-    customerId: 'CUST-456',
+    orderId: "ORD-123",
+    customerId: "CUST-456",
   },
 });
 
@@ -50,10 +50,10 @@ const result = await future;
 // Handle the Result with pattern matching
 result.match({
   Ok: (output) => {
-    console.log('Order processed:', output.status); // TypeScript knows the shape!
+    console.log("Order processed:", output.status); // TypeScript knows the shape!
   },
   Error: (error) => {
-    console.error('Workflow failed:', error);
+    console.error("Workflow failed:", error);
   },
 });
 ```
@@ -63,28 +63,28 @@ result.match({
 Start a workflow without waiting for completion:
 
 ```typescript
-const handleResult = await client.startWorkflow('processOrder', {
-  workflowId: 'order-123',
+const handleResult = await client.startWorkflow("processOrder", {
+  workflowId: "order-123",
   args: {
-    orderId: 'ORD-123',
-    customerId: 'CUST-456',
+    orderId: "ORD-123",
+    customerId: "CUST-456",
   },
 });
 
 handleResult.match({
   Ok: async (handle) => {
     // Get workflow ID
-    console.log('Started workflow:', handle.workflowId);
+    console.log("Started workflow:", handle.workflowId);
 
     // Wait for result later
     const result = await handle.result();
     result.match({
-      Ok: (output) => console.log('Completed:', output),
-      Error: (error) => console.error('Failed:', error),
+      Ok: (output) => console.log("Completed:", output),
+      Error: (error) => console.error("Failed:", error),
     });
   },
   Error: (error) => {
-    console.error('Failed to start workflow:', error);
+    console.error("Failed to start workflow:", error);
   },
 });
 ```
@@ -95,27 +95,29 @@ The typed client provides compile-time safety:
 
 ```typescript
 // ✅ Correct - TypeScript validates args
-await client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
+await client.executeWorkflow("processOrder", {
+  workflowId: "order-123",
   args: {
-    orderId: 'ORD-123',
-    customerId: 'CUST-456',
+    orderId: "ORD-123",
+    customerId: "CUST-456",
   },
 });
 
 // ❌ Error - Missing required field
-await client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
+await client.executeWorkflow("processOrder", {
+  workflowId: "order-123",
   args: {
-    orderId: 'ORD-123',
+    orderId: "ORD-123",
     // customerId is missing - TypeScript error!
   },
 });
 
 // ❌ Error - Wrong workflow name
-await client.executeWorkflow('invalidWorkflow', {
-  workflowId: 'order-123',
-  args: { /* ... */ },
+await client.executeWorkflow("invalidWorkflow", {
+  workflowId: "order-123",
+  args: {
+    /* ... */
+  },
 });
 ```
 
@@ -124,20 +126,20 @@ await client.executeWorkflow('invalidWorkflow', {
 The client uses `@swan-io/boxed` for explicit error handling:
 
 ```typescript
-import { Result } from '@swan-io/boxed';
+import { Result } from "@swan-io/boxed";
 
-const result = await client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
-  args: { orderId: 'ORD-123', customerId: 'CUST-456' },
+const result = await client.executeWorkflow("processOrder", {
+  workflowId: "order-123",
+  args: { orderId: "ORD-123", customerId: "CUST-456" },
 });
 
 // Handle result with pattern matching
 result.match({
   Ok: (value) => {
-    console.log('Order processed:', value.transactionId);
+    console.log("Order processed:", value.transactionId);
   },
   Error: (error) => {
-    console.error('Order failed:', error);
+    console.error("Order failed:", error);
   },
 });
 ```
@@ -147,22 +149,22 @@ result.match({
 Pass standard Temporal workflow options:
 
 ```typescript
-await client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
-  args: { orderId: 'ORD-123', customerId: 'CUST-456' },
+await client.executeWorkflow("processOrder", {
+  workflowId: "order-123",
+  args: { orderId: "ORD-123", customerId: "CUST-456" },
 
   // Standard Temporal options
-  taskQueue: 'orders', // Override task queue
-  workflowExecutionTimeout: '1 hour',
-  workflowRunTimeout: '30 minutes',
+  taskQueue: "orders", // Override task queue
+  workflowExecutionTimeout: "1 hour",
+  workflowRunTimeout: "30 minutes",
   retry: {
     maximumAttempts: 3,
   },
   memo: {
-    description: 'Customer order processing',
+    description: "Customer order processing",
   },
   searchAttributes: {
-    CustomerId: ['CUST-456'],
+    CustomerId: ["CUST-456"],
   },
 });
 ```
@@ -172,13 +174,13 @@ await client.executeWorkflow('processOrder', {
 Get a handle to an existing workflow:
 
 ```typescript
-const handle = client.getHandle('order-123');
+const handle = client.getHandle("order-123");
 
 // Query the workflow
-const status = await handle.query('getStatus');
+const status = await handle.query("getStatus");
 
 // Signal the workflow
-await handle.signal('cancelOrder', { reason: 'Customer request' });
+await handle.signal("cancelOrder", { reason: "Customer request" });
 
 // Get the result
 const result = await handle.result();
@@ -189,14 +191,14 @@ const result = await handle.result();
 The same client can execute any workflow in the contract:
 
 ```typescript
-const orderResult = await client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
-  args: { orderId: 'ORD-123', customerId: 'CUST-456' },
+const orderResult = await client.executeWorkflow("processOrder", {
+  workflowId: "order-123",
+  args: { orderId: "ORD-123", customerId: "CUST-456" },
 });
 
-const refundResult = await client.executeWorkflow('processRefund', {
-  workflowId: 'refund-123',
-  args: { orderId: 'ORD-123', reason: 'Damaged item' },
+const refundResult = await client.executeWorkflow("processRefund", {
+  workflowId: "refund-123",
+  args: { orderId: "ORD-123", reason: "Damaged item" },
 });
 ```
 
@@ -205,31 +207,31 @@ const refundResult = await client.executeWorkflow('processRefund', {
 ### Workflow Execution Errors
 
 ```typescript
-const result = await client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
-  args: { orderId: 'ORD-123', customerId: 'CUST-456' },
+const result = await client.executeWorkflow("processOrder", {
+  workflowId: "order-123",
+  args: { orderId: "ORD-123", customerId: "CUST-456" },
 });
 
 result.match({
-  Ok: (value) => console.log('Success:', value),
-  Error: (error) => console.error('Workflow returned error:', error),
+  Ok: (value) => console.log("Success:", value),
+  Error: (error) => console.error("Workflow returned error:", error),
 });
 ```
 
 ### Workflow Failures
 
 ```typescript
-import { WorkflowFailedError } from '@temporalio/client';
+import { WorkflowFailedError } from "@temporalio/client";
 
 try {
-  await client.executeWorkflow('processOrder', {
-    workflowId: 'order-123',
-    args: { orderId: 'ORD-123', customerId: 'CUST-456' },
+  await client.executeWorkflow("processOrder", {
+    workflowId: "order-123",
+    args: { orderId: "ORD-123", customerId: "CUST-456" },
   });
 } catch (error) {
   if (error instanceof WorkflowFailedError) {
-    console.error('Workflow failed:', error.message);
-    console.error('Cause:', error.cause);
+    console.error("Workflow failed:", error.message);
+    console.error("Cause:", error.cause);
   }
 }
 ```
@@ -242,7 +244,7 @@ Reuse connections across clients:
 
 ```typescript
 const connection = await Connection.connect({
-  address: 'localhost:7233',
+  address: "localhost:7233",
 });
 
 const temporalClient = new Client({ connection });
@@ -259,7 +261,7 @@ For high-throughput applications:
 
 ```typescript
 const connection = await Connection.connect({
-  address: 'localhost:7233',
+  address: "localhost:7233",
   // Connection pool settings
   maxConcurrentWorkflowTaskPollers: 10,
   maxConcurrentActivityTaskPollers: 20,
@@ -278,9 +280,9 @@ await connection.close();
 Different clients for different contracts:
 
 ```typescript
-import { orderContract } from './contracts/order';
-import { paymentContract } from './contracts/payment';
-import { inventoryContract } from './contracts/inventory';
+import { orderContract } from "./contracts/order";
+import { paymentContract } from "./contracts/payment";
+import { inventoryContract } from "./contracts/inventory";
 
 const temporalClient = new Client({ connection });
 
@@ -289,9 +291,15 @@ const paymentClient = TypedClient.create(paymentContract, temporalClient);
 const inventoryClient = TypedClient.create(inventoryContract, temporalClient);
 
 // Each client is typed to its contract
-await orderClient.executeWorkflow('processOrder', { /* ... */ });
-await paymentClient.executeWorkflow('processPayment', { /* ... */ });
-await inventoryClient.executeWorkflow('updateStock', { /* ... */ });
+await orderClient.executeWorkflow("processOrder", {
+  /* ... */
+});
+await paymentClient.executeWorkflow("processPayment", {
+  /* ... */
+});
+await inventoryClient.executeWorkflow("updateStock", {
+  /* ... */
+});
 ```
 
 ## Testing
@@ -299,28 +307,28 @@ await inventoryClient.executeWorkflow('updateStock', { /* ... */ });
 Mock the client for testing:
 
 ```typescript
-import { describe, it, expect, vi } from 'vitest';
-import { Result } from '@swan-io/boxed';
+import { describe, it, expect, vi } from "vitest";
+import { Result } from "@swan-io/boxed";
 
-describe('OrderService', () => {
-  it('should process order', async () => {
+describe("OrderService", () => {
+  it("should process order", async () => {
     const mockClient = {
-      executeWorkflow: vi.fn().mockResolvedValue(
-        Result.Ok({ status: 'success', transactionId: 'tx-123' })
-      ),
+      executeWorkflow: vi
+        .fn()
+        .mockResolvedValue(Result.Ok({ status: "success", transactionId: "tx-123" })),
     };
 
     const service = new OrderService(mockClient);
     const result = await service.createOrder({
-      orderId: 'ORD-123',
-      customerId: 'CUST-456',
+      orderId: "ORD-123",
+      customerId: "CUST-456",
     });
 
     expect(mockClient.executeWorkflow).toHaveBeenCalledWith(
-      'processOrder',
+      "processOrder",
       expect.objectContaining({
-        args: { orderId: 'ORD-123', customerId: 'CUST-456' },
-      })
+        args: { orderId: "ORD-123", customerId: "CUST-456" },
+      }),
     );
   });
 });
@@ -332,13 +340,13 @@ describe('OrderService', () => {
 
 ```typescript
 // ✅ Good - single connection
-const connection = await Connection.connect({ address: 'localhost:7233' });
+const connection = await Connection.connect({ address: "localhost:7233" });
 const temporalClient = new Client({ connection });
 const client = TypedClient.create(contract, temporalClient);
 
 // ❌ Avoid - creating connections repeatedly
 for (const order of orders) {
-  const connection = await Connection.connect({ address: 'localhost:7233' });
+  const connection = await Connection.connect({ address: "localhost:7233" });
   const temporalClient = new Client({ connection });
   const client = TypedClient.create(contract, temporalClient);
   await client.executeWorkflow(/* ... */);
@@ -349,19 +357,19 @@ for (const order of orders) {
 
 ```typescript
 // ✅ Good - descriptive and unique
-workflowId: `order-${orderId}-${Date.now()}`
+workflowId: `order-${orderId}-${Date.now()}`;
 
 // ❌ Avoid - random or non-descriptive
-workflowId: Math.random().toString()
+workflowId: Math.random().toString();
 ```
 
 ### 3. Handle Both Success and Error Cases
 
 ```typescript
 // ✅ Good - handle all cases
-const result = await client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
-  args: { orderId: 'ORD-123', customerId: 'CUST-456' },
+const result = await client.executeWorkflow("processOrder", {
+  workflowId: "order-123",
+  args: { orderId: "ORD-123", customerId: "CUST-456" },
 });
 
 result.match({

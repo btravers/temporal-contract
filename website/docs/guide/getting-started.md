@@ -69,11 +69,11 @@ Create a contract that defines your workflow's interface:
 
 ```typescript
 // contract.ts
-import { defineContract } from '@temporal-contract/contract';
-import { z } from 'zod';
+import { defineContract } from "@temporal-contract/contract";
+import { z } from "zod";
 
 export const orderContract = defineContract({
-  taskQueue: 'orders',
+  taskQueue: "orders",
 
   // Global activities available to all workflows
   activities: {
@@ -81,7 +81,7 @@ export const orderContract = defineContract({
       input: z.object({
         to: z.string().email(),
         subject: z.string(),
-        body: z.string()
+        body: z.string(),
       }),
       output: z.object({ sent: z.boolean() }),
     },
@@ -91,11 +91,11 @@ export const orderContract = defineContract({
     processOrder: {
       input: z.object({
         orderId: z.string(),
-        customerId: z.string()
+        customerId: z.string(),
       }),
       output: z.object({
-        status: z.enum(['success', 'failed']),
-        transactionId: z.string()
+        status: z.enum(["success", "failed"]),
+        transactionId: z.string(),
       }),
 
       // Workflow-specific activities
@@ -103,11 +103,11 @@ export const orderContract = defineContract({
         processPayment: {
           input: z.object({
             customerId: z.string(),
-            amount: z.number().positive()
+            amount: z.number().positive(),
           }),
           output: z.object({
             transactionId: z.string(),
-            success: z.boolean()
+            success: z.boolean(),
           }),
         },
       },
@@ -122,9 +122,9 @@ Implement your activities and workflows with full type safety:
 
 ```typescript
 // activities.ts
-import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
-import { Future, Result } from '@swan-io/boxed';
-import { orderContract } from './contract';
+import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { Future, Result } from "@swan-io/boxed";
+import { orderContract } from "./contract";
 
 export const activities = declareActivitiesHandler({
   contract: orderContract,
@@ -132,24 +132,26 @@ export const activities = declareActivitiesHandler({
     sendEmail: async ({ to, subject, body }) => {
       // Full type safety - parameters are automatically typed!
       return Future.fromPromise(emailService.send({ to, subject, body }))
-        .mapError((error) =>
-          new ActivityError(
-            'EMAIL_FAILED',
-            error instanceof Error ? error.message : 'Failed to send email',
-            error
-          )
+        .mapError(
+          (error) =>
+            new ActivityError(
+              "EMAIL_FAILED",
+              error instanceof Error ? error.message : "Failed to send email",
+              error,
+            ),
         )
         .mapOk(() => ({ sent: true }));
     },
     processPayment: async ({ customerId, amount }) => {
       // TypeScript knows the exact types
       return Future.fromPromise(paymentGateway.charge(customerId, amount))
-        .mapError((error) =>
-          new ActivityError(
-            'PAYMENT_FAILED',
-            error instanceof Error ? error.message : 'Payment failed',
-            error
-          )
+        .mapError(
+          (error) =>
+            new ActivityError(
+              "PAYMENT_FAILED",
+              error instanceof Error ? error.message : "Payment failed",
+              error,
+            ),
         )
         .mapOk((txId) => ({ transactionId: txId, success: true }));
     },
@@ -159,29 +161,29 @@ export const activities = declareActivitiesHandler({
 
 ```typescript
 // workflows.ts
-import { declareWorkflow } from '@temporal-contract/worker/workflow';
-import { orderContract } from './contract';
+import { declareWorkflow } from "@temporal-contract/worker/workflow";
+import { orderContract } from "./contract";
 
 export const processOrder = declareWorkflow({
-  workflowName: 'processOrder',
+  workflowName: "processOrder",
   contract: orderContract,
   implementation: async ({ activities }, { orderId, customerId }) => {
     // Full autocomplete for activities and their parameters
     // Activities return plain values (Result is unwrapped internally)
     const payment = await activities.processPayment({
       customerId,
-      amount: 100
+      amount: 100,
     });
 
     await activities.sendEmail({
       to: customerId,
-      subject: 'Order Confirmed',
+      subject: "Order Confirmed",
       body: `Order ${orderId} processed`,
     });
 
     // Return plain object (not Result - network serialization requirement)
     return {
-      status: payment.success ? 'success' : 'failed',
+      status: payment.success ? "success" : "failed",
       transactionId: payment.transactionId,
     };
   },
@@ -194,13 +196,13 @@ Set up your worker and client:
 
 ```typescript
 // worker.ts
-import { Worker } from '@temporalio/worker';
-import { activities } from './activities';
+import { Worker } from "@temporalio/worker";
+import { activities } from "./activities";
 
 const worker = await Worker.create({
-  workflowsPath: require.resolve('./workflows'),
+  workflowsPath: require.resolve("./workflows"),
   activities,
-  taskQueue: 'orders', // or activities.contract.taskQueue
+  taskQueue: "orders", // or activities.contract.taskQueue
 });
 
 await worker.run();
@@ -208,31 +210,31 @@ await worker.run();
 
 ```typescript
 // client.ts
-import { TypedClient } from '@temporal-contract/client';
-import { Connection, Client } from '@temporalio/client';
-import { orderContract } from './contract';
+import { TypedClient } from "@temporal-contract/client";
+import { Connection, Client } from "@temporalio/client";
+import { orderContract } from "./contract";
 
 const connection = await Connection.connect({
-  address: 'localhost:7233'
+  address: "localhost:7233",
 });
 
 const temporalClient = new Client({ connection });
 const client = TypedClient.create(orderContract, temporalClient);
 
 // Fully typed workflow execution with Result/Future pattern
-const future = client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
-  args: { orderId: 'ORD-123', customerId: 'CUST-456' },
+const future = client.executeWorkflow("processOrder", {
+  workflowId: "order-123",
+  args: { orderId: "ORD-123", customerId: "CUST-456" },
 });
 
 const result = await future;
 
 result.match({
   Ok: (output) => {
-    console.log(output.status);  // 'success' | 'failed' — fully typed!
+    console.log(output.status); // 'success' | 'failed' — fully typed!
   },
   Error: (error) => {
-    console.error('Workflow failed:', error);
+    console.error("Workflow failed:", error);
   },
 });
 ```

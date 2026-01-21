@@ -31,7 +31,7 @@ End-to-end type safety and automatic validation for workflows and activities
 ```typescript
 // Define contract once
 const contract = defineContract({
-  taskQueue: 'orders',
+  taskQueue: "orders",
   workflows: {
     processOrder: {
       input: z.object({ orderId: z.string() }),
@@ -39,34 +39,32 @@ const contract = defineContract({
       activities: {
         processPayment: {
           input: z.object({ orderId: z.string() }),
-          output: z.object({ transactionId: z.string() })
-        }
-      }
-    }
-  }
+          output: z.object({ transactionId: z.string() }),
+        },
+      },
+    },
+  },
 });
 
 // Implement activities with Future/Result pattern
-import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
-import { Future } from '@swan-io/boxed';
+import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { Future } from "@swan-io/boxed";
 
 const activities = declareActivitiesHandler({
   contract,
   activities: {
     processPayment: ({ orderId }) => {
       return Future.fromPromise(paymentService.process(orderId))
-        .mapError((error) =>
-          new ActivityError('PAYMENT_FAILED', 'Payment failed', error)
-        )
+        .mapError((error) => new ActivityError("PAYMENT_FAILED", "Payment failed", error))
         .mapOk((txId) => ({ transactionId: txId }));
-    }
-  }
+    },
+  },
 });
 
 // Call from client - fully typed everywhere
-const result = await client.executeWorkflow('processOrder', {
-  workflowId: 'order-123',
-  args: { orderId: 'ORD-123' }  // ✅ TypeScript knows!
+const result = await client.executeWorkflow("processOrder", {
+  workflowId: "order-123",
+  args: { orderId: "ORD-123" }, // ✅ TypeScript knows!
 });
 ```
 

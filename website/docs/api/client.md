@@ -18,7 +18,7 @@ pnpm add @temporal-contract/client @temporal-contract/boxed
 ## Entry Point
 
 ```typescript
-import { TypedClient } from '@temporal-contract/client';
+import { TypedClient } from "@temporal-contract/client";
 import type {
   ClientInferInput,
   ClientInferOutput,
@@ -26,8 +26,8 @@ import type {
   ClientInferActivity,
   ClientInferSignal,
   ClientInferQuery,
-  ClientInferUpdate
-} from '@temporal-contract/client';
+  ClientInferUpdate,
+} from "@temporal-contract/client";
 ```
 
 ## Type Utilities
@@ -37,18 +37,18 @@ import type {
 Extract input and output types from definitions (client perspective):
 
 ```typescript
-import type { ClientInferInput, ClientInferOutput } from '@temporal-contract/client';
+import type { ClientInferInput, ClientInferOutput } from "@temporal-contract/client";
 
 const workflowDef = {
   input: z.object({ orderId: z.string() }),
-  output: z.object({ success: z.boolean() })
+  output: z.object({ success: z.boolean() }),
 };
 
 // Client sends raw input (z.input)
-type Input = ClientInferInput<typeof workflowDef>;  // { orderId: string }
+type Input = ClientInferInput<typeof workflowDef>; // { orderId: string }
 
 // Client receives parsed output (z.output)
-type Output = ClientInferOutput<typeof workflowDef>;  // { success: boolean }
+type Output = ClientInferOutput<typeof workflowDef>; // { success: boolean }
 ```
 
 ### Handler Types
@@ -56,11 +56,11 @@ type Output = ClientInferOutput<typeof workflowDef>;  // { success: boolean }
 Extract client-side function signatures:
 
 ```typescript
-import type { ClientInferWorkflow } from '@temporal-contract/client';
+import type { ClientInferWorkflow } from "@temporal-contract/client";
 
 const workflowDef = {
   input: z.object({ orderId: z.string() }),
-  output: z.object({ success: z.boolean() })
+  output: z.object({ success: z.boolean() }),
 };
 
 // Workflow invocation signature
@@ -76,9 +76,9 @@ Client-side types for workflow interactions:
 import type {
   ClientInferSignal,
   ClientInferQuery,
-  ClientInferUpdate
-} from '@temporal-contract/client';
-import { Future, Result } from '@temporal-contract/boxed';
+  ClientInferUpdate,
+} from "@temporal-contract/client";
+import { Future, Result } from "@temporal-contract/boxed";
 
 // Signal returns Future<Result<void, Error>>
 type SignalFn = ClientInferSignal<typeof signalDef>;
@@ -95,10 +95,7 @@ type UpdateFn = ClientInferUpdate<typeof updateDef>;
 Extract types for entire contracts:
 
 ```typescript
-import type {
-  ClientInferWorkflows,
-  ClientInferActivities
-} from '@temporal-contract/client';
+import type { ClientInferWorkflows, ClientInferActivities } from "@temporal-contract/client";
 
 // All workflows from contract
 type Workflows = ClientInferWorkflows<typeof myContract>;
