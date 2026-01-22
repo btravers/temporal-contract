@@ -33,3 +33,7 @@ coverage/
 # VitePress
 **/.vitepress/cache/
 **/.vitepress/dist/
+
+# Generated TypeDoc
+packages/*/docs/
+docs/api/*/
