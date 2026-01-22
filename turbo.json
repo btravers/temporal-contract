@@ -27,8 +27,12 @@
       "outputs": ["dist/**"]
     },
     "build:docs": {
-      "dependsOn": ["build"],
+      "dependsOn": ["^build"],
       "outputs": ["docs/**"]
+    },
+    "@temporal-contract/docs#build": {
+      "dependsOn": ["^build", "^build:docs"],
+      "outputs": [".vitepress/dist/**"]
     }
   }
 }

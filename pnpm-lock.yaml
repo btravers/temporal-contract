@@ -142,10 +142,41 @@ importers:
         version: 2.7.5
 
   docs:
+    dependencies:
+      '@temporal-contract/boxed':
+        specifier: workspace:*
+        version: link:../packages/boxed
+      '@temporal-contract/client':
+        specifier: workspace:*
+        version: link:../packages/client
+      '@temporal-contract/client-nestjs':
+        specifier: workspace:*
+        version: link:../packages/client-nestjs
+      '@temporal-contract/contract':
+        specifier: workspace:*
+        version: link:../packages/contract
+      '@temporal-contract/testing':
+        specifier: workspace:*
+        version: link:../packages/testing
+      '@temporal-contract/worker':
+        specifier: workspace:*
+        version: link:../packages/worker
+      '@temporal-contract/worker-nestjs':
+        specifier: workspace:*
+        version: link:../packages/worker-nestjs
     devDependencies:
+      '@temporal-contract/tsconfig':
+        specifier: workspace:*
+        version: link:../tools/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.0.9
       mermaid:
         specifier: 11.12.2
         version: 11.12.2
+      tsx:
+        specifier: 'catalog:'
+        version: 4.21.0
       vitepress:
         specifier: 1.6.4
         version: 1.6.4(@algolia/client-search@5.46.0)(@types/node@25.0.9)(postcss@8.5.6)(terser@5.46.0)(typescript@5.9.3)
@@ -357,6 +388,12 @@ importers:
       tsdown:
         specifier: 'catalog:'
         version: 0.20.0-beta.4(oxc-resolver@11.16.3)(typescript@5.9.3)
+      typedoc:
+        specifier: 'catalog:'
+        version: 0.28.6(typescript@5.9.3)
+      typedoc-plugin-markdown:
+        specifier: 'catalog:'
+        version: 4.6.3(typedoc@0.28.6(typescript@5.9.3))
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -403,6 +440,12 @@ importers:
       tsdown:
         specifier: 'catalog:'
         version: 0.20.0-beta.4(oxc-resolver@11.16.3)(typescript@5.9.3)
+      typedoc:
+        specifier: 'catalog:'
+        version: 0.28.6(typescript@5.9.3)
+      typedoc-plugin-markdown:
+        specifier: 'catalog:'
+        version: 4.6.3(typedoc@0.28.6(typescript@5.9.3))
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -452,6 +495,12 @@ importers:
       tsdown:
         specifier: 'catalog:'
         version: 0.20.0-beta.4(oxc-resolver@11.16.3)(typescript@5.9.3)
+      typedoc:
+        specifier: 'catalog:'
+        version: 0.28.6(typescript@5.9.3)
+      typedoc-plugin-markdown:
+        specifier: 'catalog:'
+        version: 4.6.3(typedoc@0.28.6(typescript@5.9.3))
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -486,6 +535,12 @@ importers:
       tsdown:
         specifier: 'catalog:'
         version: 0.20.0-beta.4(oxc-resolver@11.16.3)(typescript@5.9.3)
+      typedoc:
+        specifier: 'catalog:'
+        version: 0.28.6(typescript@5.9.3)
+      typedoc-plugin-markdown:
+        specifier: 'catalog:'
+        version: 4.6.3(typedoc@0.28.6(typescript@5.9.3))
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -520,6 +575,12 @@ importers:
       tsdown:
         specifier: 'catalog:'
         version: 0.20.0-beta.4(oxc-resolver@11.16.3)(typescript@5.9.3)
+      typedoc:
+        specifier: 'catalog:'
+        version: 0.28.6(typescript@5.9.3)
+      typedoc-plugin-markdown:
+        specifier: 'catalog:'
+        version: 4.6.3(typedoc@0.28.6(typescript@5.9.3))
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -572,6 +633,12 @@ importers:
       tsdown:
         specifier: 'catalog:'
         version: 0.20.0-beta.4(oxc-resolver@11.16.3)(typescript@5.9.3)
+      typedoc:
+        specifier: 'catalog:'
+        version: 0.28.6(typescript@5.9.3)
+      typedoc-plugin-markdown:
+        specifier: 'catalog:'
+        version: 4.6.3(typedoc@0.28.6(typescript@5.9.3))
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -624,6 +691,12 @@ importers:
       tsdown:
         specifier: 'catalog:'
         version: 0.20.0-beta.4(oxc-resolver@11.16.3)(typescript@5.9.3)
+      typedoc:
+        specifier: 'catalog:'
+        version: 0.28.6(typescript@5.9.3)
+      typedoc-plugin-markdown:
+        specifier: 'catalog:'
+        version: 4.6.3(typedoc@0.28.6(typescript@5.9.3))
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

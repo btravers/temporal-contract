@@ -78,6 +78,7 @@ export default withMermaid(
         { text: "Guides", link: "/guide/getting-started" },
         { text: "API", link: "/api/" },
         { text: "Examples", link: "/examples/" },
+        { text: "Blog", link: "/blog/" },
       ],
 
       sidebar: {
@@ -125,22 +126,22 @@ export default withMermaid(
             text: "Core Packages",
             items: [
               { text: "Overview", link: "/api/" },
-              { text: "@temporal-contract/contract", link: "/api/contract" },
-              { text: "@temporal-contract/client", link: "/api/client" },
-              { text: "@temporal-contract/worker", link: "/api/worker" },
-              { text: "@temporal-contract/boxed", link: "/api/boxed" },
+              { text: "@temporal-contract/contract", link: "/api/contract/" },
+              { text: "@temporal-contract/client", link: "/api/client/" },
+              { text: "@temporal-contract/worker", link: "/api/worker/" },
+              { text: "@temporal-contract/boxed", link: "/api/boxed/" },
             ],
           },
           {
             text: "NestJS Integration",
             items: [
-              { text: "@temporal-contract/client-nestjs", link: "/api/client-nestjs" },
-              { text: "@temporal-contract/worker-nestjs", link: "/api/worker-nestjs" },
+              { text: "@temporal-contract/client-nestjs", link: "/api/client-nestjs/" },
+              { text: "@temporal-contract/worker-nestjs", link: "/api/worker-nestjs/" },
             ],
           },
           {
             text: "Testing",
-            items: [{ text: "@temporal-contract/testing", link: "/api/testing" }],
+            items: [{ text: "@temporal-contract/testing", link: "/api/testing/" }],
           },
         ],
         "/examples/": [
@@ -151,6 +152,18 @@ export default withMermaid(
               {
                 text: "Basic Order Processing",
                 link: "/examples/basic-order-processing",
+              },
+            ],
+          },
+        ],
+        "/blog/": [
+          {
+            text: "Blog",
+            items: [
+              { text: "Overview", link: "/blog/" },
+              {
+                text: "Introducing temporal-contract",
+                link: "/blog/introducing-temporal-contract",
               },
             ],
           },

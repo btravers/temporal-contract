@@ -64,6 +64,8 @@
     "@vitest/coverage-v8": "catalog:",
     "reflect-metadata": "catalog:",
     "tsdown": "catalog:",
+    "typedoc": "catalog:",
+    "typedoc-plugin-markdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"

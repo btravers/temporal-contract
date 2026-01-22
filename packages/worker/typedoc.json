@@ -1,5 +1,5 @@
 {
-  "$schema": "https://typedoc.org/schema.json",
-  "extends": ["@temporal-contract/typedoc/base.json"],
-  "entryPoints": ["./src/activity.ts", "./src/workflow.ts"]
+  "extends": "@temporal-contract/typedoc/base.json",
+  "entryPoints": ["src/activity.ts", "src/workflow.ts"],
+  "out": "docs"
 }

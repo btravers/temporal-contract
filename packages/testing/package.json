@@ -32,6 +32,8 @@
     "@temporal-contract/typedoc": "workspace:*",
     "@types/node": "catalog:",
     "tsdown": "catalog:",
+    "typedoc": "catalog:",
+    "typedoc-plugin-markdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
