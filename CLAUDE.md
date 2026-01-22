@@ -29,7 +29,7 @@ pnpm test           # Run unit tests
 pnpm test:integration  # Run integration tests (requires Docker)
 pnpm typecheck      # Type check all packages
 pnpm lint           # Run oxlint
-pnpm format         # Format with oxfmt
+pnpm format         # Format with oxfmt (import sorting)
 pnpm format --check # Check formatting
 pnpm knip           # Check for unused exports/dependencies
 ```
