@@ -398,7 +398,7 @@ async ({}, use) => {};
    - Include both basic and advanced patterns
 
 4. **Website Documentation**
-   - Keep `docs/docs/` in sync with code changes
+   - Keep `docs/` in sync with code changes
    - Update API documentation when signatures change
    - Add guides for new features
 

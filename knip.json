@@ -72,7 +72,7 @@
       "ignoreDependencies": ["typedoc", "typedoc-plugin-markdown"]
     },
     "docs": {
-      "entry": ["docs/.vitepress/config.ts", "docs/.vitepress/theme/index.ts"]
+      "entry": [".vitepress/config.ts", ".vitepress/theme/index.ts"]
     }
   },
   "ignore": ["coverage/**", "**/dist/**"],

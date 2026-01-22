@@ -25,8 +25,8 @@ pnpm typecheck
 ```
 temporal-contract/
 ├── packages/       # Core packages (contract, worker, client, boxed, testing)
-├── samples/        # Working examples
-├── website/        # Documentation website
+├── examples/       # Working examples
+├── docs/           # Documentation website
 └── tools/          # Dev tools (testing utilities, configs)
 ```
 
