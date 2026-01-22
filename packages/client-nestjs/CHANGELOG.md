@@ -1,4 +1,4 @@
-# @temporal-contract/worker-nestjs
+# @temporal-contract/client-nestjs
 
 ## 0.1.0
 
@@ -24,12 +24,4 @@
 
 - Updated dependencies
   - @temporal-contract/contract@0.1.0
-  - @temporal-contract/worker@0.1.0
-
-## 0.0.2
-
-### Patch Changes
-
-- Updated dependencies
-  - @temporal-contract/worker@0.0.7
-  - @temporal-contract/contract@0.0.7
+  - @temporal-contract/client@0.1.0

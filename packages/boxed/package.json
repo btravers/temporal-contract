@@ -1,6 +1,6 @@
 {
   "name": "@temporal-contract/boxed",
-  "version": "0.0.7",
+  "version": "0.1.0",
   "description": "Custom Future and Result implementation for Temporal workflows",
   "keywords": [
     "future",
