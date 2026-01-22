@@ -1,112 +1,279 @@
+import { defineConfig } from "vitepress";
 import { withMermaid } from "vitepress-plugin-mermaid";
 
+const SITE_DESCRIPTION =
+  "Build reliable workflow applications with end-to-end type safety, automatic schema validation, and type-safe contracts for Temporal.io workflows and activities in TypeScript";
+
 // https://vitepress.dev/reference/site-config
-export default withMermaid({
-  title: "temporal-contract",
-  description: "Type-safe contracts for Temporal.io workflows and activities",
-  base: "/temporal-contract/",
+export default withMermaid(
+  defineConfig({
+    title: "temporal-contract",
+    description: SITE_DESCRIPTION,
+    base: "/temporal-contract/",
+    lang: "en-US",
 
-  themeConfig: {
-    // https://vitepress.dev/reference/default-theme-config
-    logo: "/logo.svg",
-
-    nav: [
-      { text: "Home", link: "/" },
-      { text: "Guide", link: "/guide/getting-started" },
-      { text: "API", link: "/api/" },
-      { text: "Examples", link: "/examples/" },
+    ignoreDeadLinks: [
+      // Ignore localhost links as they're for development examples
+      /^http:\/\/localhost/,
+      // API docs are generated separately and may not exist during build
+      /^\/api\//,
+      // Ignore relative links in API docs (typedoc-generated cross-references)
+      /^\.\/index$/,
+      /^\.\/[a-z-]+$/,
     ],
 
-    sidebar: {
-      "/guide/": [
-        {
-          text: "Introduction",
-          items: [
-            { text: "Getting Started", link: "/guide/getting-started" },
-            { text: "Core Concepts", link: "/guide/core-concepts" },
-            { text: "Installation", link: "/guide/installation" },
-          ],
-        },
-        {
-          text: "Usage",
-          items: [
-            { text: "Defining Contracts", link: "/guide/defining-contracts" },
-            { text: "Client Usage", link: "/guide/client-usage" },
-            { text: "Worker Usage", link: "/guide/worker-usage" },
-          ],
-        },
-        {
-          text: "NestJS Integration",
-          items: [
-            { text: "NestJS Client Usage", link: "/guide/client-nestjs-usage" },
-            { text: "NestJS Worker Usage", link: "/guide/worker-nestjs-usage" },
-          ],
-        },
-        {
-          text: "Advanced",
-          items: [
-            { text: "Result Pattern", link: "/guide/result-pattern" },
-            { text: "Worker Implementation", link: "/guide/worker-implementation" },
-            { text: "Entry Points Architecture", link: "/guide/entry-points" },
-            { text: "Activity Handler Types", link: "/guide/activity-handlers" },
-          ],
-        },
-      ],
-      "/api/": [
-        {
-          text: "Core Packages",
-          items: [
-            { text: "Overview", link: "/api/" },
-            { text: "@temporal-contract/contract", link: "/api/contract" },
-            { text: "@temporal-contract/client", link: "/api/client" },
-            { text: "@temporal-contract/worker", link: "/api/worker" },
-            { text: "@temporal-contract/boxed", link: "/api/boxed" },
-            { text: "@temporal-contract/testing", link: "/api/testing" },
-          ],
-        },
-        {
-          text: "NestJS Integration",
-          items: [
-            { text: "@temporal-contract/client-nestjs", link: "/api/client-nestjs" },
-            { text: "@temporal-contract/worker-nestjs", link: "/api/worker-nestjs" },
-          ],
-        },
-      ],
-      "/examples/": [
-        {
-          text: "Examples",
-          items: [
-            { text: "Overview", link: "/examples/" },
-            { text: "Basic Order Processing", link: "/examples/basic-order-processing" },
-          ],
-        },
-      ],
+    sitemap: {
+      hostname: "https://btravers.github.io/temporal-contract/",
     },
 
-    socialLinks: [
-      { icon: "github", link: "https://github.com/btravers/temporal-contract" },
-      { icon: "npm", link: "https://www.npmjs.com/package/@temporal-contract/contract" },
+    // Inject canonical URLs and dynamic meta tags for each page to prevent duplicate content issues
+    transformPageData(pageData) {
+      // Only process markdown files
+      if (!pageData.relativePath.endsWith(".md")) {
+        return;
+      }
+
+      // VitePress provides relativePath without leading slash (e.g., "guide/getting-started.md")
+      // Normalize the path by removing any leading slashes just in case
+      const normalizedPath = pageData.relativePath.replace(/^\/+/, "");
+      const canonicalUrl = `https://btravers.github.io/temporal-contract/${normalizedPath}`
+        .replace(/index\.md$/, "")
+        .replace(/\.md$/, ".html");
+
+      // Ensure frontmatter and head array exist
+      pageData.frontmatter ??= {};
+      pageData.frontmatter.head ??= [];
+
+      // Add canonical URL
+      pageData.frontmatter.head.push(["link", { rel: "canonical", href: canonicalUrl }]);
+
+      // Add dynamic Open Graph tags
+      const pageTitle = pageData.title || pageData.frontmatter.title || "temporal-contract";
+      const pageDescription =
+        pageData.description || pageData.frontmatter.description || SITE_DESCRIPTION;
+
+      pageData.frontmatter.head.push(
+        ["meta", { property: "og:url", content: canonicalUrl }],
+        ["meta", { property: "og:title", content: pageTitle }],
+        ["meta", { property: "og:description", content: pageDescription }],
+      );
+
+      // Add dynamic Twitter Card tags
+      pageData.frontmatter.head.push(
+        ["meta", { name: "twitter:title", content: pageTitle }],
+        ["meta", { name: "twitter:description", content: pageDescription }],
+      );
+    },
+
+    // Mermaid configuration
+    mermaidPlugin: {
+      class: "mermaid",
+    },
+
+    themeConfig: {
+      // https://vitepress.dev/reference/default-theme-config
+      logo: "/logo.svg",
+
+      nav: [
+        { text: "Guides", link: "/guide/getting-started" },
+        { text: "API", link: "/api/" },
+        { text: "Examples", link: "/examples/" },
+      ],
+
+      sidebar: {
+        "/guide/": [
+          {
+            text: "Getting Started",
+            items: [
+              { text: "Why temporal-contract?", link: "/guide/why-temporal-contract" },
+              { text: "Getting Started", link: "/guide/getting-started" },
+              { text: "Core Concepts", link: "/guide/core-concepts" },
+              { text: "Installation", link: "/guide/installation" },
+            ],
+          },
+          {
+            text: "Core Usage",
+            items: [
+              { text: "Defining Contracts", link: "/guide/defining-contracts" },
+              { text: "Client Usage", link: "/guide/client-usage" },
+              { text: "Worker Usage", link: "/guide/worker-usage" },
+            ],
+          },
+          {
+            text: "NestJS",
+            items: [
+              { text: "Client", link: "/guide/client-nestjs-usage" },
+              { text: "Worker", link: "/guide/worker-nestjs-usage" },
+            ],
+          },
+          {
+            text: "Advanced",
+            items: [
+              { text: "Result Pattern", link: "/guide/result-pattern" },
+              { text: "Worker Implementation", link: "/guide/worker-implementation" },
+              { text: "Entry Points Architecture", link: "/guide/entry-points" },
+              { text: "Activity Handler Types", link: "/guide/activity-handlers" },
+            ],
+          },
+          {
+            text: "Help",
+            items: [{ text: "Troubleshooting", link: "/guide/troubleshooting" }],
+          },
+        ],
+        "/api/": [
+          {
+            text: "Core Packages",
+            items: [
+              { text: "Overview", link: "/api/" },
+              { text: "@temporal-contract/contract", link: "/api/contract" },
+              { text: "@temporal-contract/client", link: "/api/client" },
+              { text: "@temporal-contract/worker", link: "/api/worker" },
+              { text: "@temporal-contract/boxed", link: "/api/boxed" },
+            ],
+          },
+          {
+            text: "NestJS Integration",
+            items: [
+              { text: "@temporal-contract/client-nestjs", link: "/api/client-nestjs" },
+              { text: "@temporal-contract/worker-nestjs", link: "/api/worker-nestjs" },
+            ],
+          },
+          {
+            text: "Testing",
+            items: [{ text: "@temporal-contract/testing", link: "/api/testing" }],
+          },
+        ],
+        "/examples/": [
+          {
+            text: "Examples",
+            items: [
+              { text: "Overview", link: "/examples/" },
+              {
+                text: "Basic Order Processing",
+                link: "/examples/basic-order-processing",
+              },
+            ],
+          },
+        ],
+      },
+
+      socialLinks: [
+        { icon: "github", link: "https://github.com/btravers/temporal-contract" },
+        {
+          icon: "npm",
+          link: "https://www.npmjs.com/package/@temporal-contract/contract",
+        },
+      ],
+
+      footer: {
+        message: "Released under the MIT License.",
+        copyright: `Copyright © ${new Date().getFullYear()} Benoit TRAVERS`,
+      },
+
+      search: {
+        provider: "local",
+      },
+
+      editLink: {
+        pattern: "https://github.com/btravers/temporal-contract/edit/main/docs/:path",
+        text: "Edit this page on GitHub",
+      },
+    },
+
+    head: [
+      ["link", { rel: "icon", type: "image/svg+xml", href: "/temporal-contract/logo.svg" }],
+      // SEO keywords meta tags
+      [
+        "meta",
+        {
+          name: "keywords",
+          content:
+            "Temporal, Temporal.io, TypeScript, Node.js, NestJS, workflows, activities, durable execution, type-safe, schema validation, contract-first, type-safe workflows, schema-based workflows, event-driven architecture, microservices, distributed systems",
+        },
+      ],
+      // Open Graph meta tags for better social sharing and SEO
+      ["meta", { property: "og:type", content: "website" }],
+      ["meta", { property: "og:site_name", content: "temporal-contract" }],
+      ["meta", { property: "og:locale", content: "en_US" }],
+      [
+        "meta",
+        { property: "og:image", content: "https://btravers.github.io/temporal-contract/logo.svg" },
+      ],
+      ["meta", { property: "og:image:alt", content: "temporal-contract logo" }],
+      // Twitter Card meta tags
+      ["meta", { name: "twitter:card", content: "summary" }],
+      [
+        "meta",
+        { name: "twitter:image", content: "https://btravers.github.io/temporal-contract/logo.svg" },
+      ],
+      ["meta", { name: "twitter:image:alt", content: "temporal-contract logo" }],
+      // Additional SEO meta tags
+      ["meta", { name: "author", content: "Benoit TRAVERS" }],
+      ["meta", { name: "robots", content: "index, follow" }],
+      [
+        "meta",
+        {
+          name: "application-name",
+          content: "temporal-contract",
+        },
+      ],
+      // JSON-LD structured data for better SEO
+      [
+        "script",
+        { type: "application/ld+json" },
+        JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          name: "temporal-contract",
+          description: SITE_DESCRIPTION,
+          applicationCategory: "DeveloperApplication",
+          operatingSystem: "Cross-platform",
+          offers: {
+            "@type": "Offer",
+            price: "0",
+            priceCurrency: "USD",
+          },
+          url: "https://btravers.github.io/temporal-contract/",
+          author: {
+            "@type": "Person",
+            name: "Benoit TRAVERS",
+          },
+          programmingLanguage: {
+            "@type": "ComputerLanguage",
+            name: "TypeScript",
+            url: "https://www.typescriptlang.org/",
+          },
+          keywords:
+            "Temporal, Temporal.io, TypeScript, Node.js, NestJS, workflows, type-safe, schema validation",
+        }),
+      ],
+      // WebSite JSON-LD for proper site name display in Google search
+      [
+        "script",
+        { type: "application/ld+json" },
+        JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "temporal-contract",
+          url: "https://btravers.github.io/temporal-contract/",
+        }),
+      ],
+      // Organization JSON-LD for logo display in Google search
+      [
+        "script",
+        { type: "application/ld+json" },
+        JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "temporal-contract",
+          url: "https://btravers.github.io/temporal-contract/",
+          logo: {
+            "@type": "ImageObject",
+            url: "https://btravers.github.io/temporal-contract/logo.svg",
+          },
+          sameAs: ["https://github.com/btravers/temporal-contract"],
+        }),
+      ],
     ],
-
-    footer: {
-      message: "Released under the MIT License.",
-      copyright: `Copyright © ${new Date().getFullYear()} Benoit TRAVERS`,
-    },
-
-    search: {
-      provider: "local",
-    },
-
-    editLink: {
-      pattern: "https://github.com/btravers/temporal-contract/edit/main/docs/:path",
-      text: "Edit this page on GitHub",
-    },
-  },
-
-  head: [["link", { rel: "icon", type: "image/svg+xml", href: "/temporal-contract/logo.svg" }]],
-
-  mermaid: {
-    // Configuration options for mermaid
-    // See: https://mermaid.js.org/config/setup/modules/mermaidAPI.html
-  },
-});
+  }),
+);
