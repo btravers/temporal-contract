@@ -66,14 +66,19 @@ result.match({
 Activities return `Future<Result<T, ActivityError>>` for explicit error handling:
 
 ```typescript
-import { Future, Result } from "@temporal-contract/boxed";
-import { declareActivitiesHandler } from "@temporal-contract/worker/activity";
+import { Future } from "@swan-io/boxed";
+import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
 
-export const activities = declareActivitiesHandler(contract, {
-  processPayment: async (args) => {
-    return Future.fromPromise(paymentService.charge(args)).mapError(
-      (error) => new ActivityError("PAYMENT_FAILED", error.message),
-    );
+export const activities = declareActivitiesHandler({
+  contract,
+  activities: {
+    processOrder: {
+      processPayment: (args) => {
+        return Future.fromPromise(paymentService.charge(args))
+          .mapError((error) => new ActivityError("PAYMENT_FAILED", error.message))
+          .mapOk((result) => ({ transactionId: result.id }));
+      },
+    },
   },
 });
 ```
@@ -81,22 +86,19 @@ export const activities = declareActivitiesHandler(contract, {
 ### Workflows
 
 ```typescript
-import { Result } from "@temporal-contract/boxed";
+import { declareWorkflow } from "@temporal-contract/worker/workflow";
 
-export const workflow = declareWorkflow(contract, (ctx) => ({
-  async execute(input) {
-    const payment = await ctx.activities.processPayment(input);
+export const processOrder = declareWorkflow({
+  workflowName: "processOrder",
+  contract,
+  implementation: async ({ activities }, input) => {
+    // Activities return plain values (Result is unwrapped by framework)
+    const payment = await activities.processPayment(input);
 
-    if (payment.isError()) {
-      return Result.Error({
-        type: "PAYMENT_FAILED",
-        error: payment.error,
-      });
-    }
-
-    return Result.Ok({ success: true });
+    // Workflow returns plain object (serializable for Temporal)
+    return { success: true, transactionId: payment.transactionId };
   },
-}));
+});
 ```
 
 ## Interoperability with @swan-io/boxed
