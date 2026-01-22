@@ -42,6 +42,7 @@
   ],
   "scripts": {
     "build": "tsdown src/index.ts --format cjs,esm --dts --clean",
+    "build:docs": "typedoc",
     "dev": "tsdown src/index.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -57,6 +58,7 @@
     "@nestjs/testing": "^11.1.12",
     "@temporal-contract/testing": "workspace:*",
     "@temporal-contract/tsconfig": "workspace:*",
+    "@temporal-contract/typedoc": "workspace:*",
     "@temporalio/worker": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",

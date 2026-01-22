@@ -31,12 +31,12 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Build documentation
-        run: pnpm --filter ./website build
+        run: pnpm --filter ./docs build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: website/docs/.vitepress/dist
+          path: docs/.vitepress/dist
 
   deploy:
     environment:

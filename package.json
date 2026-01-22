@@ -7,6 +7,7 @@
   "type": "module",
   "scripts": {
     "build": "turbo run build",
+    "build:docs": "turbo run build:docs",
     "changeset": "changeset",
     "dev": "turbo run dev",
     "format": "oxfmt .",

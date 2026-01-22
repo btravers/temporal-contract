@@ -19,6 +19,7 @@
   ],
   "scripts": {
     "build": "tsdown src/global-setup.ts src/extension.ts --format esm --dts --clean",
+    "build:docs": "typedoc",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@temporal-contract/tsconfig": "workspace:*",
+    "@temporal-contract/typedoc": "workspace:*",
     "@types/node": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",

@@ -39,7 +39,7 @@ sequenceDiagram
 The example consists of two packages:
 
 ```
-samples/
+examples/
 ├── order-processing-contract/    # Contract package (shared)
 │   ├── src/
 │   │   ├── contract.ts                 # Contract definition
@@ -93,8 +93,8 @@ The worker application imports the contract package and implements:
 
 View the complete source code:
 
-- [Contract package](https://github.com/btravers/temporal-contract/tree/main/samples/order-processing-contract)
-- [Worker/Client application](https://github.com/btravers/temporal-contract/tree/main/samples/order-processing-worker)
+- [Contract package](https://github.com/btravers/temporal-contract/tree/main/examples/order-processing-contract)
+- [Worker/Client application](https://github.com/btravers/temporal-contract/tree/main/examples/order-processing-worker)
 
 ## Running the Example
 
@@ -109,7 +109,7 @@ View the complete source code:
 
 ```bash
 # Build the contract package first
-cd samples/order-processing-contract
+cd examples/order-processing-contract
 pnpm build
 
 # Run the worker

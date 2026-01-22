@@ -51,6 +51,7 @@
   ],
   "scripts": {
     "build": "tsdown src/index.ts src/interop.ts --format cjs,esm --dts --clean",
+    "build:docs": "typedoc",
     "dev": "tsdown src/index.ts src/interop.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -59,6 +60,7 @@
   "devDependencies": {
     "@swan-io/boxed": "catalog:",
     "@temporal-contract/tsconfig": "workspace:*",
+    "@temporal-contract/typedoc": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "tsdown": "catalog:",

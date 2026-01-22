@@ -18,8 +18,8 @@ type Order = z.infer<typeof OrderSchema>;
  *
  * Usage:
  *   1. Start Temporal server: temporal server start-dev
- *   2. Start a worker: cd samples/order-processing-worker && pnpm dev
- *   3. Run this client: cd samples/order-processing-client && pnpm dev
+ *   2. Start a worker: cd examples/order-processing-worker && pnpm dev
+ *   3. Run this client: cd examples/order-processing-client && pnpm dev
  */
 async function run() {
   logger.info("🚀 Starting Order Processing Client (Result/Future Pattern)...");

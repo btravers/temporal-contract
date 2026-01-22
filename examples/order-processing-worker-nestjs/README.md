@@ -61,7 +61,7 @@ This sample does the same thing as `order-processing-worker` but uses NestJS:
 pnpm dev
 
 # Or from repository root
-cd samples/order-processing-worker-nestjs
+cd examples/order-processing-worker-nestjs
 pnpm dev
 ```
 
@@ -76,7 +76,7 @@ The worker will:
 In another terminal, run the client to send workflow requests:
 
 ```bash
-cd samples/order-processing-client
+cd examples/order-processing-client
 pnpm dev
 ```
 

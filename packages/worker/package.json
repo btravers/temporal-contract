@@ -63,6 +63,7 @@
   ],
   "scripts": {
     "build": "tsdown src/activity.ts src/worker.ts src/workflow.ts --format cjs,esm --dts --clean",
+    "build:docs": "typedoc",
     "dev": "tsdown src/activity.ts src/worker.ts src/workflow.ts --format cjs,esm --dts --watch",
     "test": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
@@ -79,6 +80,7 @@
     "@temporal-contract/client": "workspace:*",
     "@temporal-contract/testing": "workspace:*",
     "@temporal-contract/tsconfig": "workspace:*",
+    "@temporal-contract/typedoc": "workspace:*",
     "@temporalio/client": "catalog:",
     "@temporalio/worker": "catalog:",
     "@temporalio/workflow": "catalog:",

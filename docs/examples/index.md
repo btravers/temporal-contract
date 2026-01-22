@@ -47,7 +47,7 @@ A complete e-commerce order processing workflow using Result/Future pattern for 
 
 ## Running the Examples
 
-All examples are located in the [`samples/`](https://github.com/btravers/temporal-contract/tree/main/samples) directory of the repository.
+All examples are located in the [`examples/`](https://github.com/btravers/temporal-contract/tree/main/samples) directory of the repository.
 
 ### Prerequisites
 
@@ -81,13 +81,13 @@ Each example has its own directory with a README:
 
 ```bash
 # Navigate to an example
-cd samples/order-processing-worker
+cd examples/order-processing-worker
 
 # Start the worker
 pnpm dev
 
 # In another terminal, run the client
-cd samples/order-processing-client
+cd examples/order-processing-client
 pnpm dev
 ```
 
@@ -96,7 +96,7 @@ pnpm dev
 Each example follows this structure:
 
 ```
-samples/
+examples/
 ├── example-contract/              # Shared contract package
 │   ├── src/
 │   │   └── contract.ts            # Contract definition

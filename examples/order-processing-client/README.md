@@ -91,13 +91,13 @@ The unified contract (`orderProcessingContract`) defines:
 
 Both workers implement the exact same contract but with different frameworks:
 
-1. **Standard Worker** (`samples/order-processing-worker`)
+1. **Standard Worker** (`examples/order-processing-worker`)
    - Uses `@temporal-contract/worker`
    - Activities use Result/Future pattern with ActivityError
    - Clean Architecture with dependency injection
    - Standalone TypeScript application
 
-2. **NestJS Worker** (`samples/order-processing-worker-nestjs`)
+2. **NestJS Worker** (`examples/order-processing-worker-nestjs`)
    - Uses `@temporal-contract/worker-nestjs`
    - Activities use Result/Future pattern with ActivityError
    - NestJS dependency injection and decorators

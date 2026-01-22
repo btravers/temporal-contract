@@ -1,14 +1,14 @@
 {
-  "name": "@temporal-contract/website",
+  "name": "@temporal-contract/docs",
   "private": true,
   "description": "Documentation website for temporal-contract",
   "license": "MIT",
   "author": "Benoit TRAVERS",
   "type": "module",
   "scripts": {
-    "build": "vitepress build docs",
-    "dev": "vitepress dev docs",
-    "preview": "vitepress preview docs"
+    "build": "vitepress build",
+    "dev": "vitepress dev",
+    "preview": "vitepress preview"
   },
   "devDependencies": {
     "mermaid": "11.12.2",
