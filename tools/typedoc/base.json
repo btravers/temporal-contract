@@ -1,11 +1,21 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": ["./src/index.ts"],
-  "out": "./docs",
   "plugin": ["typedoc-plugin-markdown"],
+  "outputFileStrategy": "modules",
+  "flattenOutputFiles": true,
+  "entryFileName": "index.md",
+  "hideGenerator": true,
   "excludePrivate": true,
   "excludeProtected": true,
   "excludeInternal": true,
-  "hideGenerator": true,
-  "readme": "none"
+  "readme": "none",
+  "githubPages": false,
+  "useCodeBlocks": true,
+  "useHTMLEncodedBrackets": true,
+  "sanitizeComments": true,
+  "parametersFormat": "table",
+  "propertiesFormat": "table",
+  "enumMembersFormat": "table",
+  "typeDeclarationFormat": "table",
+  "skipErrorChecking": true
 }

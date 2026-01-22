@@ -6,12 +6,25 @@
   "author": "Benoit TRAVERS",
   "type": "module",
   "scripts": {
+    "prebuild": "tsx scripts/copy-docs.ts",
     "build": "vitepress build",
     "dev": "vitepress dev",
     "preview": "vitepress preview"
   },
+  "dependencies": {
+    "@temporal-contract/boxed": "workspace:*",
+    "@temporal-contract/client": "workspace:*",
+    "@temporal-contract/client-nestjs": "workspace:*",
+    "@temporal-contract/contract": "workspace:*",
+    "@temporal-contract/testing": "workspace:*",
+    "@temporal-contract/worker": "workspace:*",
+    "@temporal-contract/worker-nestjs": "workspace:*"
+  },
   "devDependencies": {
+    "@temporal-contract/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
     "mermaid": "11.12.2",
+    "tsx": "catalog:",
     "vitepress": "1.6.4",
     "vitepress-plugin-mermaid": "2.0.17"
   }
