@@ -31,7 +31,7 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Build documentation
-        run: pnpm --filter ./docs build
+        run: pnpm --filter ./docs exec turbo build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
