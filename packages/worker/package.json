@@ -1,6 +1,6 @@
 {
   "name": "@temporal-contract/worker",
-  "version": "0.0.7",
+  "version": "0.1.0",
   "description": "Worker utilities with Result/Future pattern for implementing temporal-contract workflows and activities",
   "keywords": [
     "contract",

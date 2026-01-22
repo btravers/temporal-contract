@@ -1,6 +1,6 @@
 {
   "name": "@temporal-contract/client-nestjs",
-  "version": "0.0.7",
+  "version": "0.1.0",
   "description": "NestJS integration for temporal-contract client",
   "keywords": [
     "client",
