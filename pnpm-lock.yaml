@@ -592,13 +592,13 @@ importers:
         version: link:../worker
     devDependencies:
       '@nestjs/common':
-        specifier: ^11.1.12
+        specifier: 'catalog:'
         version: 11.1.12(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/core':
-        specifier: ^11.1.12
+        specifier: 'catalog:'
         version: 11.1.12(@nestjs/common@11.1.12(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/testing':
-        specifier: ^11.1.12
+        specifier: 'catalog:'
         version: 11.1.12(@nestjs/common@11.1.12(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.12(@nestjs/common@11.1.12(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))
       '@temporal-contract/testing':
         specifier: workspace:*
@@ -619,7 +619,7 @@ importers:
         specifier: 'catalog:'
         version: 4.0.17(vitest@4.0.17(@types/node@25.0.9)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       reflect-metadata:
-        specifier: ^0.2.2
+        specifier: 'catalog:'
         version: 0.2.2
       tsdown:
         specifier: 'catalog:'

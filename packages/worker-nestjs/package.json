@@ -1,6 +1,6 @@
 {
   "name": "@temporal-contract/worker-nestjs",
-  "version": "0.0.2",
+  "version": "0.0.7",
   "description": "NestJS integration for temporal-contract worker",
   "keywords": [
     "contract",
@@ -53,24 +53,24 @@
     "@temporal-contract/worker": "workspace:*"
   },
   "devDependencies": {
-    "@nestjs/common": "^11.1.12",
-    "@nestjs/core": "^11.1.12",
-    "@nestjs/testing": "^11.1.12",
+    "@nestjs/common": "catalog:",
+    "@nestjs/core": "catalog:",
+    "@nestjs/testing": "catalog:",
     "@temporal-contract/testing": "workspace:*",
     "@temporal-contract/tsconfig": "workspace:*",
     "@temporal-contract/typedoc": "workspace:*",
     "@temporalio/worker": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "reflect-metadata": "^0.2.2",
+    "reflect-metadata": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "@nestjs/common": "^10",
-    "@nestjs/core": "^10",
+    "@nestjs/common": "^11",
+    "@nestjs/core": "^11",
     "@temporalio/worker": "^1",
     "reflect-metadata": "^0.2.0"
   }
