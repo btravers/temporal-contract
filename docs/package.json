@@ -1,5 +1,5 @@
 {
-  "name": "@temporal-contract/website",
+  "name": "@temporal-contract/docs",
   "private": true,
   "description": "Documentation website for temporal-contract",
   "license": "MIT",

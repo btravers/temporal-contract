@@ -393,12 +393,12 @@ async ({}, use) => {};
    - Keep comments concise and relevant
 
 3. **Examples**
-   - Provide working examples in `samples/` directory
+   - Provide working examples in `examples/` directory
    - Examples should demonstrate real-world usage
    - Include both basic and advanced patterns
 
 4. **Website Documentation**
-   - Keep `website/docs/` in sync with code changes
+   - Keep `docs/docs/` in sync with code changes
    - Update API documentation when signatures change
    - Add guides for new features
 
@@ -548,7 +548,7 @@ Before submitting code, ensure:
 If you're unsure about any guideline:
 
 1. Check existing code for patterns
-2. Look at the samples in `samples/` directory
+2. Look at the samples in `examples/` directory
 3. Review recent PRs for examples
 4. Open a discussion on GitHub
 

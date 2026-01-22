@@ -9,52 +9,69 @@
       "entry": ["lefthook.yml"]
     },
     "packages/boxed": {
-      "ignoreDependencies": ["@swan-io/boxed"]
+      "ignoreDependencies": ["@swan-io/boxed", "@temporal-contract/typedoc"],
+      "ignoreBinaries": ["typedoc"]
     },
     "packages/client": {
       "entry": ["src/index.ts", "src/__tests__/test.workflows.ts"],
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["@temporal-contract/typedoc"],
+      "ignoreBinaries": ["typedoc"]
     },
     "packages/contract": {
       "entry": ["src/index.ts"],
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["@temporal-contract/typedoc"],
+      "ignoreBinaries": ["typedoc"]
     },
     "packages/worker": {
       "entry": ["src/activity.ts", "src/workflow.ts", "src/__tests__/test.workflows.ts"],
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["@temporal-contract/typedoc"],
+      "ignoreBinaries": ["typedoc"]
     },
     "packages/worker-nestjs": {
       "entry": ["src/index.ts"],
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["@temporal-contract/typedoc"],
+      "ignoreBinaries": ["typedoc"]
     },
     "packages/client-nestjs": {
       "entry": ["src/index.ts"],
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["@temporal-contract/typedoc"],
+      "ignoreBinaries": ["typedoc"]
     },
     "packages/testing": {
       "entry": ["src/extension.ts", "src/global-setup.ts"],
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["@temporal-contract/typedoc"],
+      "ignoreBinaries": ["typedoc"]
     },
-    "samples/order-processing-contract": {
+    "examples/order-processing-contract": {
       "entry": ["src/index.ts"],
       "project": ["src/**/*.ts"]
     },
-    "samples/order-processing-worker": {
+    "examples/order-processing-worker": {
       "entry": ["src/application/worker.ts", "src/application/workflows.ts"],
       "project": ["src/**/*.ts"]
     },
-    "samples/order-processing-worker-nestjs": {
+    "examples/order-processing-worker-nestjs": {
       "entry": ["src/main.ts", "src/workflows.ts"],
       "project": ["src/**/*.ts"]
     },
-    "samples/order-processing-client": {
+    "examples/order-processing-client": {
       "entry": ["src/client.ts"],
       "project": ["src/**/*.ts"]
     },
-    "tools/*": {
+    "tools/tsconfig": {
       "entry": ["*.json"]
     },
-    "website": {
+    "tools/typedoc": {
+      "entry": ["*.json"],
+      "ignoreDependencies": ["typedoc", "typedoc-plugin-markdown"]
+    },
+    "docs": {
       "entry": ["docs/.vitepress/config.ts", "docs/.vitepress/theme/index.ts"]
     }
   },

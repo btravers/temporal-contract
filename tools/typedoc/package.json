@@ -1,0 +1,12 @@
+{
+  "name": "@temporal-contract/typedoc",
+  "version": "0.0.7",
+  "description": "Shared TypeDoc configuration for temporal-contract packages",
+  "files": [
+    "base.json"
+  ],
+  "dependencies": {
+    "typedoc": "catalog:",
+    "typedoc-plugin-markdown": "catalog:"
+  }
+}

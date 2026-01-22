@@ -1,8 +1,8 @@
 packages:
   - packages/*
-  - samples/*
+  - examples/*
   - tools/*
-  - website
+  - docs
 
 onlyBuiltDependencies:
   - "@temporalio/core-bridge"
@@ -38,6 +38,8 @@ catalog:
   testcontainers: 11.11.0
   ts-pattern: 5.9.0
   tsdown: 0.20.0-beta.4
+  typedoc: 0.28.6
+  typedoc-plugin-markdown: 4.6.3
   tsx: 4.21.0
   turbo: 2.7.5
   typescript: 5.9.3
