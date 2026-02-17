@@ -5,7 +5,7 @@ NestJS integration for `@temporal-contract/client` providing a type-safe way to 
 ## Installation
 
 ```bash
-pnpm add @temporal-contract/client-nestjs @swan-io/boxed
+pnpm add @temporal-contract/client-nestjs @temporal-contract/contract @temporal-contract/client @temporalio/client
 ```
 
 ## Features

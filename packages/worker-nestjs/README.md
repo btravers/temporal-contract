@@ -30,7 +30,7 @@ All activities must be provided upfront in the module configuration. Use `declar
 import { Module } from "@nestjs/common";
 import { TemporalModule } from "@temporal-contract/worker-nestjs";
 import { NativeConnection } from "@temporalio/worker";
-import { Future, Result } from "@temporal-contract/boxed";
+import { Future, Result } from "@swan-io/boxed";
 import { ActivityError, declareActivitiesHandler } from "@temporal-contract/worker/activity";
 import { orderProcessingContract } from "./contract";
 
@@ -80,7 +80,7 @@ The worker starts automatically when the NestJS application initializes and shut
 
 ```typescript
 // main.ts
-import { NestFactory } from "@nestjs/common";
+import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {

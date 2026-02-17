@@ -47,7 +47,7 @@ A complete e-commerce order processing workflow using Result/Future pattern for 
 
 ## Running the Examples
 
-All examples are located in the [`examples/`](https://github.com/btravers/temporal-contract/tree/main/samples) directory of the repository.
+All examples are located in the [`examples/`](https://github.com/btravers/temporal-contract/tree/main/examples) directory of the repository.
 
 ### Prerequisites
 
@@ -184,7 +184,7 @@ Clean, typed activity implementations with Result/Future pattern:
 
 ```typescript
 import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
-import { Future, Result } from "@temporal-contract/boxed";
+import { Future, Result } from "@swan-io/boxed";
 import { orderContract } from "../contracts/order.contract";
 import { emailService } from "../infrastructure/email.service";
 import { paymentService } from "../infrastructure/payment.service";
@@ -203,37 +203,39 @@ export const activities = declareActivitiesHandler({
       });
     },
 
-    validateInventory: ({ items }) => {
-      return Future.make(async (resolve) => {
-        try {
-          const available = await inventoryService.checkAvailability(items);
-          resolve(Result.Ok({ available }));
-        } catch (error) {
-          resolve(
-            Result.Error(
-              new ActivityError("INVENTORY_CHECK_FAILED", "Failed to check inventory", error),
-            ),
-          );
-        }
-      });
-    },
+    processOrder: {
+      validateInventory: ({ items }) => {
+        return Future.make(async (resolve) => {
+          try {
+            const available = await inventoryService.checkAvailability(items);
+            resolve(Result.Ok({ available }));
+          } catch (error) {
+            resolve(
+              Result.Error(
+                new ActivityError("INVENTORY_CHECK_FAILED", "Failed to check inventory", error),
+              ),
+            );
+          }
+        });
+      },
 
-    processPayment: ({ customerId, amount }) => {
-      return Future.make(async (resolve) => {
-        try {
-          const result = await paymentService.charge(customerId, amount);
-          resolve(
-            Result.Ok({
-              transactionId: result.id,
-              success: result.status === "success",
-            }),
-          );
-        } catch (error) {
-          resolve(
-            Result.Error(new ActivityError("PAYMENT_FAILED", "Failed to process payment", error)),
-          );
-        }
-      });
+      processPayment: ({ customerId, amount }) => {
+        return Future.make(async (resolve) => {
+          try {
+            const result = await paymentService.charge(customerId, amount);
+            resolve(
+              Result.Ok({
+                transactionId: result.id,
+                success: result.status === "success",
+              }),
+            );
+          } catch (error) {
+            resolve(
+              Result.Error(new ActivityError("PAYMENT_FAILED", "Failed to process payment", error)),
+            );
+          }
+        });
+      },
     },
   },
 });
@@ -250,6 +252,7 @@ import { orderContract } from "../contracts/order.contract";
 export const processOrder = declareWorkflow({
   workflowName: "processOrder",
   contract: orderContract,
+  activityOptions: { startToCloseTimeout: "1 minute" },
   implementation: async (context, { orderId, customerId, items }) => {
     // Validate inventory
     const inventory = await context.activities.validateInventory({ items });

@@ -153,8 +153,7 @@ await client.executeWorkflow("processOrder", {
   workflowId: "order-123",
   args: { orderId: "ORD-123", customerId: "CUST-456" },
 
-  // Standard Temporal options
-  taskQueue: "orders", // Override task queue
+  // Standard Temporal options (taskQueue comes from the contract automatically)
   workflowExecutionTimeout: "1 hour",
   workflowRunTimeout: "30 minutes",
   retry: {
@@ -174,16 +173,33 @@ await client.executeWorkflow("processOrder", {
 Get a handle to an existing workflow:
 
 ```typescript
-const handle = client.getHandle("order-123");
+const handleResult = await client.getHandle("processOrder", "order-123");
 
-// Query the workflow
-const status = await handle.query("getStatus");
+handleResult.match({
+  Ok: async (handle) => {
+    // Query the workflow
+    const statusResult = await handle.queries.getStatus({});
+    statusResult.match({
+      Ok: (status) => console.log("Status:", status),
+      Error: (error) => console.error("Query failed:", error),
+    });
 
-// Signal the workflow
-await handle.signal("cancelOrder", { reason: "Customer request" });
+    // Signal the workflow
+    const signalResult = await handle.signals.cancelOrder({ reason: "Customer request" });
+    signalResult.match({
+      Ok: () => console.log("Signal sent"),
+      Error: (error) => console.error("Signal failed:", error),
+    });
 
-// Get the result
-const result = await handle.result();
+    // Get the result
+    const result = await handle.result();
+    result.match({
+      Ok: (output) => console.log("Result:", output),
+      Error: (error) => console.error("Workflow failed:", error),
+    });
+  },
+  Error: (error) => console.error("Failed to get handle:", error),
+});
 ```
 
 ## Multiple Workflows

@@ -4,7 +4,7 @@ Welcome to **temporal-contract**! This guide will help you get up and running wi
 
 ## What is temporal-contract?
 
-**temporal-contract** is a TypeScript library that brings end-to-end type safety and automatic validation to [Temporal.io](https://temporal.io/) workflows and activities. It uses a contract-first approach with Zod schemas to ensure your workflows are type-safe from definition to execution.
+**temporal-contract** is a TypeScript library that brings end-to-end type safety and automatic validation to [Temporal.io](https://temporal.io/) workflows and activities. It uses a contract-first approach with Standard Schema compatible libraries (Zod, Valibot, ArkType) to ensure your workflows are type-safe from definition to execution.
 
 ## Why Use temporal-contract?
 
@@ -22,7 +22,7 @@ Working with Temporal.io is powerful, but comes with challenges:
 temporal-contract solves these problems by:
 
 - ✅ **End-to-end type safety** — From contract to client, workflows, and activities
-- ✅ **Automatic validation** — Zod schemas validate at all network boundaries
+- ✅ **Automatic validation** — Standard Schema (Zod, Valibot, ArkType) validates at all network boundaries
 - ✅ **Compile-time checks** — TypeScript catches issues before runtime
 - ✅ **Better DX** — Autocomplete, refactoring support, inline documentation
 
@@ -129,7 +129,7 @@ import { orderContract } from "./contract";
 export const activities = declareActivitiesHandler({
   contract: orderContract,
   activities: {
-    sendEmail: async ({ to, subject, body }) => {
+    sendEmail: ({ to, subject, body }) => {
       // Full type safety - parameters are automatically typed!
       return Future.fromPromise(emailService.send({ to, subject, body }))
         .mapError(
@@ -142,7 +142,7 @@ export const activities = declareActivitiesHandler({
         )
         .mapOk(() => ({ sent: true }));
     },
-    processPayment: async ({ customerId, amount }) => {
+    processPayment: ({ customerId, amount }) => {
       // TypeScript knows the exact types
       return Future.fromPromise(paymentGateway.charge(customerId, amount))
         .mapError(
@@ -167,18 +167,19 @@ import { orderContract } from "./contract";
 export const processOrder = declareWorkflow({
   workflowName: "processOrder",
   contract: orderContract,
-  implementation: async ({ activities }, { orderId, customerId }) => {
+  activityOptions: { startToCloseTimeout: "1 minute" },
+  implementation: async (context, args) => {
     // Full autocomplete for activities and their parameters
     // Activities return plain values (Result is unwrapped internally)
-    const payment = await activities.processPayment({
-      customerId,
+    const payment = await context.activities.processPayment({
+      customerId: args.customerId,
       amount: 100,
     });
 
-    await activities.sendEmail({
-      to: customerId,
+    await context.activities.sendEmail({
+      to: args.customerId,
       subject: "Order Confirmed",
-      body: `Order ${orderId} processed`,
+      body: `Order ${args.orderId} processed`,
     });
 
     // Return plain object (not Result - network serialization requirement)

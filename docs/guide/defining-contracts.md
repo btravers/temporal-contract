@@ -4,7 +4,7 @@ Learn how to define type-safe contracts for your Temporal workflows and activiti
 
 ## Overview
 
-Contracts are the foundation of temporal-contract. They define the interface for your workflows, including inputs, outputs, and activities, all using Zod schemas for validation.
+Contracts are the foundation of temporal-contract. They define the interface for your workflows, including inputs, outputs, and activities, all using Standard Schema compatible libraries (Zod, Valibot, ArkType) for validation.
 
 ## Basic Contract Structure
 
@@ -120,7 +120,7 @@ workflows: {
 
 ## Schema Validation
 
-All inputs and outputs are validated using Zod schemas:
+All inputs and outputs are validated using Standard Schema compatible libraries (e.g., Zod):
 
 ```typescript
 input: z.object({
@@ -137,6 +137,7 @@ TypeScript automatically infers types from your schemas:
 
 ```typescript
 const contract = defineContract({
+  taskQueue: "orders",
   workflows: {
     processOrder: {
       input: z.object({

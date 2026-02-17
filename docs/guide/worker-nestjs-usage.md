@@ -44,33 +44,31 @@ export class ActivitiesProvider {
           return Future.value(Result.Ok(undefined));
         },
 
-        // Workflow-specific activities with DI
-        processOrder: {
-          processPayment: ({ customerId, amount }) => {
-            return Future.fromPromise(this.paymentService.charge(customerId, amount))
-              .mapError(
-                (error) =>
-                  new ActivityError(
-                    "PAYMENT_FAILED",
-                    error instanceof Error ? error.message : "Payment failed",
-                    error,
-                  ),
-              )
-              .mapOk((transaction) => ({ transactionId: transaction.id }));
-          },
+        // Activities with DI
+        processPayment: ({ customerId, amount }) => {
+          return Future.fromPromise(this.paymentService.charge(customerId, amount))
+            .mapError(
+              (error) =>
+                new ActivityError(
+                  "PAYMENT_FAILED",
+                  error instanceof Error ? error.message : "Payment failed",
+                  error,
+                ),
+            )
+            .mapOk((transaction) => ({ transactionId: transaction.id }));
+        },
 
-          sendNotification: ({ customerId, message }) => {
-            return Future.fromPromise(this.notificationService.send(customerId, message))
-              .mapError(
-                (error) =>
-                  new ActivityError(
-                    "NOTIFICATION_FAILED",
-                    error instanceof Error ? error.message : "Notification failed",
-                    error,
-                  ),
-              )
-              .mapOk(() => undefined);
-          },
+        sendNotification: ({ customerId, message }) => {
+          return Future.fromPromise(this.notificationService.send(customerId, message))
+            .mapError(
+              (error) =>
+                new ActivityError(
+                  "NOTIFICATION_FAILED",
+                  error instanceof Error ? error.message : "Notification failed",
+                  error,
+                ),
+            )
+            .mapOk(() => undefined);
         },
       },
     });
@@ -162,13 +160,11 @@ export class ActivitiesProvider {
     return declareActivitiesHandler({
       contract: myContract,
       activities: {
-        processOrder: {
-          checkInventory: ({ productId, quantity }) => {
-            this.logger.log(`Checking inventory for ${productId}`);
-            return Future.fromPromise(this.inventoryService.reserve(productId, quantity))
-              .mapError((error) => new ActivityError("INVENTORY_UNAVAILABLE", error.message, error))
-              .mapOk((reservation) => ({ reservationId: reservation.id }));
-          },
+        checkInventory: ({ productId, quantity }) => {
+          this.logger.log(`Checking inventory for ${productId}`);
+          return Future.fromPromise(this.inventoryService.reserve(productId, quantity))
+            .mapError((error) => new ActivityError("INVENTORY_UNAVAILABLE", error.message, error))
+            .mapOk((reservation) => ({ reservationId: reservation.id }));
         },
       },
     });
@@ -196,12 +192,10 @@ export class ActivitiesProvider {
     return declareActivitiesHandler({
       contract: myContract,
       activities: {
-        processOrder: {
-          processPayment: ({ amount }) => {
-            return Future.fromPromise(this.paymentService.charge(amount, paymentGatewayUrl))
-              .mapError((err) => new ActivityError("PAYMENT_FAILED", err.message, err))
-              .mapOk((tx) => ({ transactionId: tx.id }));
-          },
+        processPayment: ({ amount }) => {
+          return Future.fromPromise(this.paymentService.charge(amount, paymentGatewayUrl))
+            .mapError((err) => new ActivityError("PAYMENT_FAILED", err.message, err))
+            .mapOk((tx) => ({ transactionId: tx.id }));
         },
       },
     });
@@ -277,7 +271,6 @@ Run multiple workers in the same NestJS application:
   imports: [
     // Order processing worker
     TemporalModule.forRootAsync({
-      name: "orders",
       inject: [OrderActivitiesProvider],
       useFactory: async (provider: OrderActivitiesProvider) => ({
         contract: orderContract,
@@ -289,7 +282,6 @@ Run multiple workers in the same NestJS application:
 
     // Payment processing worker
     TemporalModule.forRootAsync({
-      name: "payments",
       inject: [PaymentActivitiesProvider],
       useFactory: async (provider: PaymentActivitiesProvider) => ({
         contract: paymentContract,
@@ -310,6 +302,7 @@ Test your activities with NestJS testing utilities:
 
 ```typescript
 import { Test } from "@nestjs/testing";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ActivitiesProvider } from "./activities.provider";
 import { PaymentService } from "./services/payment.service";
 
@@ -324,7 +317,7 @@ describe("ActivitiesProvider", () => {
         {
           provide: PaymentService,
           useValue: {
-            charge: jest.fn(),
+            charge: vi.fn(),
           },
         },
       ],
@@ -335,19 +328,21 @@ describe("ActivitiesProvider", () => {
   });
 
   it("should process payment", async () => {
-    jest.spyOn(paymentService, "charge").mockResolvedValue({
+    vi.spyOn(paymentService, "charge").mockResolvedValue({
       id: "tx-123",
     });
 
     const activities = provider.createActivities();
-    const result = await activities.activities.processOrder.processPayment({
+    const result = await activities.processPayment({
       customerId: "CUST-123",
       amount: 100,
     });
 
     const value = await result;
     expect(value.isOk()).toBe(true);
-    expect(value.get()).toEqual({ transactionId: "tx-123" });
+    if (value.isOk()) {
+      expect(value.value).toEqual({ transactionId: "tx-123" });
+    }
   });
 });
 ```
@@ -401,12 +396,10 @@ export class ActivitiesProvider {
     return declareActivitiesHandler({
       contract: myContract,
       activities: {
-        processOrder: {
-          processPayment: ({ customerId, amount }) => {
-            return Future.fromPromise(this.paymentService.processPayment(customerId, amount))
-              .mapError((err) => new ActivityError("PAYMENT_FAILED", err.message, err))
-              .mapOk((tx) => ({ transactionId: tx.id }));
-          },
+        processPayment: ({ customerId, amount }) => {
+          return Future.fromPromise(this.paymentService.processPayment(customerId, amount))
+            .mapError((err) => new ActivityError("PAYMENT_FAILED", err.message, err))
+            .mapOk((tx) => ({ transactionId: tx.id }));
         },
       },
     });

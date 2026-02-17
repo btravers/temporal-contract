@@ -60,16 +60,17 @@ import { myContract } from "./contract";
 export const processOrder = declareWorkflow({
   workflowName: "processOrder",
   contract: myContract,
-  implementation: async ({ activities }, { orderId, customerId, amount }) => {
+  activityOptions: { startToCloseTimeout: "1 minute" },
+  implementation: async (context, args) => {
     // Activities return plain values (Result is unwrapped internally)
-    const payment = await activities.processPayment({
-      customerId,
-      amount,
+    const payment = await context.activities.processPayment({
+      customerId: args.customerId,
+      amount: args.amount,
     });
 
-    await activities.log({
+    await context.activities.log({
       level: "info",
-      message: `Order ${orderId} processed with transaction ${payment.transactionId}`,
+      message: `Order ${args.orderId} processed with transaction ${payment.transactionId}`,
     });
 
     // Return plain object (not Result - network serialization requirement)
@@ -146,15 +147,16 @@ console.log("Payment successful:", payment.transactionId);
 The workflow context provides typed access to activities:
 
 ```typescript
-implementation: async ({ activities, info, sleep }, input) => {
+implementation: async (context, args) => {
   // Execute activities
-  const result = await activities.someActivity(input);
+  const result = await context.activities.someActivity(args);
 
   // Access workflow info
-  console.log("Workflow ID:", info.workflowId);
-  console.log("Run ID:", info.runId);
+  console.log("Workflow ID:", context.info.workflowId);
+  console.log("Run ID:", context.info.runId);
 
-  // Use Temporal utilities
+  // Use Temporal sleep (import from @temporalio/workflow)
+  // import { sleep } from "@temporalio/workflow";
   await sleep("1 hour");
 
   return { success: true };
@@ -171,11 +173,12 @@ import { declareWorkflow } from "@temporal-contract/worker/workflow";
 export const parentWorkflow = declareWorkflow({
   workflowName: "parentWorkflow",
   contract: myContract,
-  implementation: async ({ executeChildWorkflow }, input) => {
+  activityOptions: { startToCloseTimeout: "1 minute" },
+  implementation: async (context, args) => {
     // Execute child workflow - returns Future<Result>
-    const childResult = await executeChildWorkflow(myContract, "processPayment", {
-      workflowId: `payment-${input.orderId}`,
-      args: { amount: input.amount, customerId: input.customerId },
+    const childResult = await context.executeChildWorkflow(myContract, "processPayment", {
+      workflowId: `payment-${args.orderId}`,
+      args: { amount: args.amount, customerId: args.customerId },
     });
 
     // Handle the Result with pattern matching
@@ -252,16 +255,18 @@ import { activities } from "./activities";
 
 describe("Activities", () => {
   it("should process payment successfully", async () => {
-    const result = await activities.activities.processOrder.processPayment({
+    const result = await activities.processPayment({
       customerId: "CUST-123",
       amount: 100,
     });
 
     const value = await result;
     expect(value.isOk()).toBe(true);
-    expect(value.get()).toEqual({
-      transactionId: expect.any(String),
-    });
+    if (value.isOk()) {
+      expect(value.value).toEqual({
+        transactionId: expect.any(String),
+      });
+    }
   });
 });
 ```
@@ -316,14 +321,14 @@ Workflows cannot return Result due to network serialization:
 
 ```typescript
 // ✅ Good - return plain object
-implementation: async ({ activities }, input) => {
-  const payment = await activities.processPayment({ amount: 100 });
+implementation: async (context, args) => {
+  const payment = await context.activities.processPayment({ amount: 100 });
   return { success: true, transactionId: payment.transactionId };
 };
 
 // ❌ Avoid - returning Result (will lose instance over network)
-implementation: async ({ activities }, input) => {
-  const payment = await activities.processPayment({ amount: 100 });
+implementation: async (context, args) => {
+  const payment = await context.activities.processPayment({ amount: 100 });
   return Result.Ok({ transactionId: payment.transactionId }); // Won't work!
 };
 ```

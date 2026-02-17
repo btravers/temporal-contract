@@ -89,6 +89,7 @@ import { declareWorkflow } from "@temporal-contract/worker/workflow";
 const processOrder = declareWorkflow({
   workflowName: "processOrder",
   contract: orderContract,
+  activityOptions: { startToCloseTimeout: "1 minute" },
   implementation: async ({ activities }, { orderId, customerId, amount }) => {
     // Activities are fully typed
     const { transactionId } = await activities.processPayment({
@@ -117,11 +118,17 @@ First-class NestJS support with dependency injection:
 
 ```typescript
 import { TemporalClientModule } from "@temporal-contract/client-nestjs";
+import { Connection, Client } from "@temporalio/client";
+import { orderContract } from "./contract";
+
+const connection = await Connection.connect({ address: "localhost:7233" });
+const client = new Client({ connection });
 
 @Module({
   imports: [
     TemporalClientModule.forRoot({
-      connection: { address: "localhost:7233" },
+      contract: orderContract,
+      client,
     }),
   ],
 })
