@@ -2,7 +2,6 @@
 import { ContractDefinition } from "@temporal-contract/contract";
 import { Worker, WorkerOptions } from "@temporalio/worker";
 import { fileURLToPath } from "node:url";
-import { extname } from "node:path";
 import type { ActivitiesHandler } from "./activity.js";
 
 /**
@@ -65,9 +64,14 @@ export async function createWorker<TContract extends ContractDefinition>(
 }
 
 /**
- * Helper to create a workflowsPath from a file URL
+ * Helper to resolve a workflow file path relative to the current module's URL.
  *
- * Useful for creating the workflowsPath option when using ES modules
+ * Useful when using ES modules (`import.meta.url`) to locate workflow files.
+ * The `relativePath` should include the file extension explicitly (e.g. `./workflows.js`)
+ * to ensure the resolved path is unambiguous in both source and built contexts.
+ *
+ * @param baseURL - The base URL to resolve from, typically `import.meta.url`
+ * @param relativePath - Relative path to the workflows file, **including extension**
  *
  * @example
  * ```ts
@@ -76,11 +80,12 @@ export async function createWorker<TContract extends ContractDefinition>(
  * const worker = await createWorker({
  *   contract: myContract,
  *   connection,
- *   workflowsPath: workflowsPathFromURL(import.meta.url, './workflows'),
+ *   // Include the extension explicitly to work in both source (.ts) and build (.js) contexts
+ *   workflowsPath: workflowsPathFromURL(import.meta.url, './workflows.js'),
  *   activities,
  * });
  * ```
  */
 export function workflowsPathFromURL(baseURL: string, relativePath: string): string {
-  return fileURLToPath(new URL(`${relativePath}${extname(baseURL)}`, baseURL));
+  return fileURLToPath(new URL(relativePath, baseURL));
 }
