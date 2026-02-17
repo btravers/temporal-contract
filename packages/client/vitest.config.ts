@@ -12,14 +12,16 @@ export default defineConfig({
       {
         test: {
           name: "unit",
-          include: ["src/**/*.unit.spec.ts"],
+          include: ["src/**/*.spec.ts"],
+          exclude: ["src/**/__tests__/*.spec.ts"],
         },
       },
       {
         test: {
           name: "integration",
           globalSetup: "@temporal-contract/testing/global-setup",
-          include: ["src/**/*.integration.spec.ts"],
+          include: ["src/**/__tests__/*.spec.ts"],
+          testTimeout: 10_000,
         },
       },
     ],

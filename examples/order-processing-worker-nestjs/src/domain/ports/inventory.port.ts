@@ -3,7 +3,7 @@ import type { InventoryReservation, OrderItem } from "../entities/order.schema.j
 /**
  * Inventory Port - Interface for inventory operations
  */
-export interface InventoryPort {
+export type InventoryPort = {
   /**
    * Reserve inventory for order items
    */
@@ -13,4 +13,4 @@ export interface InventoryPort {
    * Release a previously reserved inventory
    */
   releaseInventory(reservationId: string): Promise<void>;
-}
+};

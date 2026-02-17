@@ -227,7 +227,7 @@ describe("TypedClient", () => {
   });
 
   describe("TypedWorkflowHandle", () => {
-    interface MockHandle {
+    type MockHandle = {
       workflowId: string;
       result: ReturnType<typeof vi.fn>;
       query: ReturnType<typeof vi.fn>;
@@ -237,7 +237,7 @@ describe("TypedClient", () => {
       cancel: ReturnType<typeof vi.fn>;
       describe: ReturnType<typeof vi.fn>;
       fetchHistory: ReturnType<typeof vi.fn>;
-    }
+    };
 
     let mockHandle: MockHandle;
 

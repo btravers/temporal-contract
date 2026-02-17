@@ -3,7 +3,7 @@ import type { PaymentResult } from "../entities/order.schema.js";
 /**
  * Payment Port - Interface for payment operations
  */
-export interface PaymentPort {
+export type PaymentPort = {
   /**
    * Process a payment for a customer
    */
@@ -13,4 +13,4 @@ export interface PaymentPort {
    * Refund a payment transaction
    */
   refundPayment(transactionId: string): Promise<void>;
-}
+};

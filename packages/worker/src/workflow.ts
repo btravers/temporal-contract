@@ -586,10 +586,10 @@ type UpdateHandlerImplementation<TUpdate extends UpdateDefinition> = (
 /**
  * Options for declaring a workflow implementation
  */
-interface DeclareWorkflowOptions<
+type DeclareWorkflowOptions<
   TContract extends ContractDefinition,
   TWorkflowName extends keyof TContract["workflows"],
-> {
+> = {
   workflowName: TWorkflowName;
   contract: TContract;
   implementation: WorkflowImplementation<TContract, TWorkflowName>;
@@ -611,7 +611,7 @@ interface DeclareWorkflowOptions<
    * ```
    */
   activityOptions: ActivityOptions;
-}
+};
 
 /**
  * Workflow implementation function
@@ -636,10 +636,10 @@ type WorkflowImplementation<
  * - Signal, query, and update handler registration
  * - Child workflow execution capabilities
  */
-interface WorkflowContext<
+type WorkflowContext<
   TContract extends ContractDefinition,
   TWorkflowName extends keyof TContract["workflows"],
-> {
+> = {
   activities: WorkflowInferWorkflowContextActivities<TContract, TWorkflowName>;
   info: WorkflowInfo;
 
@@ -803,7 +803,7 @@ interface WorkflowContext<
   ) => Future<
     Result<ClientInferOutput<TChildContract["workflows"][TChildWorkflowName]>, ChildWorkflowError>
   >;
-}
+};
 
 /**
  * Options for starting a child workflow
@@ -818,7 +818,7 @@ type TypedChildWorkflowOptions<
 /**
  * Typed handle for a child workflow with Future/Result pattern
  */
-interface TypedChildWorkflowHandle<TWorkflow extends WorkflowDefinition> {
+type TypedChildWorkflowHandle<TWorkflow extends WorkflowDefinition> = {
   /**
    * Get child workflow result with Result pattern
    */
@@ -828,7 +828,7 @@ interface TypedChildWorkflowHandle<TWorkflow extends WorkflowDefinition> {
    * Child workflow ID
    */
   workflowId: string;
-}
+};
 
 /**
  * Activity function signature from workflow execution perspective

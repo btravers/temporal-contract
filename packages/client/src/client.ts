@@ -35,7 +35,7 @@ export type TypedWorkflowStartOptions<
 /**
  * Typed workflow handle with validated results using Result/Future pattern
  */
-export interface TypedWorkflowHandle<TWorkflow extends WorkflowDefinition> {
+export type TypedWorkflowHandle<TWorkflow extends WorkflowDefinition> = {
   workflowId: string;
 
   /**
@@ -104,7 +104,7 @@ export interface TypedWorkflowHandle<TWorkflow extends WorkflowDefinition> {
   fetchHistory: () => Future<
     Result<Awaited<ReturnType<WorkflowHandle["fetchHistory"]>>, RuntimeClientError>
   >;
-}
+};
 
 /**
  * Typed Temporal client with Result/Future pattern based on a contract

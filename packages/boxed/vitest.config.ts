@@ -8,5 +8,14 @@ export default defineConfig({
       reporter: ["text", "json", "json-summary", "html"],
       include: ["src/**"],
     },
+    projects: [
+      {
+        test: {
+          name: "unit",
+          include: ["src/**/*.spec.ts"],
+          exclude: ["src/**/__tests__/*.spec.ts"],
+        },
+      },
+    ],
   },
 });

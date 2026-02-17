@@ -7,16 +7,13 @@
   "type": "module",
   "scripts": {
     "build": "turbo run build",
-    "build:docs": "turbo run build:docs",
     "changeset": "changeset",
     "dev": "turbo run dev",
     "format": "oxfmt .",
     "knip": "knip",
-    "knip:fix": "knip --fix",
     "lint": "oxlint .",
     "prepare": "lefthook install",
     "release": "pnpm build && changeset publish",
-    "setup": "pnpm install && pnpm build",
     "sort-package-json": "sort-package-json '**/package.json' '!**/node_modules/**'",
     "test": "turbo run test",
     "test:integration": "turbo run test:integration",
@@ -34,5 +31,10 @@
     "sort-package-json": "catalog:",
     "turbo": "catalog:"
   },
-  "packageManager": "pnpm@10.26.1"
+  "packageManager": "pnpm@10.26.1",
+  "pnpm": {
+    "overrides": {
+      "preact": ">=10.28.2"
+    }
+  }
 }
