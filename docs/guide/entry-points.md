@@ -119,19 +119,36 @@ Create a single activities handler in your worker application:
 
 ```typescript
 // worker-application/src/activities/index.ts
-import { declareActivitiesHandler } from "@temporal-contract/worker/activity";
+import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { Future, Result } from "@swan-io/boxed";
 import { orderContract } from "contract-package";
 
 export const activities = declareActivitiesHandler({
   contract: orderContract,
   activities: {
-    sendEmail: async ({ to, body }) => {
-      await emailService.send({ to, body });
-      return { sent: true };
+    sendEmail: ({ to, body }) => {
+      return Future.fromPromise(emailService.send({ to, body }))
+        .mapError(
+          (error) =>
+            new ActivityError(
+              "EMAIL_FAILED",
+              error instanceof Error ? error.message : "Failed to send email",
+              error,
+            ),
+        )
+        .mapOk(() => ({ sent: true }));
     },
-    processPayment: async ({ amount }) => {
-      const txId = await paymentGateway.charge(amount);
-      return { transactionId: txId };
+    processPayment: ({ amount }) => {
+      return Future.fromPromise(paymentGateway.charge(amount))
+        .mapError(
+          (error) =>
+            new ActivityError(
+              "PAYMENT_FAILED",
+              error instanceof Error ? error.message : "Payment failed",
+              error,
+            ),
+        )
+        .mapOk((txId) => ({ transactionId: txId }));
     },
   },
 });
@@ -149,14 +166,15 @@ import { orderContract } from "contract-package";
 export const processOrder = declareWorkflow({
   workflowName: "processOrder",
   contract: orderContract,
-  implementation: async ({ activities }, { orderId }) => {
-    const payment = await activities.processPayment({
+  activityOptions: { startToCloseTimeout: "1 minute" },
+  implementation: async (context, args) => {
+    const payment = await context.activities.processPayment({
       amount: 100,
     });
 
-    await activities.sendEmail({
+    await context.activities.sendEmail({
       to: "customer@example.com",
-      body: `Order ${orderId} processed`,
+      body: `Order ${args.orderId} processed`,
     });
 
     return { success: true };
@@ -171,17 +189,18 @@ Wire everything together in your worker application:
 ```typescript
 // worker-application/src/worker.ts
 import { Worker } from "@temporalio/worker";
+import { orderContract } from "contract-package";
 import { activities } from "./activities";
 
 const worker = await Worker.create({
   // Workflows loaded from path (Temporal requirement)
   workflowsPath: require.resolve("./workflows/order.workflow"),
 
-  // Activities loaded directly
-  activities: activities.activities,
+  // Activities loaded directly (handler is a flat object)
+  activities,
 
   // Task queue from contract
-  taskQueue: activities.contract.taskQueue,
+  taskQueue: orderContract.taskQueue,
 });
 
 await worker.run();
@@ -193,7 +212,7 @@ Use the contract in a separate client application (can be in a different codebas
 
 ```typescript
 // client-application/src/client.ts
-import { Connection } from "@temporalio/client";
+import { Connection, Client } from "@temporalio/client";
 import { TypedClient } from "@temporal-contract/client";
 import { orderContract } from "contract-package";
 
@@ -202,21 +221,27 @@ const connection = await Connection.connect({
   address: "localhost:7233",
 });
 
-// Create type-safe client from contract
-const client = TypedClient.create(orderContract, {
-  connection,
-  namespace: "default",
-});
+// Create Temporal client and type-safe client from contract
+const temporalClient = new Client({ connection, namespace: "default" });
+const client = TypedClient.create(orderContract, temporalClient);
 
-// Start workflow with full type safety
-const handle = await client.startWorkflow("processOrder", {
+// Start workflow with full type safety (returns Future<Result<TypedWorkflowHandle, ...>>)
+const handleResult = await client.startWorkflow("processOrder", {
   workflowId: "order-123",
   args: { orderId: "ORD-123" }, // ✅ Type-checked!
 });
 
-// Wait for result (also type-checked)
-const result = await handle.result();
-console.log(result.success); // ✅ TypeScript knows the shape
+// Unwrap the Result and wait for the workflow result
+handleResult.match({
+  Ok: async (handle) => {
+    const result = await handle.result();
+    result.match({
+      Ok: (output) => console.log(output.success), // ✅ TypeScript knows the shape
+      Error: (error) => console.error("Workflow failed:", error),
+    });
+  },
+  Error: (error) => console.error("Failed to start workflow:", error),
+});
 ```
 
 ## Multiple Workflows
@@ -234,8 +259,8 @@ export * from "./refund.workflow";
 // worker.ts
 const worker = await Worker.create({
   workflowsPath: require.resolve("./workflows"),
-  activities: activities.activities,
-  taskQueue: activities.contract.taskQueue,
+  activities,
+  taskQueue: orderContract.taskQueue,
 });
 ```
 
@@ -256,14 +281,14 @@ const contract = defineContract({
   },
 });
 
-// Activities handler must match
+// Activities handler must match — must return Future<Result<T, ActivityError>>
 declareActivitiesHandler({
   contract,
   activities: {
-    processPayment: async ({ amount }) => {
+    processPayment: ({ amount }) => {
       // ✅ amount is number
-      return { transactionId: "TXN-123" };
-      // ✅ Must return { transactionId: string }
+      return Future.value(Result.Ok({ transactionId: "TXN-123" }));
+      // ✅ Must return Future<Result<{ transactionId: string }, ActivityError>>
     },
   },
 });
@@ -276,9 +301,10 @@ declareActivitiesHandler({
 declareWorkflow({
   workflowName: "processOrder",
   contract,
-  implementation: async ({ activities }, input) => {
+  activityOptions: { startToCloseTimeout: "1 minute" },
+  implementation: async (context, args) => {
     // ✅ TypeScript knows processPayment exists
-    const result = await activities.processPayment({
+    const result = await context.activities.processPayment({
       amount: 100, // ✅ Type checked
     });
 
@@ -325,8 +351,8 @@ Respects Temporal's architecture requirements.
 Activities and workflows can be tested independently:
 
 ```typescript
-// Test activities directly
-const result = await activities.activities.processPayment({
+// Test activities directly (handler is a flat object)
+const result = await activities.processPayment({
   amount: 100,
 });
 
@@ -350,9 +376,11 @@ Clear separation of concerns:
 
 ```typescript
 // activities/shared.ts
+import { Future, Result } from "@swan-io/boxed";
+
 export const sharedActivities = {
-  sendEmail: async ({ to, body }) => ({ sent: true }),
-  logEvent: async ({ event }) => ({ logged: true }),
+  sendEmail: ({ to, body }) => Future.value(Result.Ok({ sent: true })),
+  logEvent: ({ event }) => Future.value(Result.Ok({ logged: true })),
 };
 
 // activities/order.ts
@@ -362,7 +390,7 @@ export const orderActivities = declareActivitiesHandler({
   contract: orderContract,
   activities: {
     ...sharedActivities,
-    processPayment: async ({ amount }) => ({ transactionId: "TXN" }),
+    processPayment: ({ amount }) => Future.value(Result.Ok({ transactionId: "TXN" })),
   },
 });
 ```
@@ -371,12 +399,14 @@ export const orderActivities = declareActivitiesHandler({
 
 ```typescript
 // activities/index.ts
+import { Future, Result } from "@swan-io/boxed";
+
 const baseActivities = {
-  validateInput: async ({ data }) => ({ valid: true }),
+  validateInput: ({ data }) => Future.value(Result.Ok({ valid: true })),
 };
 
 const paymentActivities = {
-  processPayment: async ({ amount }) => ({ transactionId: "TXN" }),
+  processPayment: ({ amount }) => Future.value(Result.Ok({ transactionId: "TXN" })),
 };
 
 export const activities = declareActivitiesHandler({

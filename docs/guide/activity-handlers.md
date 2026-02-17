@@ -11,16 +11,16 @@ temporal-contract provides type utilities to extract activity handler types from
 Instead of defining activity implementations inline, you can extract types for reuse:
 
 ```typescript
-import type { ActivityHandlers } from "@temporal-contract/worker/activity";
+import type { ActivitiesHandler } from "@temporal-contract/worker/activity";
 import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
 import { Future, Result } from "@swan-io/boxed";
 import { orderContract } from "./contract";
 
 // Extract all activity handler types from contract
-type OrderActivityHandlers = ActivityHandlers<typeof orderContract>;
+type OrderActivitiesHandler = ActivitiesHandler<typeof orderContract>;
 
 // Implement activities with explicit types using Future/Result pattern
-const sendEmail: OrderActivityHandlers["sendEmail"] = ({ to, body }) => {
+const sendEmail: OrderActivitiesHandler["sendEmail"] = ({ to, body }) => {
   return Future.fromPromise(emailService.send({ to, body }))
     .mapError(
       (error) =>
@@ -33,7 +33,7 @@ const sendEmail: OrderActivityHandlers["sendEmail"] = ({ to, body }) => {
     .mapOk(() => ({ sent: true }));
 };
 
-const processPayment: OrderActivityHandlers["processPayment"] = ({ amount }) => {
+const processPayment: OrderActivitiesHandler["processPayment"] = ({ amount }) => {
   return Future.fromPromise(paymentGateway.charge(amount))
     .mapError(
       (error) =>
@@ -58,17 +58,17 @@ export const activities = declareActivitiesHandler({
 
 ## Type Utilities
 
-### ActivityHandlers
+### ActivitiesHandler
 
 Extract all activity handler types from a contract:
 
 ```typescript
-import type { ActivityHandlers } from "@temporal-contract/worker/activity";
+import type { ActivitiesHandler } from "@temporal-contract/worker/activity";
 
-type MyActivities = ActivityHandlers<typeof myContract>;
+type MyActivities = ActivitiesHandler<typeof myContract>;
 // {
-//   sendEmail: (input: { to: string, body: string }) => Promise<{ sent: boolean }>;
-//   processPayment: (input: { amount: number }) => Promise<{ transactionId: string }>;
+//   sendEmail: (input: { to: string, body: string }) => Future<Result<{ sent: boolean }, ActivityError>>;
+//   processPayment: (input: { amount: number }) => Future<Result<{ transactionId: string }, ActivityError>>;
 // }
 ```
 
@@ -77,12 +77,12 @@ type MyActivities = ActivityHandlers<typeof myContract>;
 Extract specific activity types:
 
 ```typescript
-type SendEmailHandler = ActivityHandlers<typeof contract>["sendEmail"];
-type ProcessPaymentHandler = ActivityHandlers<typeof contract>["processPayment"];
+type SendEmailHandler = ActivitiesHandler<typeof contract>["sendEmail"];
+type ProcessPaymentHandler = ActivitiesHandler<typeof contract>["processPayment"];
 
-const sendEmail: SendEmailHandler = async ({ to, body }) => {
-  // Implementation
-  return { sent: true };
+const sendEmail: SendEmailHandler = ({ to, body }) => {
+  // Implementation — must return Future<Result<T, ActivityError>>
+  return Future.value(Result.Ok({ sent: true }));
 };
 ```
 
@@ -94,12 +94,12 @@ Implement activities in separate files:
 
 ```typescript
 // activities/email.ts
-import type { ActivityHandlers } from "@temporal-contract/worker/activity";
+import type { ActivitiesHandler } from "@temporal-contract/worker/activity";
 import { ActivityError } from "@temporal-contract/worker/activity";
 import { Future, Result } from "@swan-io/boxed";
 import { orderContract } from "../contracts/order.contract";
 
-type Handlers = ActivityHandlers<typeof orderContract>;
+type Handlers = ActivitiesHandler<typeof orderContract>;
 
 export const sendEmail: Handlers["sendEmail"] = ({ to, body }) => {
   return Future.fromPromise(emailService.send({ to, body }))
@@ -117,12 +117,12 @@ export const sendEmail: Handlers["sendEmail"] = ({ to, body }) => {
 
 ```typescript
 // activities/payment.ts
-import type { ActivityHandlers } from "@temporal-contract/worker/activity";
+import type { ActivitiesHandler } from "@temporal-contract/worker/activity";
 import { ActivityError } from "@temporal-contract/worker/activity";
 import { Future, Result } from "@swan-io/boxed";
 import { orderContract } from "../contracts/order.contract";
 
-type Handlers = ActivityHandlers<typeof orderContract>;
+type Handlers = ActivitiesHandler<typeof orderContract>;
 
 export const processPayment: Handlers["processPayment"] = ({ amount }) => {
   return Future.fromPromise(paymentGateway.charge(amount))
@@ -159,23 +159,39 @@ export const activities = declareActivitiesHandler({
 Create factory functions with typed activities:
 
 ```typescript
-import type { ActivityHandlers } from "@temporal-contract/worker/activity";
+import type { ActivitiesHandler } from "@temporal-contract/worker/activity";
 
-type Handlers = ActivityHandlers<typeof orderContract>;
+type Handlers = ActivitiesHandler<typeof orderContract>;
 
 export const createEmailActivity = (emailService: EmailService): Handlers["sendEmail"] => {
-  return async ({ to, body }) => {
-    await emailService.send({ to, body });
-    return { sent: true };
+  return ({ to, body }) => {
+    return Future.fromPromise(emailService.send({ to, body }))
+      .mapError(
+        (error) =>
+          new ActivityError(
+            "EMAIL_FAILED",
+            error instanceof Error ? error.message : "Failed",
+            error,
+          ),
+      )
+      .mapOk(() => ({ sent: true }));
   };
 };
 
 export const createPaymentActivity = (
   paymentGateway: PaymentGateway,
 ): Handlers["processPayment"] => {
-  return async ({ amount }) => {
-    const txId = await paymentGateway.charge(amount);
-    return { transactionId: txId };
+  return ({ amount }) => {
+    return Future.fromPromise(paymentGateway.charge(amount))
+      .mapError(
+        (error) =>
+          new ActivityError(
+            "PAYMENT_FAILED",
+            error instanceof Error ? error.message : "Failed",
+            error,
+          ),
+      )
+      .mapOk((txId) => ({ transactionId: txId }));
   };
 };
 ```
@@ -200,10 +216,10 @@ export const activities = declareActivitiesHandler({
 Mock activities with correct types:
 
 ```typescript
-import type { ActivityHandlers } from "@temporal-contract/worker/activity";
+import type { ActivitiesHandler } from "@temporal-contract/worker/activity";
 import { Future, Result } from "@swan-io/boxed";
 
-type Handlers = ActivityHandlers<typeof orderContract>;
+type Handlers = ActivitiesHandler<typeof orderContract>;
 
 // Create mock activities for testing
 const mockActivities: Handlers = {
@@ -230,9 +246,9 @@ describe("processOrder", () => {
 Wrap activities with middleware:
 
 ```typescript
-import type { ActivityHandlers } from "@temporal-contract/worker/activity";
+import type { ActivitiesHandler } from "@temporal-contract/worker/activity";
 
-type Handlers = ActivityHandlers<typeof orderContract>;
+type Handlers = ActivitiesHandler<typeof orderContract>;
 
 // Create logging middleware
 function withLogging<T extends (...args: any[]) => any>(name: string, fn: T): T {
@@ -323,14 +339,14 @@ Always extract types for better maintainability:
 
 ```typescript
 // ✅ Good
-type Handlers = ActivityHandlers<typeof contract>;
-const sendEmail: Handlers["sendEmail"] = async ({ to, body }) => {
-  /* ... */
+type Handlers = ActivitiesHandler<typeof contract>;
+const sendEmail: Handlers["sendEmail"] = ({ to, body }) => {
+  return Future.value(Result.Ok({ sent: true }));
 };
 
 // ❌ Avoid inline typing
-const sendEmail = async ({ to, body }: { to: string; body: string }) => {
-  /* ... */
+const sendEmail = ({ to, body }: { to: string; body: string }) => {
+  return Future.value(Result.Ok({ sent: true }));
 };
 ```
 
@@ -354,9 +370,17 @@ Make activities testable and configurable:
 
 ```typescript
 export const createActivities = (services: Services) => {
-  const sendEmail: Handlers["sendEmail"] = async ({ to, body }) => {
-    await services.email.send({ to, body });
-    return { sent: true };
+  const sendEmail: Handlers["sendEmail"] = ({ to, body }) => {
+    return Future.fromPromise(services.email.send({ to, body }))
+      .mapError(
+        (error) =>
+          new ActivityError(
+            "EMAIL_FAILED",
+            error instanceof Error ? error.message : "Failed",
+            error,
+          ),
+      )
+      .mapOk(() => ({ sent: true }));
   };
 
   return { sendEmail };

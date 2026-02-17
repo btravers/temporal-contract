@@ -12,6 +12,10 @@ pnpm add -D @temporal-contract/testing
 
 ## Quick Example
 
+### Global Setup
+
+Configure Vitest to start a Temporal server before all tests:
+
 ```typescript
 // vitest.config.ts
 import { defineConfig } from "vitest/config";
@@ -21,6 +25,24 @@ export default defineConfig({
     globalSetup: "@temporal-contract/testing/global-setup",
     testTimeout: 60000,
   },
+});
+```
+
+### Test Extension
+
+Use the `it` extension for automatic connection management:
+
+```typescript
+// my-workflow.spec.ts
+import { it } from "@temporal-contract/testing/extension";
+import { expect } from "vitest";
+
+it("should execute workflow", async ({ clientConnection, workerConnection }) => {
+  // clientConnection: Connection from @temporalio/client (auto-connected, auto-closed)
+  // workerConnection: NativeConnection from @temporalio/worker (auto-connected)
+
+  const client = new Client({ connection: clientConnection });
+  // ... use client and workerConnection in your test
 });
 ```
 

@@ -108,12 +108,13 @@ import { declareWorkflow } from "@temporal-contract/worker/workflow";
 export const processOrder = declareWorkflow({
   workflowName: "processOrder",
   contract,
-  implementation: async ({ activities }, input) => {
-    // input is typed as { orderId: string, amount: number }
+  activityOptions: { startToCloseTimeout: "1 minute" },
+  implementation: async (context, args) => {
+    // args is typed as { orderId: string, amount: number }
     // return type must match { success: boolean, transactionId: string }
 
-    const payment = await activities.processPayment({
-      amount: input.amount,
+    const payment = await context.activities.processPayment({
+      amount: args.amount,
     });
 
     return {
@@ -129,9 +130,11 @@ export const processOrder = declareWorkflow({
 The client provides type-safe workflow execution:
 
 ```typescript
+import { Client } from "@temporalio/client";
 import { TypedClient } from "@temporal-contract/client";
 
-const client = TypedClient.create(contract, { connection });
+const temporalClient = new Client({ connection });
+const client = TypedClient.create(contract, temporalClient);
 
 // TypeScript knows the exact argument types
 const result = await client.executeWorkflow("processOrder", {
@@ -139,8 +142,11 @@ const result = await client.executeWorkflow("processOrder", {
   args: { orderId: "ORD-123", amount: 100 },
 });
 
-// result is fully typed!
-console.log(result.transactionId);
+// result is a Result — use .match() or .isOk() to unwrap
+result.match({
+  Ok: (output) => console.log(output.transactionId),
+  Error: (error) => console.error("Workflow failed:", error),
+});
 ```
 
 ## Activities: Global vs Workflow-Specific

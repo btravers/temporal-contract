@@ -71,39 +71,37 @@ export {
  * @example
  * ```ts
  * // workflows/processOrder.ts
- * import { declareWorkflow } from '@temporal-contract/worker';
+ * import { declareWorkflow } from '@temporal-contract/worker/workflow';
  * import myContract from '../contract';
  *
  * export const processOrder = declareWorkflow({
  *   workflowName: 'processOrder',
  *   contract: myContract,
- *   implementation: async (context, orderId, customerId) => {
+ *   activityOptions: {
+ *     startToCloseTimeout: '1 minute',
+ *   },
+ *   implementation: async (context, args) => {
  *     // context.activities: typed activities (workflow + global)
  *     // context.info: WorkflowInfo
  *
- *     const inventory = await context.activities.validateInventory(orderId);
+ *     const inventory = await context.activities.validateInventory({
+ *       orderId: args.orderId,
+ *     });
  *
  *     if (!inventory.available) {
- *       throw new Error('Out of stock');
+ *       return { orderId: args.orderId, status: 'out_of_stock' };
  *     }
  *
- *     const payment = await context.activities.chargePayment(customerId, 100);
- *
- *     // Global activity
- *     await context.activities.sendEmail(
- *       customerId,
- *       'Order processed',
- *       'Your order has been processed'
- *     );
+ *     const payment = await context.activities.chargePayment({
+ *       customerId: args.customerId,
+ *       amount: 100,
+ *     });
  *
  *     return {
- *       orderId,
+ *       orderId: args.orderId,
  *       status: payment.success ? 'success' : 'failed',
  *       transactionId: payment.transactionId,
  *     };
- *   },
- *   activityOptions: {
- *     startToCloseTimeout: '1 minute',
  *   },
  * });
  * ```
@@ -111,13 +109,15 @@ export {
  * Then in your worker setup:
  * ```ts
  * // worker.ts
- * import { Worker } from '@temporalio/worker';
- * import { activitiesHandler } from './activities';
+ * import { createWorker } from '@temporal-contract/worker/worker';
+ * import { activities } from './activities';
+ * import myContract from './contract';
  *
- * const worker = await Worker.create({
- *   workflowsPath: require.resolve('./workflows'), // Imports processOrder
- *   activities: activitiesHandler.activities,
- *   taskQueue: activitiesHandler.contract.taskQueue,
+ * const worker = await createWorker({
+ *   contract: myContract,
+ *   connection,
+ *   workflowsPath: workflowsPathFromURL(import.meta.url, './workflows.js'),
+ *   activities,
  * });
  * ```
  */

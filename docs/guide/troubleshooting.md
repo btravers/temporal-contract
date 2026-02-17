@@ -157,13 +157,14 @@ Property 'transactionId' does not exist on type 'never'.
    });
    ```
 
-2. **Use correct type inference:**
+2. **Use correct type inference with ActivitiesHandler:**
 
    ```typescript
-   import type { InferWorkflowInput } from "@temporal-contract/contract";
+   import type { ActivitiesHandler } from "@temporal-contract/worker/activity";
    import { contract } from "./contract.js";
 
-   type OrderInput = InferWorkflowInput<typeof contract, "processOrder">;
+   type MyHandlers = ActivitiesHandler<typeof contract>;
+   // Use MyHandlers["processPayment"] to type individual activity implementations
    ```
 
 3. **Check activity handler types:**

@@ -108,6 +108,7 @@ import { orderContract } from "./contract";
 export const processOrder = declareWorkflow({
   workflowName: "processOrder",
   contract: orderContract,
+  activityOptions: { startToCloseTimeout: "1 minute" },
   implementation: async ({ activities }, { orderId, customerId, amount }) => {
     const { transactionId } = await activities.processPayment({ customerId, amount });
     await activities.sendNotification({ customerId, message: `Order ${orderId} confirmed!` });

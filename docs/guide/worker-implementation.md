@@ -83,16 +83,17 @@ import { myContract } from "./contract";
 export const processOrder = declareWorkflow({
   workflowName: "processOrder",
   contract: myContract,
-  implementation: async ({ activities }, input) => {
-    // activities is fully typed
+  activityOptions: { startToCloseTimeout: "1 minute" },
+  implementation: async (context, args) => {
+    // context.activities is fully typed
     // Activities return plain values (Result is unwrapped by the framework)
-    const payment = await activities.processPayment({
-      customerId: input.customerId,
+    const payment = await context.activities.processPayment({
+      customerId: args.customerId,
       amount: 100,
     });
 
-    await activities.sendEmail({
-      to: input.customerId,
+    await context.activities.sendEmail({
+      to: args.customerId,
       subject: "Order Confirmed",
       body: "Your order has been processed",
     });
@@ -160,13 +161,13 @@ return { txId: "TXN-123" }; // Wrong field name
 The workflow context is fully typed based on your contract:
 
 ```typescript
-implementation: async ({ activities }, input) => {
+implementation: async (context, args) => {
   // TypeScript knows all available activities
-  activities.processPayment; // ✅ Available
-  activities.unknownActivity; // ❌ TypeScript error
+  context.activities.processPayment; // ✅ Available
+  context.activities.unknownActivity; // ❌ TypeScript error
 
   // Full autocomplete for parameters
-  await activities.processPayment({
+  await context.activities.processPayment({
     // IDE shows: customerId: string, amount: number
   });
 };
@@ -209,11 +210,12 @@ import { myContract, notificationContract } from "./contracts";
 export const parentWorkflow = declareWorkflow({
   workflowName: "parentWorkflow",
   contract: myContract,
-  implementation: async ({ executeChildWorkflow }, input) => {
+  activityOptions: { startToCloseTimeout: "1 minute" },
+  implementation: async (context, args) => {
     // Execute child workflow from same contract and wait for result
-    const result = await executeChildWorkflow(myContract, "processPayment", {
-      workflowId: `payment-${input.orderId}`,
-      args: { amount: input.totalAmount },
+    const result = await context.executeChildWorkflow(myContract, "processPayment", {
+      workflowId: `payment-${args.orderId}`,
+      args: { amount: args.totalAmount },
     });
 
     result.match({
@@ -234,11 +236,12 @@ Invoke child workflows from different contracts and workers:
 export const orderWorkflow = declareWorkflow({
   workflowName: "processOrder",
   contract: orderContract,
-  implementation: async ({ executeChildWorkflow }, input) => {
+  activityOptions: { startToCloseTimeout: "1 minute" },
+  implementation: async (context, args) => {
     // Process payment in same contract
-    const paymentResult = await executeChildWorkflow(orderContract, "processPayment", {
-      workflowId: `payment-${input.orderId}`,
-      args: { amount: input.total },
+    const paymentResult = await context.executeChildWorkflow(orderContract, "processPayment", {
+      workflowId: `payment-${args.orderId}`,
+      args: { amount: args.total },
     });
 
     if (paymentResult.isError()) {
@@ -246,12 +249,12 @@ export const orderWorkflow = declareWorkflow({
     }
 
     // Send notification using another worker's contract
-    const notificationResult = await executeChildWorkflow(
+    const notificationResult = await context.executeChildWorkflow(
       notificationContract,
       "sendOrderConfirmation",
       {
-        workflowId: `notify-${input.orderId}`,
-        args: { orderId: input.orderId, email: input.customerEmail },
+        workflowId: `notify-${args.orderId}`,
+        args: { orderId: args.orderId, email: args.customerEmail },
       },
     );
 
@@ -271,11 +274,12 @@ Use `startChildWorkflow` to start a child workflow without waiting for its resul
 export const orderWorkflow = declareWorkflow({
   workflowName: "processOrder",
   contract: myContract,
-  implementation: async ({ startChildWorkflow }, input) => {
+  activityOptions: { startToCloseTimeout: "1 minute" },
+  implementation: async (context, args) => {
     // Start background notification workflow
-    const handleResult = await startChildWorkflow(notificationContract, "sendEmail", {
-      workflowId: `email-${input.orderId}`,
-      args: { to: input.customerEmail, subject: "Order received" },
+    const handleResult = await context.startChildWorkflow(notificationContract, "sendEmail", {
+      workflowId: `email-${args.orderId}`,
+      args: { to: args.customerEmail, subject: "Order received" },
     });
 
     handleResult.match({
@@ -328,19 +332,31 @@ Organize activities by domain:
 
 ```typescript
 // activities/payment.ts
+import { Future, Result } from "@swan-io/boxed";
+import { ActivityError } from "@temporal-contract/worker/activity";
+
 export const paymentActivities = {
-  processPayment: async ({ customerId, amount }) => {
-    /* ... */
+  processPayment: ({ customerId, amount }) => {
+    return Future.fromPromise(paymentGateway.charge(customerId, amount))
+      .mapError((err) => new ActivityError("PAYMENT_FAILED", err.message, err))
+      .mapOk((tx) => ({ transactionId: tx.id }));
   },
-  refundPayment: async ({ transactionId }) => {
-    /* ... */
+  refundPayment: ({ transactionId }) => {
+    return Future.fromPromise(paymentGateway.refund(transactionId))
+      .mapError((err) => new ActivityError("REFUND_FAILED", err.message, err))
+      .mapOk(() => ({ refunded: true }));
   },
 };
 
 // activities/email.ts
+import { Future, Result } from "@swan-io/boxed";
+import { ActivityError } from "@temporal-contract/worker/activity";
+
 export const emailActivities = {
-  sendEmail: async ({ to, subject, body }) => {
-    /* ... */
+  sendEmail: ({ to, subject, body }) => {
+    return Future.fromPromise(emailService.send({ to, subject, body }))
+      .mapError((err) => new ActivityError("EMAIL_FAILED", err.message, err))
+      .mapOk(() => ({ sent: true }));
   },
 };
 
@@ -363,6 +379,9 @@ export const activities = declareActivitiesHandler({
 Make activities testable:
 
 ```typescript
+import { Future, Result } from "@swan-io/boxed";
+import { ActivityError } from "@temporal-contract/worker/activity";
+
 export const createActivities = (services: {
   emailService: EmailService;
   paymentGateway: PaymentGateway;
@@ -370,13 +389,15 @@ export const createActivities = (services: {
   declareActivitiesHandler({
     contract: myContract,
     activities: {
-      sendEmail: async ({ to, subject, body }) => {
-        await services.emailService.send({ to, subject, body });
-        return { sent: true };
+      sendEmail: ({ to, subject, body }) => {
+        return Future.fromPromise(services.emailService.send({ to, subject, body }))
+          .mapError((err) => new ActivityError("EMAIL_FAILED", err.message, err))
+          .mapOk(() => ({ sent: true }));
       },
-      processPayment: async ({ customerId, amount }) => {
-        const txId = await services.paymentGateway.charge(customerId, amount);
-        return { transactionId: txId, success: true };
+      processPayment: ({ customerId, amount }) => {
+        return Future.fromPromise(services.paymentGateway.charge(customerId, amount))
+          .mapError((err) => new ActivityError("PAYMENT_FAILED", err.message, err))
+          .mapOk((txId) => ({ transactionId: txId, success: true }));
       },
     },
   });
@@ -416,11 +437,12 @@ In workflows, activities return plain values. If an activity fails, it will thro
 export const processOrder = declareWorkflow({
   workflowName: "processOrder",
   contract: myContract,
-  implementation: async ({ activities }, input) => {
+  activityOptions: { startToCloseTimeout: "1 minute" },
+  implementation: async (context, args) => {
     try {
       // Activity returns plain value if successful
-      const payment = await activities.processPayment({
-        customerId: input.customerId,
+      const payment = await context.activities.processPayment({
+        customerId: args.customerId,
         amount: 100,
       });
 

@@ -41,6 +41,7 @@ import { declareWorkflow } from "@temporal-contract/worker/workflow";
 export const processOrder = declareWorkflow({
   workflowName: "processOrder",
   contract: myContract,
+  activityOptions: { startToCloseTimeout: "1 minute" },
   implementation: async ({ activities }, input) => {
     // Activities return plain values (Result is unwrapped internally)
     await activities.sendEmail({ to: "user@example.com", body: "Done!" });
@@ -77,9 +78,10 @@ import { declareWorkflow } from "@temporal-contract/worker/workflow";
 export const parentWorkflow = declareWorkflow({
   workflowName: "parentWorkflow",
   contract: myContract,
-  implementation: async ({ executeChildWorkflow }, input) => {
+  activityOptions: { startToCloseTimeout: "1 minute" },
+  implementation: async (context, input) => {
     // Execute child workflow from same contract and wait for result
-    const childResult = await executeChildWorkflow(myContract, "processPayment", {
+    const childResult = await context.executeChildWorkflow(myContract, "processPayment", {
       workflowId: `payment-${input.orderId}`,
       args: { amount: input.totalAmount },
     });
@@ -90,7 +92,7 @@ export const parentWorkflow = declareWorkflow({
     });
 
     // Execute child workflow from another contract (another worker)
-    const notificationResult = await executeChildWorkflow(
+    const notificationResult = await context.executeChildWorkflow(
       notificationContract,
       "sendNotification",
       {
@@ -100,7 +102,7 @@ export const parentWorkflow = declareWorkflow({
     );
 
     // Or start child workflow without waiting
-    const handleResult = await startChildWorkflow(myContract, "sendEmail", {
+    const handleResult = await context.startChildWorkflow(myContract, "sendEmail", {
       workflowId: `email-${input.orderId}`,
       args: { to: "user@example.com", body: "Order received" },
     });

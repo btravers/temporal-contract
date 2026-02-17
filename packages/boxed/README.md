@@ -66,7 +66,7 @@ result.match({
 Activities return `Future<Result<T, ActivityError>>` for explicit error handling:
 
 ```typescript
-import { Future } from "@swan-io/boxed";
+import { Future, Result } from "@swan-io/boxed";
 import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
 
 export const activities = declareActivitiesHandler({
@@ -75,7 +75,14 @@ export const activities = declareActivitiesHandler({
     processOrder: {
       processPayment: (args) => {
         return Future.fromPromise(paymentService.charge(args))
-          .mapError((error) => new ActivityError("PAYMENT_FAILED", error.message))
+          .mapError(
+            (error) =>
+              new ActivityError(
+                "PAYMENT_FAILED",
+                error instanceof Error ? error.message : String(error),
+                error,
+              ),
+          )
           .mapOk((result) => ({ transactionId: result.id }));
       },
     },
@@ -91,6 +98,7 @@ import { declareWorkflow } from "@temporal-contract/worker/workflow";
 export const processOrder = declareWorkflow({
   workflowName: "processOrder",
   contract,
+  activityOptions: { startToCloseTimeout: "1 minute" },
   implementation: async ({ activities }, input) => {
     // Activities return plain values (Result is unwrapped by framework)
     const payment = await activities.processPayment(input);
@@ -183,24 +191,32 @@ externalLibrary.processSomething(swanCompatible);
 - `map<U>(fn)` - Transform Ok value
 - `mapError<F>(fn)` - Transform Error value
 - `flatMap<U>(fn)` - Chain results
+- `flatMapOk<U>(fn)` - Alias for flatMap
 - `getOr(defaultValue)` - Get value or default
+- `getWithDefault(defaultValue)` - Alias for getOr
 - `toOption()` - Convert to Option type
+- `Result.fromExecution(fn)` - Create result from synchronous function that may throw
+- `Result.fromAsyncExecution(fn)` - Create result from async function that may throw
+- `Result.all(results)` - Combine array of results into result of array
 
 ### Future\<T>
 
 - `Future.value<T>(value)` - Create resolved future
-- `Future.fromPromise<T>(promise)` - Create future from promise (returns `Future<Result<T, Error>>`)
+- `Future.fromPromise<T>(promise)` - Create future from promise (returns `Future<Result<T, unknown>>`)
 - `Future.make<T>(executor)` - Create future from executor function
 - `Future.reject<T>(error)` - Create rejected future
+- `Future.fromAsync<T>(fn)` - Create future from async function
 - `Future.all(futures)` - Combine multiple futures
 - `Future.race(futures)` - Race multiple futures
 - `map<U>(fn)` - Transform future value
 - `flatMap<U>(fn)` - Chain futures
 - `mapOk<U>(fn)` - Transform Ok value in Future<Result>
 - `mapError<F>(fn)` - Transform Error value in Future<Result>
+- `flatMapOk<U>(fn)` - FlatMap over Ok value in Future<Result>
 - `tap(fn)` - Execute side effect
 - `tapOk(fn)` - Execute side effect on Ok
 - `tapError(fn)` - Execute side effect on Error
+- `toPromise()` - Convert to Promise
 
 ## TypeScript Support
 

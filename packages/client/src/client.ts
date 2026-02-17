@@ -124,10 +124,8 @@ export class TypedClient<TContract extends ContractDefinition> {
    * @example
    * ```ts
    * const connection = await Connection.connect();
-   * const client = TypedClient.create(myContract, {
-   *   connection,
-   *   namespace: 'default',
-   * });
+   * const temporalClient = new Client({ connection });
+   * const client = TypedClient.create(myContract, temporalClient);
    *
    * const result = await client.executeWorkflow('processOrder', {
    *   workflowId: 'order-123',
