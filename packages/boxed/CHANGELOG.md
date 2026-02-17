@@ -1,5 +1,11 @@
 # @temporal-contract/boxed
 
+## 0.2.0
+
+### Minor Changes
+
+- Align project structure with amqp-contract and address code quality issues across packages.
+
 ## 0.1.0
 
 ### Minor Changes
