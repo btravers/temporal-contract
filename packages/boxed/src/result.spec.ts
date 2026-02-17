@@ -304,5 +304,42 @@ describe("Result", () => {
       // THEN
       expect(combined).toEqual(Result.Error("error"));
     });
+
+    it("should create Ok Result from async execution that resolves", async () => {
+      // GIVEN
+
+      // WHEN
+      const result = await Result.fromAsyncExecution(async () => 42);
+
+      // THEN
+      expect(result).toEqual(Result.Ok(42));
+    });
+
+    it("should create Error Result from async execution that throws", async () => {
+      // GIVEN
+
+      // WHEN
+      const result = await Result.fromAsyncExecution(async () => {
+        throw new Error("async error");
+      });
+
+      // THEN
+      expect(result).toEqual(Result.Error(new Error("async error")));
+    });
+
+    it("should infer correct type from async execution", async () => {
+      // GIVEN
+
+      // WHEN
+      const result = await Result.fromAsyncExecution(async () => "hello");
+
+      // THEN
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // TypeScript should know result.value is string
+        const value: string = result.value;
+        expect(value).toBe("hello");
+      }
+    });
   });
 });

@@ -182,16 +182,14 @@ export class TypedClient<TContract extends ContractDefinition> {
         const definition = this.contract.workflows[workflowName as string];
 
         if (!definition) {
-          resolve(Result.Error(createWorkflowNotFoundError(workflowName, this.contract)));
-          return;
+          return Result.Error(createWorkflowNotFoundError(workflowName, this.contract));
         }
 
         const inputResult = await definition.input["~standard"].validate(args);
         if (inputResult.issues) {
-          resolve(
-            Result.Error(createWorkflowValidationError(workflowName, "input", inputResult.issues)),
+          return Result.Error(
+            createWorkflowValidationError(workflowName, "input", inputResult.issues),
           );
-          return;
         }
 
         const validatedInput = inputResult.value as ClientInferInput<
@@ -208,11 +206,13 @@ export class TypedClient<TContract extends ContractDefinition> {
           const typedHandle = this.createTypedHandle(handle, definition) as TypedWorkflowHandle<
             TContract["workflows"][TWorkflowName]
           >;
-          resolve(Result.Ok(typedHandle));
+          return Result.Ok(typedHandle);
         } catch (error) {
-          resolve(Result.Error(createRuntimeClientError("startWorkflow", error)));
+          return Result.Error(createRuntimeClientError("startWorkflow", error));
         }
-      })();
+      })()
+        .then(resolve)
+        .catch((e: unknown) => resolve(Result.Error(createRuntimeClientError("unexpected", e))));
     });
   }
 
@@ -248,16 +248,14 @@ export class TypedClient<TContract extends ContractDefinition> {
         const definition = this.contract.workflows[workflowName as string];
 
         if (!definition) {
-          resolve(Result.Error(createWorkflowNotFoundError(workflowName, this.contract)));
-          return;
+          return Result.Error(createWorkflowNotFoundError(workflowName, this.contract));
         }
 
         const inputResult = await definition.input["~standard"].validate(args);
         if (inputResult.issues) {
-          resolve(
-            Result.Error(createWorkflowValidationError(workflowName, "input", inputResult.issues)),
+          return Result.Error(
+            createWorkflowValidationError(workflowName, "input", inputResult.issues),
           );
-          return;
         }
 
         const validatedInput = inputResult.value as ClientInferInput<
@@ -275,23 +273,20 @@ export class TypedClient<TContract extends ContractDefinition> {
           // Validate output with Standard Schema
           const outputResult = await definition.output["~standard"].validate(result);
           if (outputResult.issues) {
-            resolve(
-              Result.Error(
-                createWorkflowValidationError(workflowName, "output", outputResult.issues),
-              ),
+            return Result.Error(
+              createWorkflowValidationError(workflowName, "output", outputResult.issues),
             );
-            return;
           }
 
-          resolve(
-            Result.Ok(
-              outputResult.value as ClientInferOutput<TContract["workflows"][TWorkflowName]>,
-            ),
+          return Result.Ok(
+            outputResult.value as ClientInferOutput<TContract["workflows"][TWorkflowName]>,
           );
         } catch (error) {
-          resolve(Result.Error(createRuntimeClientError("executeWorkflow", error)));
+          return Result.Error(createRuntimeClientError("executeWorkflow", error));
         }
-      })();
+      })()
+        .then(resolve)
+        .catch((e: unknown) => resolve(Result.Error(createRuntimeClientError("unexpected", e))));
     });
   }
 
@@ -320,22 +315,25 @@ export class TypedClient<TContract extends ContractDefinition> {
     >
   > {
     return Future.make((resolve) => {
-      const definition = this.contract.workflows[workflowName as string];
+      (async () => {
+        const definition = this.contract.workflows[workflowName as string];
 
-      if (!definition) {
-        resolve(Result.Error(createWorkflowNotFoundError(workflowName, this.contract)));
-        return;
-      }
+        if (!definition) {
+          return Result.Error(createWorkflowNotFoundError(workflowName, this.contract));
+        }
 
-      try {
-        const handle = this.client.workflow.getHandle(workflowId);
-        const typedHandle = this.createTypedHandle(handle, definition) as TypedWorkflowHandle<
-          TContract["workflows"][TWorkflowName]
-        >;
-        resolve(Result.Ok(typedHandle));
-      } catch (error) {
-        resolve(Result.Error(createRuntimeClientError("getHandle", error)));
-      }
+        try {
+          const handle = this.client.workflow.getHandle(workflowId);
+          const typedHandle = this.createTypedHandle(handle, definition) as TypedWorkflowHandle<
+            TContract["workflows"][TWorkflowName]
+          >;
+          return Result.Ok(typedHandle);
+        } catch (error) {
+          return Result.Error(createRuntimeClientError("getHandle", error));
+        }
+      })()
+        .then(resolve)
+        .catch((e: unknown) => resolve(Result.Error(createRuntimeClientError("unexpected", e))));
     });
   }
 
@@ -355,10 +353,7 @@ export class TypedClient<TContract extends ContractDefinition> {
           (async () => {
             const inputResult = await queryDef.input["~standard"].validate(args);
             if (inputResult.issues) {
-              resolve(
-                Result.Error(new QueryValidationError(queryName, "input", inputResult.issues)),
-              );
-              return;
+              return Result.Error(new QueryValidationError(queryName, "input", inputResult.issues));
             }
 
             try {
@@ -366,17 +361,20 @@ export class TypedClient<TContract extends ContractDefinition> {
 
               const outputResult = await queryDef.output["~standard"].validate(result);
               if (outputResult.issues) {
-                resolve(
-                  Result.Error(new QueryValidationError(queryName, "output", outputResult.issues)),
+                return Result.Error(
+                  new QueryValidationError(queryName, "output", outputResult.issues),
                 );
-                return;
               }
 
-              resolve(Result.Ok(outputResult.value));
+              return Result.Ok(outputResult.value);
             } catch (error) {
-              resolve(Result.Error(createRuntimeClientError("query", error)));
+              return Result.Error(createRuntimeClientError("query", error));
             }
-          })();
+          })()
+            .then(resolve)
+            .catch((e: unknown) =>
+              resolve(Result.Error(createRuntimeClientError("unexpected", e))),
+            );
         });
       };
     }
@@ -393,17 +391,20 @@ export class TypedClient<TContract extends ContractDefinition> {
           (async () => {
             const inputResult = await signalDef.input["~standard"].validate(args);
             if (inputResult.issues) {
-              resolve(Result.Error(new SignalValidationError(signalName, inputResult.issues)));
-              return;
+              return Result.Error(new SignalValidationError(signalName, inputResult.issues));
             }
 
             try {
               await workflowHandle.signal(signalName as string, inputResult.value);
-              resolve(Result.Ok(undefined));
+              return Result.Ok(undefined);
             } catch (error) {
-              resolve(Result.Error(createRuntimeClientError("signal", error)));
+              return Result.Error(createRuntimeClientError("signal", error));
             }
-          })();
+          })()
+            .then(resolve)
+            .catch((e: unknown) =>
+              resolve(Result.Error(createRuntimeClientError("unexpected", e))),
+            );
         });
       };
     }
@@ -420,10 +421,9 @@ export class TypedClient<TContract extends ContractDefinition> {
           (async () => {
             const inputResult = await updateDef.input["~standard"].validate(args);
             if (inputResult.issues) {
-              resolve(
-                Result.Error(new UpdateValidationError(updateName, "input", inputResult.issues)),
+              return Result.Error(
+                new UpdateValidationError(updateName, "input", inputResult.issues),
               );
-              return;
             }
 
             try {
@@ -433,19 +433,20 @@ export class TypedClient<TContract extends ContractDefinition> {
 
               const outputResult = await updateDef.output["~standard"].validate(result);
               if (outputResult.issues) {
-                resolve(
-                  Result.Error(
-                    new UpdateValidationError(updateName, "output", outputResult.issues),
-                  ),
+                return Result.Error(
+                  new UpdateValidationError(updateName, "output", outputResult.issues),
                 );
-                return;
               }
 
-              resolve(Result.Ok(outputResult.value));
+              return Result.Ok(outputResult.value);
             } catch (error) {
-              resolve(Result.Error(createRuntimeClientError("update", error)));
+              return Result.Error(createRuntimeClientError("update", error));
             }
-          })();
+          })()
+            .then(resolve)
+            .catch((e: unknown) =>
+              resolve(Result.Error(createRuntimeClientError("unexpected", e))),
+            );
         });
       };
     }
@@ -464,22 +465,23 @@ export class TypedClient<TContract extends ContractDefinition> {
               const result = await workflowHandle.result();
               const outputResult = await definition.output["~standard"].validate(result);
               if (outputResult.issues) {
-                resolve(
-                  Result.Error(
-                    new WorkflowValidationError(
-                      workflowHandle.workflowId,
-                      "output",
-                      outputResult.issues,
-                    ),
+                return Result.Error(
+                  new WorkflowValidationError(
+                    workflowHandle.workflowId,
+                    "output",
+                    outputResult.issues,
                   ),
                 );
-                return;
               }
-              resolve(Result.Ok(outputResult.value as ClientInferOutput<TWorkflow>));
+              return Result.Ok(outputResult.value as ClientInferOutput<TWorkflow>);
             } catch (error) {
-              resolve(Result.Error(createRuntimeClientError("result", error)));
+              return Result.Error(createRuntimeClientError("result", error));
             }
-          })();
+          })()
+            .then(resolve)
+            .catch((e: unknown) =>
+              resolve(Result.Error(createRuntimeClientError("unexpected", e))),
+            );
         });
       },
       terminate: (reason?: string): Future<Result<void, RuntimeClientError>> => {

@@ -7,6 +7,6 @@
  * @packageDocumentation
  */
 
-export { Result, Ok, Error } from "./result.js";
+export { Result, Ok, Err } from "./result.js";
 export type { Option } from "./result.js";
 export { Future } from "./future.js";

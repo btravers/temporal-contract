@@ -271,35 +271,36 @@ const identifierSchema = z
   .regex(/^[a-zA-Z_$][a-zA-Z0-9_$]*$/, "must be a valid JavaScript identifier");
 
 /**
- * Extract clean error message from Zod validation error
+ * Extract a clean, single-line error message from a Zod validation error.
+ *
+ * Uses `error.issues` directly (compatible with Zod v4+) rather than parsing
+ * `error.message` as JSON, which was a Zod v3 implementation detail.
  */
 function getCleanErrorMessage(error: z.ZodError): string {
-  try {
-    const parsed = JSON.parse(error.message);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      const firstError = parsed[0];
-
-      // For record key validation errors, dive into nested issues
-      if (
-        firstError?.code === "invalid_key" &&
-        firstError?.issues &&
-        firstError.issues.length > 0
-      ) {
-        const nestedError = firstError.issues[0];
-        if (nestedError?.message) {
-          return nestedError.message;
-        }
-      }
-
-      // For direct validation errors
-      if (firstError?.message) {
-        return firstError.message;
-      }
-    }
-  } catch {
-    // If parsing fails, return the raw message
+  const issues = error.issues;
+  if (!issues || issues.length === 0) {
+    return error.message;
   }
-  return error.message;
+
+  const firstIssue = issues[0];
+  if (!firstIssue) {
+    return error.message;
+  }
+
+  // For record key validation errors (invalid_key), surface the nested issue message
+  if (
+    firstIssue.code === "invalid_key" &&
+    "issues" in firstIssue &&
+    Array.isArray((firstIssue as { issues?: unknown[] }).issues) &&
+    (firstIssue as { issues: { message?: string }[] }).issues.length > 0
+  ) {
+    const nestedMessage = (firstIssue as { issues: { message?: string }[] }).issues[0]?.message;
+    if (nestedMessage) {
+      return nestedMessage;
+    }
+  }
+
+  return firstIssue.message ?? error.message;
 }
 
 /**

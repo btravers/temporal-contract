@@ -1,5 +1,5 @@
 import type { Result } from "./result.js";
-import { Ok, Error } from "./result.js";
+import { Ok, Err } from "./result.js";
 
 /**
  * Future type representing an asynchronous computation
@@ -39,7 +39,7 @@ export class Future<T> implements Promise<T> {
     return new Future(
       promise
         .then((value) => new Ok<T, unknown>(value) as Result<T, unknown>)
-        .catch((error) => new Error<T, unknown>(error) as Result<T, unknown>),
+        .catch((error) => new Err<T, unknown>(error) as Result<T, unknown>),
     );
   }
 
@@ -65,6 +65,24 @@ export class Future<T> implements Promise<T> {
   }
 
   /**
+   * Create a Future from an async function.
+   *
+   * Prefer this over `Future.make` when the executor is async, as it properly
+   * propagates rejections instead of leaving the Future pending on unhandled errors.
+   *
+   * @example
+   * ```ts
+   * const future = Future.fromAsync(async () => {
+   *   const data = await fetchSomething();
+   *   return data;
+   * });
+   * ```
+   */
+  static fromAsync<T>(fn: () => Promise<T>): Future<T> {
+    return new Future(fn());
+  }
+
+  /**
    * Map the result of the Future
    */
   map<U>(fn: (value: T) => U): Future<U> {
@@ -86,7 +104,7 @@ export class Future<T> implements Promise<T> {
       if (result.isOk()) {
         return new Ok(fn(result.value));
       }
-      return new Error(result.error);
+      return new Err(result.error);
     });
   }
 
@@ -96,7 +114,7 @@ export class Future<T> implements Promise<T> {
   mapError<V, E, F>(this: Future<Result<V, E>>, fn: (error: E) => F): Future<Result<V, F>> {
     return this.map((result) => {
       if (result.isError()) {
-        return new Error(fn(result.error));
+        return new Err(fn(result.error));
       }
       return new Ok(result.value);
     });
@@ -114,7 +132,7 @@ export class Future<T> implements Promise<T> {
         if (result.isOk()) {
           return fn(result.value).promise;
         }
-        return Promise.resolve(new Error(result.error));
+        return Promise.resolve(new Err(result.error));
       }),
     );
   }

@@ -65,6 +65,39 @@ describe("Future", () => {
       // WHEN & THEN
       await expect(future).rejects.toThrow("test error");
     });
+
+    it("should create Future from async function that resolves", async () => {
+      // GIVEN
+      const future = Future.fromAsync(async () => {
+        return 42;
+      });
+
+      // WHEN
+      const value = await future;
+
+      // THEN
+      expect(value).toBe(42);
+    });
+
+    it("should create Future from async function that rejects", async () => {
+      // GIVEN
+      const future = Future.fromAsync(async () => {
+        throw new Error("async error");
+      });
+
+      // WHEN & THEN
+      await expect(future).rejects.toThrow("async error");
+    });
+
+    it("should propagate rejection unlike Future.make async IIFE without catch", async () => {
+      // GIVEN - fromAsync propagates the rejection (not silently pending)
+      const future = Future.fromAsync(async (): Promise<number> => {
+        throw new Error("original error");
+      });
+
+      // WHEN & THEN - the Future rejects rather than hanging
+      await expect(future).rejects.toThrow("original error");
+    });
   });
 
   describe("transformations", () => {
