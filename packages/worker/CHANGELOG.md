@@ -1,5 +1,17 @@
 # @temporal-contract/worker
 
+## 0.2.0
+
+### Minor Changes
+
+- Align project structure with amqp-contract and address code quality issues across packages.
+
+### Patch Changes
+
+- Updated dependencies
+  - @temporal-contract/contract@0.2.0
+  - @temporal-contract/boxed@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes
