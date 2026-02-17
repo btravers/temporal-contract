@@ -23,7 +23,7 @@
   "devDependencies": {
     "@temporal-contract/tsconfig": "workspace:*",
     "@types/node": "catalog:",
-    "mermaid": "11.12.2",
+    "mermaid": "11.12.3",
     "tsx": "catalog:",
     "vitepress": "1.6.4",
     "vitepress-plugin-mermaid": "2.0.17"
