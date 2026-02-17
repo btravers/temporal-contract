@@ -2,6 +2,7 @@ import { GenericContainer, Wait, Network } from "testcontainers";
 import type { TestProject } from "vitest/node";
 
 declare module "vitest" {
+  // oxlint-disable-next-line typescript/consistent-type-definitions -- module augmentation requires interface
   export interface ProvidedContext {
     __TESTCONTAINERS_TEMPORAL_IP__: string;
     __TESTCONTAINERS_TEMPORAL_PORT_7233__: number;

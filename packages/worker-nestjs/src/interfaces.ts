@@ -8,9 +8,10 @@ export type { ActivitiesHandler } from "@temporal-contract/worker/activity";
 /**
  * Options for configuring the Temporal module
  */
-export interface TemporalModuleOptions<
-  TContract extends ContractDefinition = ContractDefinition,
-> extends Omit<WorkerOptions, "activities" | "taskQueue" | "connection" | "workflowsPath"> {
+export type TemporalModuleOptions<TContract extends ContractDefinition = ContractDefinition> = Omit<
+  WorkerOptions,
+  "activities" | "taskQueue" | "connection" | "workflowsPath"
+> & {
   /**
    * The contract definition for this worker
    */
@@ -33,4 +34,4 @@ export interface TemporalModuleOptions<
    * Path to workflows directory
    */
   workflowsPath: string;
-}
+};

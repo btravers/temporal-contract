@@ -3,11 +3,10 @@
   "compilerOptions": {
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "lib": ["ES2022"],
+    "lib": ["ES2023"],
     "target": "ES2022",
 
     "strict": true,
-    "noImplicitAny": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
@@ -25,6 +24,11 @@
     "allowUnreachableCode": false,
     "noImplicitReturns": true,
 
-    "declaration": true
-  }
+    "allowJs": true,
+    "checkJs": false,
+    "declaration": true,
+    "declarationMap": true,
+    "noEmit": true
+  },
+  "exclude": ["node_modules", "dist"]
 }

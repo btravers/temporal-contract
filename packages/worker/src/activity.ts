@@ -75,10 +75,10 @@ type BoxedActivitiesImplementations<TActivities extends Record<string, ActivityD
 /**
  * Options for creating activities handler
  */
-interface DeclareActivitiesHandlerOptions<TContract extends ContractDefinition> {
+type DeclareActivitiesHandlerOptions<TContract extends ContractDefinition> = {
   contract: TContract;
   activities: ContractBoxedActivitiesImplementations<TContract>;
-}
+};
 
 type ActivityImplementation<TActivity extends ActivityDefinition> = (
   args: WorkerInferInput<TActivity>,

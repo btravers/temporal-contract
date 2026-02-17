@@ -1,39 +1,22 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "ignoreExportsUsedInFile": true,
-  "vitest": {
-    "config": ["**/vitest.config.ts"]
-  },
+  "ignoreDependencies": ["pino-pretty", "@temporal-contract/typedoc", "typedoc-plugin-markdown"],
   "workspaces": {
     ".": {
       "entry": ["lefthook.yml"]
     },
+    "packages/*": {
+      "project": ["src/**/*.ts"]
+    },
     "packages/boxed": {
-      "ignoreDependencies": [
-        "@swan-io/boxed",
-        "@temporal-contract/typedoc",
-        "typedoc-plugin-markdown"
-      ]
+      "ignoreDependencies": ["@swan-io/boxed"]
     },
     "packages/client": {
-      "entry": ["src/__tests__/test.workflows.ts"],
-      "ignoreDependencies": ["@temporal-contract/typedoc", "typedoc-plugin-markdown"]
-    },
-    "packages/contract": {
-      "ignoreDependencies": ["@temporal-contract/typedoc", "typedoc-plugin-markdown"]
+      "entry": ["src/__tests__/test.workflows.ts"]
     },
     "packages/worker": {
-      "entry": ["src/__tests__/test.workflows.ts"],
-      "ignoreDependencies": ["@temporal-contract/typedoc", "typedoc-plugin-markdown"]
-    },
-    "packages/worker-nestjs": {
-      "ignoreDependencies": ["@temporal-contract/typedoc", "typedoc-plugin-markdown"]
-    },
-    "packages/client-nestjs": {
-      "ignoreDependencies": ["@temporal-contract/typedoc", "typedoc-plugin-markdown"]
-    },
-    "packages/testing": {
-      "ignoreDependencies": ["@temporal-contract/typedoc", "typedoc-plugin-markdown"]
+      "entry": ["src/__tests__/test.workflows.ts"]
     },
     "examples/order-processing-worker": {
       "entry": ["src/application/workflows.ts"]
@@ -52,6 +35,5 @@
       "ignoreDependencies": ["@temporal-contract/tsconfig"]
     }
   },
-  "ignore": ["coverage/**", "**/dist/**"],
-  "ignoreDependencies": ["pino-pretty"]
+  "ignore": ["coverage/**", "**/dist/**"]
 }

@@ -7,10 +7,10 @@ import type { ActivitiesHandler } from "./activity.js";
 /**
  * Options for creating a Temporal worker
  */
-export interface CreateWorkerOptions<TContract extends ContractDefinition> extends Omit<
+export type CreateWorkerOptions<TContract extends ContractDefinition> = Omit<
   WorkerOptions,
   "activities" | "taskQueue"
-> {
+> & {
   /**
    * The contract definition for this worker
    */
@@ -20,7 +20,7 @@ export interface CreateWorkerOptions<TContract extends ContractDefinition> exten
    * Activities handler for this worker
    */
   activities: ActivitiesHandler<TContract>;
-}
+};
 
 /**
  * Create a typed Temporal worker with contract-based configuration

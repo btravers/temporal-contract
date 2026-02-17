@@ -10,10 +10,11 @@ onlyBuiltDependencies:
   - lefthook
   - protobufjs
 
-strictPeerDependencies: false
-
-overrides:
-  preact: ">=10.28.2"
+settings:
+  autoInstallPeers: false
+  engineStrict: true
+  saveExact: true
+  strictPeerDependencies: true
 
 catalog:
   "@changesets/cli": 2.29.8
