@@ -46,7 +46,6 @@ onlyBuiltDependencies:
   - protobufjs
 
 settings:
-  autoInstallPeers: false
   engineStrict: true
   saveExact: true
   strictPeerDependencies: true
