@@ -13,9 +13,9 @@ catalog:
   "@nestjs/testing": 11.1.13
   "@standard-schema/spec": 1.1.0
   "@swan-io/boxed": 3.2.1
-  "@temporalio/client": 1.14.1
-  "@temporalio/worker": 1.14.1
-  "@temporalio/workflow": 1.14.1
+  "@temporalio/client": 1.15.0
+  "@temporalio/worker": 1.15.0
+  "@temporalio/workflow": 1.15.0
   "@types/node": 25.2.3
   "@vitest/coverage-v8": 4.0.18
   arktype: 2.1.29
