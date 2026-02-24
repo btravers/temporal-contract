@@ -1,0 +1,30 @@
+{
+  "name": "@temporal-contract/sample-order-processing-worker-effect",
+  "private": true,
+  "description": "Effect-native order processing worker using temporal-contract",
+  "type": "module",
+  "scripts": {
+    "test:integration": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@temporal-contract/contract-effect": "workspace:*",
+    "@temporal-contract/worker-effect": "workspace:*",
+    "@temporalio/worker": "catalog:",
+    "@temporalio/workflow": "catalog:",
+    "effect": "catalog:",
+    "pino": "catalog:",
+    "pino-pretty": "catalog:"
+  },
+  "devDependencies": {
+    "@temporal-contract/client-effect": "workspace:*",
+    "@temporal-contract/testing": "workspace:*",
+    "@temporal-contract/tsconfig": "workspace:*",
+    "@temporalio/client": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
