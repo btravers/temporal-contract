@@ -14,10 +14,13 @@
   "dependencies": {
     "@temporal-contract/boxed": "workspace:*",
     "@temporal-contract/client": "workspace:*",
+    "@temporal-contract/client-effect": "workspace:*",
     "@temporal-contract/client-nestjs": "workspace:*",
     "@temporal-contract/contract": "workspace:*",
+    "@temporal-contract/contract-effect": "workspace:*",
     "@temporal-contract/testing": "workspace:*",
     "@temporal-contract/worker": "workspace:*",
+    "@temporal-contract/worker-effect": "workspace:*",
     "@temporal-contract/worker-nestjs": "workspace:*"
   },
   "devDependencies": {

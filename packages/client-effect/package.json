@@ -42,6 +42,7 @@
   ],
   "scripts": {
     "build": "tsdown src/index.ts --format cjs,esm --dts --clean",
+    "build:docs": "typedoc",
     "dev": "tsdown src/index.ts --format cjs,esm --dts --watch",
     "test": "vitest run --project unit",
     "test:watch": "vitest --project unit",
@@ -57,6 +58,8 @@
     "@vitest/coverage-v8": "catalog:",
     "effect": "catalog:",
     "tsdown": "catalog:",
+    "typedoc": "catalog:",
+    "typedoc-plugin-markdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

@@ -7,6 +7,9 @@ import "@temporal-contract/contract";
 import "@temporal-contract/testing/global-setup";
 import "@temporal-contract/worker/activity";
 import "@temporal-contract/worker-nestjs";
+import "@temporal-contract/contract-effect";
+import "@temporal-contract/client-effect";
+import "@temporal-contract/worker-effect";
 
 import { cp, mkdir, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -20,10 +23,13 @@ const packages = [
   "boxed",
   "client",
   "client-nestjs",
+  "client-effect",
   "contract",
+  "contract-effect",
   "testing",
   "worker",
   "worker-nestjs",
+  "worker-effect",
 ];
 
 async function copyDocs(): Promise<void> {

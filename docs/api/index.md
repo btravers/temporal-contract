@@ -14,6 +14,12 @@ Welcome to the temporal-contract API documentation. This documentation is auto-g
 - [@temporal-contract/client-nestjs](./client-nestjs/) - NestJS client module
 - [@temporal-contract/worker-nestjs](./worker-nestjs/) - NestJS worker module
 
+## EffectTS Integration
+
+- [@temporal-contract/client-effect](./client-effect/) - EffectTS client module
+- [@temporal-contract/contract-effect](./contract-effect/) - EffectTS contract module
+- [@temporal-contract/worker-effect](./worker-effect/) - EffectTS worker module
+
 ## Testing
 
 - [@temporal-contract/testing](./testing/) - Testing utilities with testcontainers
