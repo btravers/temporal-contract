@@ -1,0 +1,67 @@
+{
+  "name": "@temporal-contract/client-effect",
+  "version": "0.1.0",
+  "description": "Effect-native client for consuming temporal-contract workflows",
+  "keywords": [
+    "client",
+    "contract",
+    "effect",
+    "temporal",
+    "typescript"
+  ],
+  "homepage": "https://github.com/btravers/temporal-contract#readme",
+  "bugs": {
+    "url": "https://github.com/btravers/temporal-contract/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/btravers/temporal-contract.git",
+    "directory": "packages/client-effect"
+  },
+  "license": "MIT",
+  "author": "Ben Weis <bweis96@gmail.com>",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown src/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsdown src/index.ts --format cjs,esm --dts --watch",
+    "test": "vitest run --project unit",
+    "test:watch": "vitest --project unit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@temporal-contract/contract-effect": "workspace:*"
+  },
+  "devDependencies": {
+    "@temporal-contract/tsconfig": "workspace:*",
+    "@temporalio/client": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "effect": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@temporalio/client": "^1",
+    "effect": "^3"
+  }
+}

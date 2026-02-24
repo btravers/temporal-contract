@@ -24,6 +24,7 @@
     "@changesets/cli": "catalog:",
     "@commitlint/cli": "catalog:",
     "@commitlint/config-conventional": "catalog:",
+    "@rolldown/binding-darwin-arm64": "1.0.0-rc.3",
     "knip": "catalog:",
     "lefthook": "catalog:",
     "oxfmt": "catalog:",

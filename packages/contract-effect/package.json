@@ -1,0 +1,62 @@
+{
+  "name": "@temporal-contract/contract-effect",
+  "version": "0.1.0",
+  "description": "Effect Schema contract builder for temporal-contract",
+  "keywords": [
+    "contract",
+    "effect",
+    "schema",
+    "temporal",
+    "typescript"
+  ],
+  "homepage": "https://github.com/btravers/temporal-contract#readme",
+  "bugs": {
+    "url": "https://github.com/btravers/temporal-contract/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/btravers/temporal-contract.git",
+    "directory": "packages/contract-effect"
+  },
+  "license": "MIT",
+  "author": "Ben Weis <bweis96@gmail.com>",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown src/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsdown src/index.ts --format cjs,esm --dts --watch",
+    "test": "vitest run --project unit",
+    "test:watch": "vitest --project unit",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@temporal-contract/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "effect": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "effect": "^3"
+  }
+}
