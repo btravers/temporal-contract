@@ -3,14 +3,14 @@
   "private": true,
   "description": "Contract package for basic order processing sample",
   "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     }
   },
-  "main": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
   "scripts": {
     "build": "tsdown src/index.ts --dts",
     "typecheck": "tsc --noEmit"

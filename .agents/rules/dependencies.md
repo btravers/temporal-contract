@@ -22,7 +22,7 @@
 | `tsdown`     | TypeScript bundler                 |
 | `vitest`     | Test framework                     |
 | `oxlint`     | Linter                             |
-| `oxfmt`      | Formatter (import sorting)         |
+| `oxfmt`      | Formatter (import sorting, JSON)   |
 | `knip`       | Unused export/dependency detection |
 | `lefthook`   | Git hooks                          |
 | `changesets` | Version management                 |

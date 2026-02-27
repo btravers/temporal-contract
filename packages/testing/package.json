@@ -2,6 +2,10 @@
   "name": "@temporal-contract/testing",
   "version": "0.2.0",
   "description": "Temporal testing utilities",
+  "files": [
+    "config",
+    "dist"
+  ],
   "type": "module",
   "exports": {
     "./extension": {
@@ -13,10 +17,6 @@
       "import": "./dist/global-setup.mjs"
     }
   },
-  "files": [
-    "config",
-    "dist"
-  ],
   "scripts": {
     "build": "tsdown src/global-setup.ts src/extension.ts --format esm --dts --clean",
     "build:docs": "typedoc",
