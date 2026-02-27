@@ -6,32 +6,32 @@ packages:
 
 catalog:
   "@changesets/cli": 2.29.8
-  "@commitlint/cli": 20.4.1
-  "@commitlint/config-conventional": 20.4.1
-  "@nestjs/common": 11.1.13
-  "@nestjs/core": 11.1.13
-  "@nestjs/testing": 11.1.13
+  "@commitlint/cli": 20.4.2
+  "@commitlint/config-conventional": 20.4.2
+  "@nestjs/common": 11.1.14
+  "@nestjs/core": 11.1.14
+  "@nestjs/testing": 11.1.14
   "@standard-schema/spec": 1.1.0
   "@swan-io/boxed": 3.2.1
-  "@temporalio/client": 1.14.1
-  "@temporalio/worker": 1.14.1
-  "@temporalio/workflow": 1.14.1
-  "@types/node": 25.2.3
+  "@temporalio/client": 1.15.0
+  "@temporalio/worker": 1.15.0
+  "@temporalio/workflow": 1.15.0
+  "@types/node": 25.3.2
   "@vitest/coverage-v8": 4.0.18
   arktype: 2.1.29
-  knip: 5.83.1
+  knip: 5.85.0
   lefthook: 2.1.1
-  oxfmt: 0.33.0
-  oxlint: 1.48.0
+  oxfmt: 0.35.0
+  oxlint: 1.50.0
   pino: 10.3.1
   pino-pretty: 13.1.3
   reflect-metadata: 0.2.2
   sort-package-json: 3.6.1
-  testcontainers: 11.11.0
+  testcontainers: 11.12.0
   ts-pattern: 5.9.0
-  tsdown: 0.20.3
+  tsdown: 0.21.0-beta.2
   tsx: 4.21.0
-  turbo: 2.8.9
+  turbo: 2.8.11
   typedoc: 0.28.17
   typedoc-plugin-markdown: 4.10.0
   typescript: 5.9.3
