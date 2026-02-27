@@ -23,9 +23,8 @@
 
 ## Formatting
 
-- **oxfmt** for formatting and import sorting
+- **oxfmt** for formatting, import sorting, and package.json ordering
 - Run `pnpm format` to fix, `pnpm format --check` to verify
-- **sort-package-json** keeps package.json fields ordered
 
 ## Anti-patterns
 

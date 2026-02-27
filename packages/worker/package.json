@@ -14,14 +14,20 @@
   "bugs": {
     "url": "https://github.com/btravers/temporal-contract/issues"
   },
+  "license": "MIT",
+  "author": "Benoit TRAVERS <benoit.travers.fr@gmail.com>",
   "repository": {
     "type": "git",
     "url": "https://github.com/btravers/temporal-contract.git",
     "directory": "packages/worker"
   },
-  "license": "MIT",
-  "author": "Benoit TRAVERS <benoit.travers.fr@gmail.com>",
+  "files": [
+    "dist"
+  ],
   "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     "./activity": {
       "import": {
@@ -55,12 +61,6 @@
       }
     }
   },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
-  "files": [
-    "dist"
-  ],
   "scripts": {
     "build": "tsdown src/activity.ts src/worker.ts src/workflow.ts --format cjs,esm --dts --clean",
     "build:docs": "typedoc",
