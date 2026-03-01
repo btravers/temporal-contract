@@ -17,7 +17,7 @@ catalog:
   "@vitest/coverage-v8": 4.0.18
   arktype: 2.1.29
   knip: 5.85.0
-  lefthook: 2.1.1
+  lefthook: 2.1.2
   oxfmt: 0.35.0
   oxlint: 1.50.0
   pino: 10.3.1
