@@ -11,7 +11,6 @@
 | `@swan-io/boxed`              | Result and Future types       |
 | `zod` / `valibot` / `arktype` | Schema validation libraries   |
 | `pino`                        | Structured logging            |
-| `reflect-metadata`            | NestJS decorator support      |
 
 ## Tooling
 
