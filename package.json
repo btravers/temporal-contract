@@ -33,7 +33,8 @@
   "pnpm": {
     "overrides": {
       "preact": ">=10.28.2",
-      "rollup": ">=4.59.0"
+      "rollup": ">=4.59.0",
+      "serialize-javascript": ">=7.0.3"
     }
   }
 }

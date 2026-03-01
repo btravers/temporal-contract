@@ -101,13 +101,6 @@ export default withMermaid(
             ],
           },
           {
-            text: "NestJS",
-            items: [
-              { text: "Client", link: "/guide/client-nestjs-usage" },
-              { text: "Worker", link: "/guide/worker-nestjs-usage" },
-            ],
-          },
-          {
             text: "Advanced",
             items: [
               { text: "Result Pattern", link: "/guide/result-pattern" },
@@ -130,13 +123,6 @@ export default withMermaid(
               { text: "@temporal-contract/client", link: "/api/client/" },
               { text: "@temporal-contract/worker", link: "/api/worker/" },
               { text: "@temporal-contract/boxed", link: "/api/boxed/" },
-            ],
-          },
-          {
-            text: "NestJS Integration",
-            items: [
-              { text: "@temporal-contract/client-nestjs", link: "/api/client-nestjs/" },
-              { text: "@temporal-contract/worker-nestjs", link: "/api/worker-nestjs/" },
             ],
           },
           {
@@ -201,7 +187,7 @@ export default withMermaid(
         {
           name: "keywords",
           content:
-            "Temporal, Temporal.io, TypeScript, Node.js, NestJS, workflows, activities, durable execution, type-safe, schema validation, contract-first, type-safe workflows, schema-based workflows, event-driven architecture, microservices, distributed systems",
+            "Temporal, Temporal.io, TypeScript, Node.js, workflows, activities, durable execution, type-safe, schema validation, contract-first, type-safe workflows, schema-based workflows, event-driven architecture, microservices, distributed systems",
         },
       ],
       // Open Graph meta tags for better social sharing and SEO
@@ -257,7 +243,7 @@ export default withMermaid(
             url: "https://www.typescriptlang.org/",
           },
           keywords:
-            "Temporal, Temporal.io, TypeScript, Node.js, NestJS, workflows, type-safe, schema validation",
+            "Temporal, Temporal.io, TypeScript, Node.js, workflows, type-safe, schema validation",
         }),
       ],
       // WebSite JSON-LD for proper site name display in Google search

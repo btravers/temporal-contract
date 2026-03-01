@@ -59,26 +59,6 @@ yarn add zod @temporalio/client @temporalio/worker @temporalio/workflow
 Both packages provide the same API, making it easy to work with both.
 :::
 
-### NestJS Integration
-
-For NestJS applications, also install:
-
-::: code-group
-
-```bash [pnpm]
-pnpm add @temporal-contract/worker-nestjs @nestjs/common @nestjs/core
-```
-
-```bash [npm]
-npm install @temporal-contract/worker-nestjs @nestjs/common @nestjs/core
-```
-
-```bash [yarn]
-yarn add @temporal-contract/worker-nestjs @nestjs/common @nestjs/core
-```
-
-:::
-
 ### Optional Packages
 
 For testing your workflows and activities:

@@ -1,6 +1,6 @@
 ---
 title: Why temporal-contract? - Type-safe Temporal.io Workflows for TypeScript
-description: Discover why temporal-contract is the best solution for building type-safe Temporal.io workflows and activities with TypeScript, Node.js, and NestJS. Learn about contract-first development and schema validation.
+description: Discover why temporal-contract is the best solution for building type-safe Temporal.io workflows and activities with TypeScript and Node.js. Learn about contract-first development and schema validation.
 ---
 
 # Why temporal-contract?

@@ -8,9 +8,8 @@ This sample demonstrates that a single client can interact with any worker imple
 
 This client package demonstrates that:
 
-- Both `order-processing-worker` and `order-processing-worker-nestjs` workers implement the **same unified contract**
-- A single client works with any worker implementation
-- From the client's perspective, all workers are identical
+- The `order-processing-worker` implements the **unified contract**
+- The client works with the worker implementation through the shared contract
 - Workers handle errors internally using the Result/Future pattern with ActivityError
 
 ## Running the Sample
@@ -30,21 +29,12 @@ cd ../..
 pnpm install && pnpm build
 ```
 
-### Running with Any Worker
+### Running
 
-1. Start a worker (choose one):
-
-**Option A: Standard Worker**
+1. Start the worker:
 
 ```bash
 cd ../order-processing-worker
-pnpm dev
-```
-
-**Option B: NestJS Worker**
-
-```bash
-cd ../order-processing-worker-nestjs
 pnpm dev
 ```
 
@@ -87,32 +77,17 @@ The unified contract (`orderProcessingContract`) defines:
 - Workflow: `processOrder`
   - Activities: `processPayment`, `reserveInventory`, `releaseInventory`, `createShipment`, `refundPayment`
 
-### Worker Implementations
+### Worker Implementation
 
-Both workers implement the exact same contract but with different frameworks:
+The worker (`examples/order-processing-worker`) uses `@temporal-contract/worker` with:
 
-1. **Standard Worker** (`examples/order-processing-worker`)
-   - Uses `@temporal-contract/worker`
-   - Activities use Result/Future pattern with ActivityError
-   - Clean Architecture with dependency injection
-   - Standalone TypeScript application
-
-2. **NestJS Worker** (`examples/order-processing-worker-nestjs`)
-   - Uses `@temporal-contract/worker-nestjs`
-   - Activities use Result/Future pattern with ActivityError
-   - NestJS dependency injection and decorators
-   - Better for NestJS-based applications
+- Activities using the Result/Future pattern with ActivityError
+- Clean Architecture with dependency injection
+- Standalone TypeScript application
 
 ### Client Perspective
 
-From the client's perspective, there's **no difference** between the workers:
-
-- Same contract import
-- Same workflow names
-- Same activity signatures
-- Same result types
-
-This demonstrates the power of contract-driven development - implementations can vary while maintaining compatibility.
+The client interacts with the worker through the shared contract, demonstrating the power of contract-driven development.
 
 ## License
 

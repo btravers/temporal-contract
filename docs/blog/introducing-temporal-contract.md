@@ -112,29 +112,6 @@ temporal-contract works with multiple schema libraries:
 - [Valibot](https://valibot.dev/)
 - [ArkType](https://arktype.io/)
 
-### NestJS Integration
-
-First-class NestJS support with dependency injection:
-
-```typescript
-import { TemporalClientModule } from "@temporal-contract/client-nestjs";
-import { Connection, Client } from "@temporalio/client";
-import { orderContract } from "./contract";
-
-const connection = await Connection.connect({ address: "localhost:7233" });
-const client = new Client({ connection });
-
-@Module({
-  imports: [
-    TemporalClientModule.forRoot({
-      contract: orderContract,
-      client,
-    }),
-  ],
-})
-export class AppModule {}
-```
-
 ### Result Pattern
 
 Explicit error handling with the Result/Future pattern:

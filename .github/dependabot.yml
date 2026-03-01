@@ -10,9 +10,6 @@ updates:
       temporal:
         patterns:
           - "@temporalio/*"
-      nestjs:
-        patterns:
-          - "@nestjs/*"
       commitlint:
         patterns:
           - "@commitlint/*"

@@ -349,5 +349,4 @@ new ActivityError("ERROR", "Something went wrong");
 - [Defining Contracts](/guide/defining-contracts) - Creating contract definitions
 - [Client Usage](/guide/client-usage) - Executing workflows from clients
 - [Result Pattern](/guide/result-pattern) - Understanding Result/Future patterns
-- [NestJS Worker Usage](/guide/worker-nestjs-usage) - Using workers with NestJS
 - [API Reference](/api/worker) - Complete worker API documentation
