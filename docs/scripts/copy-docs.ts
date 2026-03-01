@@ -2,11 +2,9 @@
 // They must be kept in sync with the packages array below.
 import "@temporal-contract/boxed";
 import "@temporal-contract/client";
-import "@temporal-contract/client-nestjs";
 import "@temporal-contract/contract";
 import "@temporal-contract/testing/global-setup";
 import "@temporal-contract/worker/activity";
-import "@temporal-contract/worker-nestjs";
 
 import { cp, mkdir, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -16,15 +14,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const docsApiDir = join(__dirname, "..", "api");
 const packagesDir = join(__dirname, "..", "..", "packages");
 
-const packages = [
-  "boxed",
-  "client",
-  "client-nestjs",
-  "contract",
-  "testing",
-  "worker",
-  "worker-nestjs",
-];
+const packages = ["boxed", "client", "contract", "testing", "worker"];
 
 async function copyDocs(): Promise<void> {
   try {

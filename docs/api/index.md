@@ -9,11 +9,6 @@ Welcome to the temporal-contract API documentation. This documentation is auto-g
 - [@temporal-contract/worker](./worker/) - Type-safe Temporal worker
 - [@temporal-contract/boxed](./boxed/) - Result/Future pattern implementation
 
-## NestJS Integration
-
-- [@temporal-contract/client-nestjs](./client-nestjs/) - NestJS client module
-- [@temporal-contract/worker-nestjs](./worker-nestjs/) - NestJS worker module
-
 ## Testing
 
 - [@temporal-contract/testing](./testing/) - Testing utilities with testcontainers

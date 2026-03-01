@@ -1,7 +1,7 @@
 ---
 layout: home
 title: temporal-contract - Type-safe Temporal.io workflows for TypeScript
-description: End-to-end type safety, runtime validation, and explicit error handling for Temporal.io workflows and activities in TypeScript and NestJS
+description: End-to-end type safety, runtime validation, and explicit error handling for Temporal.io workflows and activities in TypeScript
 
 hero:
   name: "temporal-contract"
@@ -33,10 +33,6 @@ features:
   - icon: 📝
     title: Contract-First Design
     details: Define your workflow interface once — types and validation flow from contract to client and worker.
-
-  - icon: 🚀
-    title: NestJS Ready
-    details: First-class NestJS support with dependency injection and automatic lifecycle management.
 ---
 
 ## Quick Example

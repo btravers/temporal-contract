@@ -14,11 +14,9 @@
   "dependencies": {
     "@temporal-contract/boxed": "workspace:*",
     "@temporal-contract/client": "workspace:*",
-    "@temporal-contract/client-nestjs": "workspace:*",
     "@temporal-contract/contract": "workspace:*",
     "@temporal-contract/testing": "workspace:*",
-    "@temporal-contract/worker": "workspace:*",
-    "@temporal-contract/worker-nestjs": "workspace:*"
+    "@temporal-contract/worker": "workspace:*"
   },
   "devDependencies": {
     "@temporal-contract/tsconfig": "workspace:*",

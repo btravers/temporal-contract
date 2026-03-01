@@ -11,15 +11,13 @@
 
 ## Package Map
 
-| Package         | Purpose                                                    |
-| --------------- | ---------------------------------------------------------- |
-| `contract`      | Contract builder (`defineContract`) and type definitions   |
-| `worker`        | Type-safe worker, workflow declarations, activity handlers |
-| `client`        | Type-safe client for consuming workflows via Result/Future |
-| `boxed`         | Re-exports Result and Future types from @swan-io/boxed     |
-| `testing`       | Testing utilities (global setup, Temporal test server)     |
-| `worker-nestjs` | NestJS module integration for Temporal workers             |
-| `client-nestjs` | NestJS module integration for Temporal clients             |
+| Package    | Purpose                                                    |
+| ---------- | ---------------------------------------------------------- |
+| `contract` | Contract builder (`defineContract`) and type definitions   |
+| `worker`   | Type-safe worker, workflow declarations, activity handlers |
+| `client`   | Type-safe client for consuming workflows via Result/Future |
+| `boxed`    | Re-exports Result and Future types from @swan-io/boxed     |
+| `testing`  | Testing utilities (global setup, Temporal test server)     |
 
 ## Key Concepts
 

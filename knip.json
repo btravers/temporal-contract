@@ -21,9 +21,6 @@
     "examples/order-processing-worker": {
       "entry": ["src/application/workflows.ts"]
     },
-    "examples/order-processing-worker-nestjs": {
-      "entry": ["src/workflows.ts"]
-    },
     "tools/tsconfig": {
       "entry": ["*.json"]
     },

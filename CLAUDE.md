@@ -13,4 +13,3 @@
 | Code style        | [.agents/rules/code-style.md](.agents/rules/code-style.md)               |
 | Testing           | [.agents/rules/testing.md](.agents/rules/testing.md)                     |
 | Dependencies      | [.agents/rules/dependencies.md](.agents/rules/dependencies.md)           |
-| NestJS            | [.agents/rules/nestjs.md](.agents/rules/nestjs.md)                       |
