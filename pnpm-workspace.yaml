@@ -13,7 +13,7 @@ catalog:
   "@temporalio/client": 1.15.0
   "@temporalio/worker": 1.15.0
   "@temporalio/workflow": 1.15.0
-  "@types/node": 25.3.2
+  "@types/node": 25.3.3
   "@vitest/coverage-v8": 4.0.18
   arktype: 2.1.29
   knip: 5.85.0
