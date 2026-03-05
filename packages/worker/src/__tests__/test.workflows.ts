@@ -56,6 +56,12 @@ export const workflowWithActivities = declareWorkflow({
   activityOptions: {
     startToCloseTimeout: "1 minute",
   },
+  perActivityOptions: {
+    processPayment: {
+      startToCloseTimeout: "5 minutes",
+      retry: { maximumAttempts: 5 },
+    },
+  },
 });
 
 export const interactiveWorkflow = declareWorkflow({

@@ -129,6 +129,7 @@ export function declareWorkflow<
   contract,
   implementation,
   activityOptions,
+  perActivityOptions,
 }: DeclareWorkflowOptions<TContract, TWorkflowName>): (
   ...args: unknown[]
 ) => Promise<WorkerInferOutput<TContract["workflows"][TWorkflowName]>> {
@@ -166,8 +167,12 @@ export function declareWorkflow<
     let contextActivities: unknown = {};
 
     if (definition.activities || contract.activities) {
-      const rawActivities =
-        proxyActivities<Record<string, (...args: unknown[]) => Promise<unknown>>>(activityOptions);
+      const rawActivities = createRawActivities(
+        activityOptions,
+        perActivityOptions as Record<string, ActivityOptions> | undefined,
+        definition.activities,
+        contract.activities,
+      );
 
       contextActivities = createValidatedActivities(
         rawActivities,
@@ -586,6 +591,14 @@ type UpdateHandlerImplementation<TUpdate extends UpdateDefinition> = (
 /**
  * Options for declaring a workflow implementation
  */
+/**
+ * All activity names available in a workflow (workflow-specific + global)
+ */
+type AllActivityNames<
+  TContract extends ContractDefinition,
+  TWorkflowName extends keyof TContract["workflows"],
+> = keyof WorkflowInferWorkflowContextActivities<TContract, TWorkflowName> & string;
+
 type DeclareWorkflowOptions<
   TContract extends ContractDefinition,
   TWorkflowName extends keyof TContract["workflows"],
@@ -611,6 +624,23 @@ type DeclareWorkflowOptions<
    * ```
    */
   activityOptions: ActivityOptions;
+  /**
+   * Per-activity options that override the default `activityOptions` for specific activities.
+   * Each key is an activity name (workflow-specific or global) and the value is a full
+   * `ActivityOptions` object that replaces the defaults for that activity.
+   *
+   * @example
+   * ```ts
+   * activityOptions: {
+   *   startToCloseTimeout: '1 minute',
+   * },
+   * perActivityOptions: {
+   *   processPayment: { startToCloseTimeout: '5 minutes', retry: { maximumAttempts: 5 } },
+   *   sendNotification: { startToCloseTimeout: '30 seconds' },
+   * }
+   * ```
+   */
+  perActivityOptions?: Partial<Record<AllActivityNames<TContract, TWorkflowName>, ActivityOptions>>;
 };
 
 /**
@@ -869,6 +899,73 @@ type WorkflowInferWorkflowContextActivities<
   TWorkflowName extends keyof TContract["workflows"],
 > = WorkflowInferWorkflowActivities<TContract["workflows"][TWorkflowName]> &
   WorkflowInferActivities<TContract>;
+
+/**
+ * Create raw activity proxies, handling per-activity option overrides.
+ *
+ * Activities that share the same options are grouped under a single
+ * `proxyActivities` call for efficiency. Activities with per-activity
+ * overrides get their own `proxyActivities` call.
+ */
+function createRawActivities(
+  defaultOptions: ActivityOptions,
+  perActivityOptions: Record<string, ActivityOptions> | undefined,
+  workflowActivities: Record<string, ActivityDefinition> | undefined,
+  contractActivities: Record<string, ActivityDefinition> | undefined,
+): Record<string, (...args: unknown[]) => Promise<unknown>> {
+  // All activity names from both workflow-specific and global definitions
+  const allActivityNames = new Set([
+    ...Object.keys(workflowActivities ?? {}),
+    ...Object.keys(contractActivities ?? {}),
+  ]);
+
+  if (!perActivityOptions || Object.keys(perActivityOptions).length === 0) {
+    // Fast path: no per-activity overrides, single proxy for all
+    return proxyActivities<Record<string, (...args: unknown[]) => Promise<unknown>>>(
+      defaultOptions,
+    );
+  }
+
+  // Create the default proxy for activities without overrides
+  const defaultProxy =
+    proxyActivities<Record<string, (...args: unknown[]) => Promise<unknown>>>(defaultOptions);
+
+  const result: Record<string, (...args: unknown[]) => Promise<unknown>> = {};
+
+  // Group overridden activities by their serialized options to minimize proxy calls
+  const optionsToActivities = new Map<string, string[]>();
+  for (const [activityName, options] of Object.entries(perActivityOptions)) {
+    if (!allActivityNames.has(activityName)) {
+      continue;
+    }
+    const key = JSON.stringify(options);
+    const group = optionsToActivities.get(key);
+    if (group) {
+      group.push(activityName);
+    } else {
+      optionsToActivities.set(key, [activityName]);
+    }
+  }
+
+  // Create one proxy per unique options set
+  for (const [_key, activityNames] of optionsToActivities) {
+    const options = perActivityOptions[activityNames[0]!]!;
+    const proxy =
+      proxyActivities<Record<string, (...args: unknown[]) => Promise<unknown>>>(options);
+    for (const name of activityNames) {
+      result[name] = proxy[name]!;
+    }
+  }
+
+  // Fill in non-overridden activities from the default proxy
+  for (const name of allActivityNames) {
+    if (!(name in result)) {
+      result[name] = defaultProxy[name]!;
+    }
+  }
+
+  return result;
+}
 
 /**
  * Create a validated activities proxy that parses inputs and outputs
