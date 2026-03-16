@@ -80,6 +80,10 @@ export {
  *   activityOptions: {
  *     startToCloseTimeout: '1 minute',
  *   },
+ *   // Optional: override options for specific activities
+ *   perActivityOptions: {
+ *     chargePayment: { startToCloseTimeout: '30 seconds', retry: { maximumAttempts: 1 } },
+ *   },
  *   implementation: async (context, args) => {
  *     // context.activities: typed activities (workflow + global)
  *     // context.info: WorkflowInfo
@@ -129,6 +133,7 @@ export function declareWorkflow<
   contract,
   implementation,
   activityOptions,
+  perActivityOptions,
 }: DeclareWorkflowOptions<TContract, TWorkflowName>): (
   ...args: unknown[]
 ) => Promise<WorkerInferOutput<TContract["workflows"][TWorkflowName]>> {
@@ -166,8 +171,38 @@ export function declareWorkflow<
     let contextActivities: unknown = {};
 
     if (definition.activities || contract.activities) {
-      const rawActivities =
-        proxyActivities<Record<string, (...args: unknown[]) => Promise<unknown>>>(activityOptions);
+      const allActivityNames = [
+        ...Object.keys(definition.activities ?? {}),
+        ...Object.keys(contract.activities ?? {}),
+      ];
+
+      const defaultProxy =
+        activityOptions !== undefined
+          ? proxyActivities<Record<string, (...args: unknown[]) => Promise<unknown>>>(
+              activityOptions,
+            )
+          : null;
+
+      const perActivityOptionsMap = perActivityOptions as
+        | Record<string, ActivityOptions | undefined>
+        | undefined;
+      const rawActivities: Record<string, (...args: unknown[]) => Promise<unknown>> = {};
+      for (const activityName of allActivityNames) {
+        const specificOptions = perActivityOptionsMap?.[activityName];
+        if (specificOptions !== undefined) {
+          const proxy = proxyActivities<Record<string, (...args: unknown[]) => Promise<unknown>>>({
+            ...activityOptions,
+            ...specificOptions,
+          });
+          rawActivities[activityName] = proxy[activityName] as (
+            ...args: unknown[]
+          ) => Promise<unknown>;
+        } else if (defaultProxy !== null) {
+          rawActivities[activityName] = defaultProxy[activityName] as (
+            ...args: unknown[]
+          ) => Promise<unknown>;
+        }
+      }
 
       contextActivities = createValidatedActivities(
         rawActivities,
@@ -595,12 +630,10 @@ type DeclareWorkflowOptions<
   implementation: WorkflowImplementation<TContract, TWorkflowName>;
   /**
    * Default activity options applied to all activities in this workflow.
-   * For more control, you can override specific Temporal ActivityOptions like:
-   * - startToCloseTimeout: Maximum time for activity execution
-   * - scheduleToCloseTimeout: End-to-end timeout including queuing
-   * - scheduleToStartTimeout: Maximum time activity can wait in queue
-   * - heartbeatTimeout: Time between heartbeats before considering activity dead
-   * - retry: Retry policy for failed activities
+   * Can be overridden per activity using `perActivityOptions`.
+   *
+   * At least one of `activityOptions` or `perActivityOptions` must be provided
+   * for each activity (Temporal requires a timeout on every activity call).
    *
    * @example
    * ```ts
@@ -610,7 +643,23 @@ type DeclareWorkflowOptions<
    * }
    * ```
    */
-  activityOptions: ActivityOptions;
+  activityOptions?: ActivityOptions;
+  /**
+   * Per-activity options that override `activityOptions` for specific activities.
+   * Options are merged with `activityOptions` (per-activity values take precedence).
+   *
+   * @example
+   * ```ts
+   * activityOptions: { startToCloseTimeout: '1m' },
+   * perActivityOptions: {
+   *   sendEmail: { startToCloseTimeout: '5m', retry: { maximumAttempts: 5 } },
+   *   chargePayment: { startToCloseTimeout: '30s', retry: { maximumAttempts: 1 } },
+   * }
+   * ```
+   */
+  perActivityOptions?: {
+    [K in keyof WorkflowInferWorkflowContextActivities<TContract, TWorkflowName>]?: ActivityOptions;
+  };
 };
 
 /**
