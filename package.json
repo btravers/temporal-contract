@@ -32,6 +32,7 @@
   "packageManager": "pnpm@10.33.0",
   "pnpm": {
     "overrides": {
+      "picomatch": ">=2.3.2",
       "preact": ">=10.28.2",
       "rollup": ">=4.59.0",
       "serialize-javascript": ">=7.0.3"
