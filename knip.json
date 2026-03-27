@@ -1,7 +1,12 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "ignoreExportsUsedInFile": true,
-  "ignoreDependencies": ["pino-pretty", "@temporal-contract/typedoc", "typedoc-plugin-markdown"],
+  "ignoreDependencies": [
+    "pino-pretty",
+    "@temporal-contract/typedoc",
+    "typedoc-plugin-markdown",
+    "@changesets/config"
+  ],
   "workspaces": {
     ".": {
       "entry": ["lefthook.yml"]
@@ -9,9 +14,7 @@
     "packages/*": {
       "project": ["src/**/*.ts"]
     },
-    "packages/boxed": {
-      "ignoreDependencies": ["@swan-io/boxed"]
-    },
+    "packages/boxed": {},
     "packages/client": {
       "entry": ["src/__tests__/test.workflows.ts"]
     },
@@ -32,5 +35,5 @@
       "ignoreDependencies": ["@temporal-contract/tsconfig"]
     }
   },
-  "ignore": ["coverage/**", "**/dist/**"]
+  "ignore": []
 }
