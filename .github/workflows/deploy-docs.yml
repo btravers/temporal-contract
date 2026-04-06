@@ -32,7 +32,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Build documentation
         run: pnpm --filter ./docs exec turbo build
