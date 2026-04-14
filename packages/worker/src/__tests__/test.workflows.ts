@@ -148,3 +148,37 @@ export const workflowWithFailableActivity = declareWorkflow({
     startToCloseTimeout: "1 minute",
   },
 });
+
+// Workflow that uses per-activity options
+export const workflowWithPerActivityOptions = declareWorkflow({
+  workflowName: "workflowWithActivities",
+  contract: testContract,
+  implementation: async ({ activities }, args) => {
+    const validationResult = await activities.validateOrder({ orderId: args.orderId });
+
+    if (!validationResult.valid) {
+      return {
+        orderId: args.orderId,
+        status: "failed" as const,
+        reason: "Invalid order ID",
+      };
+    }
+
+    const paymentResult = await activities.processPayment({ amount: args.amount });
+
+    return {
+      orderId: args.orderId,
+      status: paymentResult.success ? ("success" as const) : ("failed" as const),
+      transactionId: paymentResult.transactionId,
+    };
+  },
+  activityOptions: {
+    startToCloseTimeout: "1 minute",
+  },
+  perActivityOptions: {
+    processPayment: {
+      startToCloseTimeout: "30 seconds",
+      retry: { maximumAttempts: 1 },
+    },
+  },
+});

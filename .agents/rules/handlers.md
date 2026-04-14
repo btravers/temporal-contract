@@ -40,6 +40,10 @@ export const processOrder = declareWorkflow({
   workflowName: "processOrder",
   contract: myContract,
   activityOptions: { startToCloseTimeout: "1 minute" },
+  // Optional: override options for specific activities
+  perActivityOptions: {
+    chargePayment: { startToCloseTimeout: "30 seconds", retry: { maximumAttempts: 1 } },
+  },
   implementation: async (context, args) => {
     // context.activities — typed, validated activities
     // context.info — WorkflowInfo
