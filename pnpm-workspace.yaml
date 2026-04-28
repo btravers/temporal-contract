@@ -6,7 +6,7 @@ packages:
 
 catalog:
   "@changesets/cli": 2.31.0
-  "@commitlint/cli": 20.5.0
+  "@commitlint/cli": 20.5.2
   "@commitlint/config-conventional": 20.5.0
   "@standard-schema/spec": 1.1.0
   "@swan-io/boxed": 3.2.1
