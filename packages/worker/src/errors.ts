@@ -1,4 +1,5 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
+import { summarizeIssues } from "./internal.js";
 
 /**
  * Base error class for worker errors
@@ -38,7 +39,7 @@ export class ActivityInputValidationError extends WorkerError {
     public readonly activityName: string,
     public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    const message = issues.map((issue) => issue.message).join("; ");
+    const message = summarizeIssues(issues);
     super(`Activity "${activityName}" input validation failed: ${message}`);
     this.name = "ActivityInputValidationError";
   }
@@ -52,7 +53,7 @@ export class ActivityOutputValidationError extends WorkerError {
     public readonly activityName: string,
     public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    const message = issues.map((issue) => issue.message).join("; ");
+    const message = summarizeIssues(issues);
     super(`Activity "${activityName}" output validation failed: ${message}`);
     this.name = "ActivityOutputValidationError";
   }
@@ -66,7 +67,7 @@ export class WorkflowInputValidationError extends WorkerError {
     public readonly workflowName: string,
     public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    const message = issues.map((issue) => issue.message).join("; ");
+    const message = summarizeIssues(issues);
     super(`Workflow "${workflowName}" input validation failed: ${message}`);
     this.name = "WorkflowInputValidationError";
   }
@@ -80,7 +81,7 @@ export class WorkflowOutputValidationError extends WorkerError {
     public readonly workflowName: string,
     public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    const message = issues.map((issue) => issue.message).join("; ");
+    const message = summarizeIssues(issues);
     super(`Workflow "${workflowName}" output validation failed: ${message}`);
     this.name = "WorkflowOutputValidationError";
   }
@@ -94,7 +95,7 @@ export class SignalInputValidationError extends WorkerError {
     public readonly signalName: string,
     public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    const message = issues.map((issue) => issue.message).join("; ");
+    const message = summarizeIssues(issues);
     super(`Signal "${signalName}" input validation failed: ${message}`);
     this.name = "SignalInputValidationError";
   }
@@ -108,7 +109,7 @@ export class QueryInputValidationError extends WorkerError {
     public readonly queryName: string,
     public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    const message = issues.map((issue) => issue.message).join("; ");
+    const message = summarizeIssues(issues);
     super(`Query "${queryName}" input validation failed: ${message}`);
     this.name = "QueryInputValidationError";
   }
@@ -122,7 +123,7 @@ export class QueryOutputValidationError extends WorkerError {
     public readonly queryName: string,
     public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    const message = issues.map((issue) => issue.message).join("; ");
+    const message = summarizeIssues(issues);
     super(`Query "${queryName}" output validation failed: ${message}`);
     this.name = "QueryOutputValidationError";
   }
@@ -136,7 +137,7 @@ export class UpdateInputValidationError extends WorkerError {
     public readonly updateName: string,
     public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    const message = issues.map((issue) => issue.message).join("; ");
+    const message = summarizeIssues(issues);
     super(`Update "${updateName}" input validation failed: ${message}`);
     this.name = "UpdateInputValidationError";
   }
@@ -150,7 +151,7 @@ export class UpdateOutputValidationError extends WorkerError {
     public readonly updateName: string,
     public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
-    const message = issues.map((issue) => issue.message).join("; ");
+    const message = summarizeIssues(issues);
     super(`Update "${updateName}" output validation failed: ${message}`);
     this.name = "UpdateOutputValidationError";
   }
