@@ -736,7 +736,7 @@ async function validateChildWorkflowOutput<TChildWorkflow extends WorkflowDefini
       ),
     );
   }
-  return Result.Ok(outputResult.value as WorkerInferOutput<TChildWorkflow>);
+  return Result.Ok(outputResult.value as ClientInferOutput<TChildWorkflow>);
 }
 
 async function getAndValidateChildWorkflow<

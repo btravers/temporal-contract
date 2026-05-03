@@ -439,6 +439,40 @@ describe("Contract Builder", () => {
       );
     });
 
+    it("should not misclassify a workflow named 'global' as the global activity scope", () => {
+      // A workflow can legally be named "global" — the collision detector must
+      // not confuse it with the global activity scope sentinel.
+      expect(() =>
+        defineContract({
+          taskQueue: "test",
+          workflows: {
+            global: {
+              input: z.object({}),
+              output: z.object({}),
+              activities: {
+                send: {
+                  input: z.object({}),
+                  output: z.object({}),
+                },
+              },
+            },
+            other: {
+              input: z.object({}),
+              output: z.object({}),
+              activities: {
+                send: {
+                  input: z.object({}),
+                  output: z.object({}),
+                },
+              },
+            },
+          },
+        }),
+      ).toThrow(
+        'workflow "other" has activity "send" that conflicts with the same-named activity in workflow "global". Activities share a single flat namespace at runtime — rename one of them.',
+      );
+    });
+
     it("should throw when signal name is invalid", () => {
       expect(() =>
         defineContract({
