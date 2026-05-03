@@ -13,6 +13,9 @@ export {
 } from "./schedule.js";
 export {
   RuntimeClientError,
+  WorkflowAlreadyStartedError,
+  WorkflowExecutionNotFoundError,
+  WorkflowFailedError,
   WorkflowNotFoundError,
   WorkflowValidationError,
   QueryValidationError,

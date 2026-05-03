@@ -7,11 +7,21 @@ import {
   RuntimeClientError,
   SignalValidationError,
   UpdateValidationError,
+  WorkflowAlreadyStartedError,
+  WorkflowExecutionNotFoundError,
+  WorkflowFailedError,
   WorkflowNotFoundError,
   WorkflowValidationError,
 } from "./errors.js";
-import { Client } from "@temporalio/client";
-import { TypedSearchAttributes } from "@temporalio/common";
+import {
+  Client,
+  WorkflowExecutionAlreadyStartedError,
+  WorkflowFailedError as TemporalWorkflowFailedError,
+} from "@temporalio/client";
+import {
+  TypedSearchAttributes,
+  WorkflowNotFoundError as TemporalWorkflowNotFoundError,
+} from "@temporalio/common";
 
 // Create mock workflow object
 const createMockWorkflow = () => ({
@@ -33,9 +43,55 @@ const mockSchedule = {
 // Mock Temporal Client
 const mockWorkflow = createMockWorkflow();
 
-vi.mock("@temporalio/client", () => ({
-  WorkflowHandle: vi.fn(),
-}));
+// The Temporal error classes are mocked here as constructable stand-ins:
+// the typed client uses `instanceof` to discriminate them, so the mock must
+// expose real classes. If they were left undefined, `instanceof` would
+// throw a TypeError that escapes to the makeFuture catch and surfaces as
+// `RuntimeClientError("unexpected")` — masking the real classification.
+//
+// vi.mock factories are hoisted, so the class declarations live inside the
+// factory rather than at the top level.
+vi.mock("@temporalio/client", () => {
+  class WorkflowExecutionAlreadyStartedError extends Error {
+    constructor(
+      message: string,
+      public readonly workflowId: string,
+      public readonly workflowType: string,
+    ) {
+      super(message);
+    }
+  }
+  class WorkflowFailedError extends Error {
+    constructor(
+      message: string,
+      public readonly originalCause?: Error,
+    ) {
+      super(message);
+    }
+  }
+  return {
+    WorkflowHandle: vi.fn(),
+    WorkflowExecutionAlreadyStartedError,
+    WorkflowFailedError,
+  };
+});
+
+vi.mock("@temporalio/common", async () => {
+  const actual = await vi.importActual<typeof import("@temporalio/common")>("@temporalio/common");
+  class WorkflowNotFoundError extends Error {
+    constructor(
+      message: string,
+      public readonly workflowId: string,
+      public readonly runId: string | undefined,
+    ) {
+      super(message);
+    }
+  }
+  return {
+    ...actual,
+    WorkflowNotFoundError,
+  };
+});
 
 describe("TypedClient", () => {
   const testContract = defineContract({
@@ -854,6 +910,232 @@ describe("TypedClient", () => {
       // The TypedSearchAttributes instance should only contain `customerId`.
       // We can't easily introspect it, but the call shouldn't have thrown
       // and Temporal's serializer would reject unknown keys downstream.
+    });
+  });
+
+  describe("typed Temporal error discrimination", () => {
+    // Closes #184 — Temporal's typed error classes flow through the typed
+    // client surface as discriminated Result.Error variants instead of
+    // collapsing into a generic `RuntimeClientError`.
+
+    it("startWorkflow surfaces WorkflowAlreadyStartedError when Temporal rejects with WorkflowExecutionAlreadyStartedError", async () => {
+      mockWorkflow.start.mockRejectedValue(
+        new WorkflowExecutionAlreadyStartedError("already started", "test-123", "testWorkflow"),
+      );
+
+      const result = await typedClient.startWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
+      });
+
+      expect(result.isError()).toBe(true);
+      if (result.isError()) {
+        expect(result.error).toBeInstanceOf(WorkflowAlreadyStartedError);
+        const err = result.error as WorkflowAlreadyStartedError;
+        expect(err.workflowId).toBe("test-123");
+        expect(err.workflowType).toBe("testWorkflow");
+        expect(err.cause).toBeInstanceOf(WorkflowExecutionAlreadyStartedError);
+      }
+    });
+
+    it("startWorkflow falls through to RuntimeClientError for unrelated errors", async () => {
+      mockWorkflow.start.mockRejectedValue(new Error("network down"));
+
+      const result = await typedClient.startWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
+      });
+
+      expect(result.isError()).toBe(true);
+      if (result.isError()) {
+        expect(result.error).toBeInstanceOf(RuntimeClientError);
+        expect(result.error).not.toBeInstanceOf(WorkflowAlreadyStartedError);
+        expect((result.error as RuntimeClientError).operation).toBe("startWorkflow");
+      }
+    });
+
+    it("signalWithStart surfaces WorkflowAlreadyStartedError too", async () => {
+      mockWorkflow.signalWithStart.mockRejectedValue(
+        new WorkflowExecutionAlreadyStartedError("already started", "test-123", "testWorkflow"),
+      );
+
+      const result = await typedClient.signalWithStart("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
+        signalName: "updateProgress",
+        signalArgs: [50],
+      });
+
+      expect(result.isError()).toBe(true);
+      if (result.isError()) {
+        expect(result.error).toBeInstanceOf(WorkflowAlreadyStartedError);
+      }
+    });
+
+    it("executeWorkflow surfaces WorkflowAlreadyStartedError when start collides", async () => {
+      mockWorkflow.execute.mockRejectedValue(
+        new WorkflowExecutionAlreadyStartedError("already started", "test-123", "testWorkflow"),
+      );
+
+      const result = await typedClient.executeWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
+      });
+
+      expect(result.isError()).toBe(true);
+      if (result.isError()) {
+        expect(result.error).toBeInstanceOf(WorkflowAlreadyStartedError);
+      }
+    });
+
+    it("executeWorkflow surfaces WorkflowFailedError when the workflow run fails", async () => {
+      mockWorkflow.execute.mockRejectedValue(
+        new TemporalWorkflowFailedError(
+          "workflow failed",
+          new Error("boom"),
+          "NON_RETRYABLE_FAILURE",
+        ),
+      );
+
+      const result = await typedClient.executeWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
+      });
+
+      expect(result.isError()).toBe(true);
+      if (result.isError()) {
+        expect(result.error).toBeInstanceOf(WorkflowFailedError);
+        expect((result.error as WorkflowFailedError).workflowId).toBe("test-123");
+      }
+    });
+
+    it("executeWorkflow surfaces WorkflowExecutionNotFoundError on missing exec", async () => {
+      mockWorkflow.execute.mockRejectedValue(
+        new TemporalWorkflowNotFoundError("not found", "test-123", "run-1"),
+      );
+
+      const result = await typedClient.executeWorkflow("testWorkflow", {
+        workflowId: "test-123",
+        args: { name: "hello", value: 42 },
+      });
+
+      expect(result.isError()).toBe(true);
+      if (result.isError()) {
+        expect(result.error).toBeInstanceOf(WorkflowExecutionNotFoundError);
+        const err = result.error as WorkflowExecutionNotFoundError;
+        expect(err.workflowId).toBe("test-123");
+        expect(err.runId).toBe("run-1");
+      }
+    });
+
+    it("handle.result() surfaces WorkflowFailedError", async () => {
+      const cause = new Error("boom");
+      const handle = {
+        workflowId: "test-123",
+        result: vi
+          .fn()
+          .mockRejectedValue(
+            new TemporalWorkflowFailedError("failed", cause, "NON_RETRYABLE_FAILURE"),
+          ),
+        query: vi.fn(),
+        signal: vi.fn(),
+        executeUpdate: vi.fn(),
+        terminate: vi.fn(),
+        cancel: vi.fn(),
+        describe: vi.fn(),
+        fetchHistory: vi.fn(),
+      };
+      mockWorkflow.getHandle.mockReturnValue(handle);
+
+      const handleResult = await typedClient.getHandle("testWorkflow", "test-123");
+      if (!handleResult.isOk()) throw new Error("getHandle should succeed");
+      const result = await handleResult.value.result();
+
+      expect(result.isError()).toBe(true);
+      if (result.isError()) {
+        expect(result.error).toBeInstanceOf(WorkflowFailedError);
+        expect((result.error as WorkflowFailedError).workflowId).toBe("test-123");
+      }
+    });
+
+    it("handle.terminate() surfaces WorkflowExecutionNotFoundError", async () => {
+      const handle = {
+        workflowId: "test-123",
+        result: vi.fn(),
+        query: vi.fn(),
+        signal: vi.fn(),
+        executeUpdate: vi.fn(),
+        terminate: vi
+          .fn()
+          .mockRejectedValue(new TemporalWorkflowNotFoundError("not found", "test-123", undefined)),
+        cancel: vi.fn(),
+        describe: vi.fn(),
+        fetchHistory: vi.fn(),
+      };
+      mockWorkflow.getHandle.mockReturnValue(handle);
+
+      const handleResult = await typedClient.getHandle("testWorkflow", "test-123");
+      if (!handleResult.isOk()) throw new Error("getHandle should succeed");
+      const result = await handleResult.value.terminate("done");
+
+      expect(result.isError()).toBe(true);
+      if (result.isError()) {
+        expect(result.error).toBeInstanceOf(WorkflowExecutionNotFoundError);
+      }
+    });
+
+    it("handle.signals.* surfaces WorkflowExecutionNotFoundError", async () => {
+      const handle = {
+        workflowId: "test-123",
+        result: vi.fn(),
+        query: vi.fn(),
+        signal: vi
+          .fn()
+          .mockRejectedValue(new TemporalWorkflowNotFoundError("not found", "test-123", undefined)),
+        executeUpdate: vi.fn(),
+        terminate: vi.fn(),
+        cancel: vi.fn(),
+        describe: vi.fn(),
+        fetchHistory: vi.fn(),
+      };
+      mockWorkflow.getHandle.mockReturnValue(handle);
+
+      const handleResult = await typedClient.getHandle("testWorkflow", "test-123");
+      if (!handleResult.isOk()) throw new Error("getHandle should succeed");
+      const result = await handleResult.value.signals.updateProgress([50]);
+
+      expect(result.isError()).toBe(true);
+      if (result.isError()) {
+        expect(result.error).toBeInstanceOf(WorkflowExecutionNotFoundError);
+      }
+    });
+
+    it("preserves Temporal's runId on WorkflowExecutionNotFoundError", async () => {
+      const handle = {
+        workflowId: "test-123",
+        result: vi.fn(),
+        query: vi.fn(),
+        signal: vi.fn(),
+        executeUpdate: vi.fn(),
+        terminate: vi.fn(),
+        cancel: vi.fn(),
+        describe: vi
+          .fn()
+          .mockRejectedValue(new TemporalWorkflowNotFoundError("not found", "test-123", "run-xyz")),
+        fetchHistory: vi.fn(),
+      };
+      mockWorkflow.getHandle.mockReturnValue(handle);
+
+      const handleResult = await typedClient.getHandle("testWorkflow", "test-123");
+      if (!handleResult.isOk()) throw new Error("getHandle should succeed");
+      const result = await handleResult.value.describe();
+
+      expect(result.isError()).toBe(true);
+      if (result.isError()) {
+        const err = result.error as WorkflowExecutionNotFoundError;
+        expect(err).toBeInstanceOf(WorkflowExecutionNotFoundError);
+        expect(err.runId).toBe("run-xyz");
+      }
     });
   });
 });

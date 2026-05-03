@@ -2,6 +2,9 @@ import { Client, Connection } from "@temporalio/client";
 import {
   RuntimeClientError,
   TypedClient,
+  WorkflowAlreadyStartedError,
+  WorkflowExecutionNotFoundError,
+  WorkflowFailedError,
   WorkflowNotFoundError,
   WorkflowValidationError,
 } from "@temporal-contract/client";
@@ -96,6 +99,15 @@ async function run() {
         .with(P.instanceOf(WorkflowValidationError), (err) => {
           logger.error({ error: err, orderId: order.orderId }, "❌ Workflow validation failed");
         })
+        .with(P.instanceOf(WorkflowAlreadyStartedError), (err) => {
+          // Idempotent fast-path: a workflow with this ID is already running
+          // (or in retention). Production callers can re-fetch the existing
+          // handle and continue; here we just log and move on.
+          logger.warn(
+            { error: err, orderId: order.orderId },
+            "⏭️  Workflow already started — skipping",
+          );
+        })
         .with(P.instanceOf(RuntimeClientError), (err) => {
           logger.error({ error: err, orderId: order.orderId }, "❌ Failed to start workflow");
         })
@@ -118,6 +130,18 @@ async function run() {
           logger.error(
             { error: err, orderId: order.orderId },
             "❌ Workflow result validation failed",
+          );
+        })
+        .with(P.instanceOf(WorkflowFailedError), (err) => {
+          logger.error(
+            { error: err, orderId: order.orderId, cause: err.cause },
+            "❌ Workflow completed with failure",
+          );
+        })
+        .with(P.instanceOf(WorkflowExecutionNotFoundError), (err) => {
+          logger.error(
+            { error: err, orderId: order.orderId },
+            "❌ Workflow execution not found in namespace",
           );
         })
         .with(P.instanceOf(RuntimeClientError), (err) => {
@@ -192,6 +216,15 @@ async function run() {
       })
       .with(P.instanceOf(WorkflowValidationError), (err) => {
         logger.error({ error: err }, "❌ Validation failed");
+      })
+      .with(P.instanceOf(WorkflowAlreadyStartedError), (err) => {
+        logger.warn({ error: err }, "⏭️  Workflow already started");
+      })
+      .with(P.instanceOf(WorkflowFailedError), (err) => {
+        logger.error({ error: err, cause: err.cause }, "❌ Workflow completed with failure");
+      })
+      .with(P.instanceOf(WorkflowExecutionNotFoundError), (err) => {
+        logger.error({ error: err }, "❌ Workflow execution not found in namespace");
       })
       .with(P.instanceOf(RuntimeClientError), (err) => {
         logger.error({ error: err }, "❌ Workflow execution failed");

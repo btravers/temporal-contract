@@ -6,7 +6,15 @@
  * In-package modules and tests import it directly via relative path.
  */
 import { Future, Result } from "@swan-io/boxed";
-import { RuntimeClientError } from "./errors.js";
+import { WorkflowExecutionAlreadyStartedError } from "@temporalio/client";
+import { WorkflowFailedError as TemporalWorkflowFailedError } from "@temporalio/client";
+import { WorkflowNotFoundError as TemporalWorkflowNotFoundError } from "@temporalio/common";
+import {
+  RuntimeClientError,
+  WorkflowAlreadyStartedError,
+  WorkflowExecutionNotFoundError,
+  WorkflowFailedError,
+} from "./errors.js";
 
 /**
  * Wrap an async result-producing function in a `Future`, catching any
@@ -30,4 +38,66 @@ export function makeFuture<T, E>(
         resolve(Result.Error<T, E | RuntimeClientError>(new RuntimeClientError("unexpected", e))),
       );
   });
+}
+
+/**
+ * Map a thrown error from `client.workflow.start` / `signalWithStart` into
+ * the discriminated union surfaced by the typed client. Specifically
+ * recognizes Temporal's `WorkflowExecutionAlreadyStartedError`; everything
+ * else falls through to {@link RuntimeClientError}.
+ */
+export function classifyStartError(
+  operation: string,
+  error: unknown,
+): WorkflowAlreadyStartedError | RuntimeClientError {
+  if (error instanceof WorkflowExecutionAlreadyStartedError) {
+    return new WorkflowAlreadyStartedError(error.workflowType, error.workflowId, error);
+  }
+  return new RuntimeClientError(operation, error);
+}
+
+/**
+ * Map a thrown error from a workflow handle method (signal, query,
+ * executeUpdate, terminate, cancel, describe, fetchHistory) into the
+ * discriminated union surfaced by the typed client. Recognizes Temporal's
+ * `WorkflowNotFoundError`; everything else falls through to
+ * {@link RuntimeClientError}.
+ *
+ * `fallbackWorkflowId` is used when Temporal's error carries an empty
+ * `workflowId` (it normalizes missing IDs to the empty string), so the
+ * surfaced error always identifies the targeted execution.
+ */
+export function classifyHandleError(
+  operation: string,
+  error: unknown,
+  fallbackWorkflowId: string,
+): WorkflowExecutionNotFoundError | RuntimeClientError {
+  if (error instanceof TemporalWorkflowNotFoundError) {
+    return new WorkflowExecutionNotFoundError(
+      error.workflowId || fallbackWorkflowId,
+      error.runId,
+      error,
+    );
+  }
+  return new RuntimeClientError(operation, error);
+}
+
+/**
+ * Map a thrown error from `handle.result()` / `client.workflow.execute()`
+ * (the latter when waiting on the result phase). Recognizes Temporal's
+ * `WorkflowFailedError` and `WorkflowNotFoundError`; everything else falls
+ * through to {@link RuntimeClientError}.
+ */
+export function classifyResultError(
+  operation: string,
+  error: unknown,
+  workflowId: string,
+): WorkflowFailedError | WorkflowExecutionNotFoundError | RuntimeClientError {
+  if (error instanceof TemporalWorkflowFailedError) {
+    return new WorkflowFailedError(workflowId, error);
+  }
+  if (error instanceof TemporalWorkflowNotFoundError) {
+    return new WorkflowExecutionNotFoundError(error.workflowId || workflowId, error.runId, error);
+  }
+  return new RuntimeClientError(operation, error);
 }

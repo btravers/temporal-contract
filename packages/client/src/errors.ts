@@ -44,6 +44,65 @@ export class WorkflowNotFoundError extends TypedClientError {
 }
 
 /**
+ * Discriminated variant of {@link RuntimeClientError} surfaced when starting
+ * a workflow collides with an existing execution — Temporal's
+ * `WorkflowExecutionAlreadyStartedError`. The most common cause is a
+ * workflowId reuse policy that rejects duplicates while a previous run is
+ * still in retention.
+ *
+ * Distinguishing this from `RuntimeClientError` lets idempotent callers
+ * branch on it explicitly (e.g. fetch the existing handle and continue)
+ * without inspecting `error.cause` against a Temporal SDK class.
+ */
+export class WorkflowAlreadyStartedError extends TypedClientError {
+  constructor(
+    public readonly workflowType: string,
+    public readonly workflowId: string,
+    public override readonly cause?: unknown,
+  ) {
+    super(`Workflow "${workflowType}" with ID "${workflowId}" is already started or in retention.`);
+  }
+}
+
+/**
+ * Discriminated variant of {@link RuntimeClientError} surfaced when handle
+ * operations (`signal`, `query`, `executeUpdate`, `result`, `terminate`,
+ * `cancel`, `describe`, `fetchHistory`) target a workflow execution that
+ * doesn't exist in the namespace — Temporal's `WorkflowNotFoundError`
+ * (distinct from this package's contract-level
+ * {@link WorkflowNotFoundError}).
+ */
+export class WorkflowExecutionNotFoundError extends TypedClientError {
+  constructor(
+    public readonly workflowId: string,
+    public readonly runId?: string,
+    public override readonly cause?: unknown,
+  ) {
+    super(
+      `Workflow execution "${workflowId}"${runId ? ` (run "${runId}")` : ""} not found in namespace.`,
+    );
+  }
+}
+
+/**
+ * Discriminated variant of {@link RuntimeClientError} surfaced when waiting
+ * on a workflow's result and the workflow completes with a failure —
+ * Temporal's `WorkflowFailedError`. The original `cause` (typically an
+ * `ApplicationFailure`, `CancelledFailure`, etc.) is preserved so callers
+ * can branch on the underlying failure category.
+ */
+export class WorkflowFailedError extends TypedClientError {
+  constructor(
+    public readonly workflowId: string,
+    public override readonly cause?: unknown,
+  ) {
+    const causeMessage =
+      cause instanceof Error ? cause.message : String(cause ?? "unknown failure");
+    super(`Workflow "${workflowId}" completed with failure: ${causeMessage}`);
+  }
+}
+
+/**
  * Pattern for string keys safe to render with dot notation. A "safe" key is a
  * JavaScript identifier (letters/digits/underscore/$, not starting with a
  * digit). Anything else — keys containing dots, spaces, leading digits, the
