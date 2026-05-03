@@ -1,4 +1,10 @@
-// Entry point for activities
+// Entry point for activity implementations.
+//
+// Activities run *outside* the workflow sandbox, so they can use any
+// implementation of the Result/Future pattern — we standardize on
+// `@swan-io/boxed` here for its richer API. Workflow code (see workflow.ts)
+// must use `@temporal-contract/boxed` instead, since it's compatible with
+// Temporal's deterministic replay machinery.
 import { ActivityDefinition, ContractDefinition } from "@temporal-contract/contract";
 import { Future, Result } from "@swan-io/boxed";
 import { WorkerInferInput, WorkerInferOutput } from "./types.js";
@@ -7,19 +13,13 @@ import {
   ActivityInputValidationError,
   ActivityOutputValidationError,
 } from "./errors.js";
+import { extractHandlerInput } from "./internal.js";
 
 export {
   ActivityDefinitionNotFoundError,
   ActivityInputValidationError,
   ActivityOutputValidationError,
 } from "./errors.js";
-
-export {
-  getWorkflowActivities,
-  getWorkflowActivityNames,
-  isWorkflowActivity,
-  getWorkflowNames,
-} from "./activity-utils.js";
 
 /**
  * Activity error class that should be used to wrap all technical exceptions
@@ -184,8 +184,7 @@ export function declareActivitiesHandler<TContract extends ContractDefinition>(
     activityImpl: (args: unknown) => Future<Result<unknown, ActivityError>>,
   ) {
     return async (...args: unknown[]) => {
-      // Extract single parameter (Temporal passes arguments as an array)
-      const input = args.length === 1 ? args[0] : args;
+      const input = extractHandlerInput(args);
 
       // Validate input
       const inputResult = await activityDef.input["~standard"].validate(input);
