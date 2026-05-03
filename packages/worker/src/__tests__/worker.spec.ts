@@ -104,7 +104,7 @@ const activities = declareActivitiesHandler({
         return Future.value(
           Result.Error(
             new ActivityError("ACTIVITY_FAILED", "Activity was configured to fail", {
-              shouldFail: true,
+              cause: { shouldFail: true },
             }),
           ),
         );

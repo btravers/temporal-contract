@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Future, Result } from "@swan-io/boxed";
 import { z } from "zod";
+import { ApplicationFailure } from "@temporalio/common";
 import { ActivityDefinitionNotFoundError } from "./errors.js";
 import type { ContractDefinition } from "@temporal-contract/contract";
 import { ActivityError, declareActivitiesHandler } from "./activity.js";
@@ -167,28 +168,28 @@ describe("Worker-Boxed Package", () => {
         },
       } satisfies ContractDefinition;
 
+      const cause = new Error("upstream gateway error");
+
       const activities = declareActivitiesHandler({
         contract,
         activities: {
           failingActivity: (_args) => {
             return Future.value(
-              Result.Error(
-                new ActivityError("ACTIVITY_FAILED", "Something went wrong", {
-                  info: "additional details",
-                }),
-              ),
+              Result.Error(new ActivityError("ACTIVITY_FAILED", "Something went wrong", { cause })),
             );
           },
         },
       });
 
-      // WHEN / THEN - should throw
+      // WHEN / THEN — wrapper rethrows as ApplicationFailure carrying the
+      // ActivityError's code as `type` and the cause as `cause`.
       await expect(activities.failingActivity({ value: "test" })).rejects.toEqual(
         expect.objectContaining({
-          name: "ActivityError",
+          name: "ApplicationFailure",
           message: "Something went wrong",
-          code: "ACTIVITY_FAILED",
-          cause: expect.objectContaining({ info: "additional details" }),
+          type: "ACTIVITY_FAILED",
+          nonRetryable: false,
+          cause,
         }),
       );
     });
@@ -353,6 +354,146 @@ describe("Worker-Boxed Package", () => {
           message: expect.stringContaining("strictOutputActivity"),
         }),
       );
+    });
+
+    describe("ActivityError → ApplicationFailure conversion", () => {
+      // Closes #121 — `ActivityError` now carries Temporal retry-policy
+      // metadata. The wrapper translates it into an `ApplicationFailure` so
+      // Temporal honors the directives at the SDK boundary.
+
+      const contract = {
+        taskQueue: "test-queue",
+        workflows: {},
+        activities: {
+          run: {
+            input: z.object({}),
+            output: z.object({}),
+          },
+        },
+      } satisfies ContractDefinition;
+
+      it("propagates nonRetryable=true through to the thrown ApplicationFailure", async () => {
+        const activities = declareActivitiesHandler({
+          contract,
+          activities: {
+            run: () =>
+              Future.value(
+                Result.Error(
+                  new ActivityError("PAYMENT_DECLINED", "Card was declined", {
+                    nonRetryable: true,
+                  }),
+                ),
+              ),
+          },
+        });
+
+        await expect(activities.run({})).rejects.toEqual(
+          expect.objectContaining({
+            name: "ApplicationFailure",
+            type: "PAYMENT_DECLINED",
+            nonRetryable: true,
+          }),
+        );
+      });
+
+      it("defaults nonRetryable to false when not specified", async () => {
+        const activities = declareActivitiesHandler({
+          contract,
+          activities: {
+            run: () =>
+              Future.value(Result.Error(new ActivityError("TRANSIENT", "Try again later"))),
+          },
+        });
+
+        await expect(activities.run({})).rejects.toMatchObject({
+          name: "ApplicationFailure",
+          type: "TRANSIENT",
+          nonRetryable: false,
+        });
+      });
+
+      it("forwards details and nextRetryDelay onto the ApplicationFailure", async () => {
+        const activities = declareActivitiesHandler({
+          contract,
+          activities: {
+            run: () =>
+              Future.value(
+                Result.Error(
+                  new ActivityError("RATE_LIMITED", "Throttled", {
+                    details: [{ retryAfterSeconds: 30 }, "x-trace-123"],
+                    nextRetryDelay: "30 seconds",
+                  }),
+                ),
+              ),
+          },
+        });
+
+        await expect(activities.run({})).rejects.toMatchObject({
+          name: "ApplicationFailure",
+          type: "RATE_LIMITED",
+          details: [{ retryAfterSeconds: 30 }, "x-trace-123"],
+          nextRetryDelay: "30 seconds",
+        });
+      });
+
+      it("attaches an Error cause but skips non-Error causes", async () => {
+        const cause = new Error("network down");
+
+        const activities = declareActivitiesHandler({
+          contract,
+          activities: {
+            run: () =>
+              Future.value(
+                Result.Error(new ActivityError("UPSTREAM", "Upstream failed", { cause })),
+              ),
+          },
+        });
+
+        await expect(activities.run({})).rejects.toMatchObject({
+          name: "ApplicationFailure",
+          cause,
+        });
+      });
+    });
+
+    describe("ApplicationFailure direct return", () => {
+      // The error variant of Result accepts ApplicationFailure as well, so
+      // consumers who already use Temporal's standard error class don't have
+      // to wrap it.
+
+      it("forwards a returned ApplicationFailure unchanged", async () => {
+        const contract = {
+          taskQueue: "test-queue",
+          workflows: {},
+          activities: {
+            run: {
+              input: z.object({}),
+              output: z.object({}),
+            },
+          },
+        } satisfies ContractDefinition;
+
+        const activities = declareActivitiesHandler({
+          contract,
+          activities: {
+            run: () =>
+              Future.value(
+                Result.Error(
+                  ApplicationFailure.nonRetryable("permission denied", "PERMISSION_DENIED"),
+                ),
+              ),
+          },
+        });
+
+        await expect(activities.run({})).rejects.toEqual(
+          expect.objectContaining({
+            name: "ApplicationFailure",
+            type: "PERMISSION_DENIED",
+            nonRetryable: true,
+            message: "permission denied",
+          }),
+        );
+      });
     });
   });
 });
