@@ -74,28 +74,6 @@ describe("Result", () => {
       // THEN
       expect(value).toBe(42);
     });
-
-    it("should getWithDefault return the value", () => {
-      // GIVEN
-      const result = Result.Ok(42);
-
-      // WHEN
-      const value = result.getWithDefault(0);
-
-      // THEN
-      expect(value).toBe(42);
-    });
-
-    it("should convert to Some option", () => {
-      // GIVEN
-      const result = Result.Ok(42);
-
-      // WHEN
-      const option = result.toOption();
-
-      // THEN
-      expect(option).toEqual({ tag: "Some", value: 42 });
-    });
   });
 
   describe("Error", () => {
@@ -169,28 +147,6 @@ describe("Result", () => {
 
       // THEN
       expect(value).toBe(42);
-    });
-
-    it("should getWithDefault return default value", () => {
-      // GIVEN
-      const result: Result<number, string> = Result.Error("error");
-
-      // WHEN
-      const value = result.getWithDefault(42);
-
-      // THEN
-      expect(value).toBe(42);
-    });
-
-    it("should convert to None option", () => {
-      // GIVEN
-      const result = Result.Error("error");
-
-      // WHEN
-      const option = result.toOption();
-
-      // THEN
-      expect(option.tag).toBe("None");
     });
   });
 

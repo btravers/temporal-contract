@@ -48,16 +48,8 @@ export class Ok<T, E> {
     return this.value;
   }
 
-  getWithDefault(_defaultValue: T): T {
-    return this.value;
-  }
-
   match<R>(pattern: { Ok: (value: T) => R; Error: (error: E) => R }): R {
     return pattern.Ok(this.value);
-  }
-
-  toOption(): Option<T> {
-    return { tag: "Some" as const, value: this.value };
   }
 }
 
@@ -103,23 +95,10 @@ export class Err<T, E> {
     return defaultValue;
   }
 
-  getWithDefault(defaultValue: T): T {
-    return defaultValue;
-  }
-
   match<R>(pattern: { Ok: (value: T) => R; Error: (error: E) => R }): R {
     return pattern.Error(this.error);
   }
-
-  toOption(): Option<T> {
-    return { tag: "None" as const };
-  }
 }
-
-/**
- * Option type for Result.toOption()
- */
-export type Option<T> = { tag: "Some"; value: T } | { tag: "None" };
 
 /**
  * Result namespace with factory methods
@@ -131,21 +110,37 @@ export const Result = {
   isOk: <T, E>(result: Result<T, E>): result is Ok<T, E> => result.isOk(),
   isError: <T, E>(result: Result<T, E>): result is Err<T, E> => result.isError(),
 
-  fromExecution: <T, E = globalThis.Error>(fn: () => T): Result<T, E> => {
+  /**
+   * Run a synchronous function, capturing any thrown value as `Result.Error`.
+   *
+   * The error is typed as `unknown` because anything can be thrown in
+   * JavaScript. Narrow it via `.mapError(...)` at the call site:
+   *
+   * @example
+   * ```ts
+   * const parsed = Result.fromExecution(() => JSON.parse(input))
+   *   .mapError((e) => e instanceof SyntaxError ? e : new Error(String(e)));
+   * ```
+   */
+  fromExecution: <T>(fn: () => T): Result<T, unknown> => {
     try {
-      return new Ok<T, E>(fn());
+      return new Ok<T, unknown>(fn());
     } catch (error) {
-      return new Err<T, E>(error as E);
+      return new Err<T, unknown>(error);
     }
   },
 
-  fromAsyncExecution: async <T, E = globalThis.Error>(
-    fn: () => Promise<T>,
-  ): Promise<Result<T, E>> => {
+  /**
+   * Run an async function, capturing any rejection as `Result.Error`.
+   *
+   * The error is typed as `unknown`; narrow it via `.mapError(...)` on the
+   * resulting `Result`.
+   */
+  fromAsyncExecution: async <T>(fn: () => Promise<T>): Promise<Result<T, unknown>> => {
     try {
-      return new Ok<T, E>(await fn());
+      return new Ok<T, unknown>(await fn());
     } catch (error) {
-      return new Err<T, E>(error as E);
+      return new Err<T, unknown>(error);
     }
   },
 
