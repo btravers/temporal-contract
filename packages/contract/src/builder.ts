@@ -383,11 +383,18 @@ const contractValidationSchema = z
     // duplicate name silently clobbers another. Catch all collisions here:
     // 1. workflow-specific vs. global, and
     // 2. workflow-specific vs. other workflow-specific.
-    const owners = new Map<string, string>();
+    //
+    // The global owner is tracked with a Symbol rather than a sentinel string
+    // because workflow names are only validated as JS identifiers — a user
+    // could legitimately name a workflow "global", and a string sentinel would
+    // misclassify those collisions.
+    const GLOBAL_OWNER: unique symbol = Symbol("global");
+    type Owner = string | typeof GLOBAL_OWNER;
+    const owners = new Map<string, Owner>();
 
     if (contract.activities) {
       for (const activityName of Object.keys(contract.activities)) {
-        owners.set(activityName, "global");
+        owners.set(activityName, GLOBAL_OWNER);
       }
     }
 
@@ -397,14 +404,14 @@ const contractValidationSchema = z
       }
       for (const activityName of Object.keys(workflow.activities)) {
         const previousOwner = owners.get(activityName);
-        if (previousOwner === "global") {
+        if (previousOwner === GLOBAL_OWNER) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: `workflow "${workflowName}" has activity "${activityName}" that conflicts with a global activity. Consider renaming the workflow-specific activity or removing the global activity "${activityName}".`,
           });
           continue;
         }
-        if (previousOwner !== undefined) {
+        if (typeof previousOwner === "string") {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: `workflow "${workflowName}" has activity "${activityName}" that conflicts with the same-named activity in workflow "${previousOwner}". Activities share a single flat namespace at runtime — rename one of them.`,
