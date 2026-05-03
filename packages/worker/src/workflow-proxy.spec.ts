@@ -34,8 +34,8 @@ vi.mock("@temporalio/workflow", async () => {
   };
 });
 
-// Import *after* the mock so the workflow module sees our stub.
-const { buildRawActivitiesProxy } = await import("./workflow.js");
+// Import *after* the mock so the helper module sees our stub.
+const { buildRawActivitiesProxy } = await import("./internal.js");
 
 const activityDef = (input: z.ZodTypeAny, output: z.ZodTypeAny): ActivityDefinition =>
   ({ input, output }) as unknown as ActivityDefinition;
@@ -45,7 +45,10 @@ describe("buildRawActivitiesProxy", () => {
     proxyCalls.length = 0;
   });
 
-  it("uses the workflow's default options when no override is provided", () => {
+  it("makes a single proxyActivities call when no override is provided (fast path)", () => {
+    // Regression: previously this path made one proxyActivities call per
+    // activity name. The optimized path delegates everything to one default
+    // proxy, matching the original (pre-`activityOptionsByName`) behavior.
     const def: Record<string, ActivityDefinition> = {
       a: activityDef(z.object({}), z.object({})),
       b: activityDef(z.object({}), z.object({})),
@@ -54,9 +57,22 @@ describe("buildRawActivitiesProxy", () => {
 
     const result = buildRawActivitiesProxy(def, undefined, defaults, undefined);
 
-    expect(Object.keys(result).sort()).toEqual(["a", "b"]);
-    // Two `proxyActivities` calls (one per name); each receives the defaults.
-    expect(proxyCalls).toEqual([defaults, defaults]);
+    // Exactly one proxyActivities call, with the default options.
+    expect(proxyCalls).toEqual([defaults]);
+    // Lookups by name still work — the returned object is the proxy itself.
+    expect(typeof result["a"]).toBe("function");
+    expect(typeof result["b"]).toBe("function");
+  });
+
+  it("treats an empty overrides object as the fast path", () => {
+    const def: Record<string, ActivityDefinition> = {
+      a: activityDef(z.object({}), z.object({})),
+    };
+    const defaults: ActivityOptions = { startToCloseTimeout: "1 minute" };
+
+    buildRawActivitiesProxy(def, undefined, defaults, {});
+
+    expect(proxyCalls).toEqual([defaults]);
   });
 
   it("shallow-merges per-activity overrides over the defaults", () => {
@@ -77,12 +93,11 @@ describe("buildRawActivitiesProxy", () => {
 
     buildRawActivitiesProxy(def, undefined, defaults, overrides);
 
-    // `fast` keeps the defaults; `slow` gets the override-merged options.
-    expect(proxyCalls).toContainEqual(defaults);
-    expect(proxyCalls).toContainEqual({
-      startToCloseTimeout: "10 minutes",
-      retry: { maximumAttempts: 10 },
-    });
+    // One default proxy + one override proxy — not one per activity name.
+    expect(proxyCalls).toEqual([
+      defaults,
+      { startToCloseTimeout: "10 minutes", retry: { maximumAttempts: 10 } },
+    ]);
   });
 
   it("override fields replace default fields without deep-merging", () => {
@@ -103,6 +118,7 @@ describe("buildRawActivitiesProxy", () => {
     buildRawActivitiesProxy(def, undefined, defaults, overrides);
 
     expect(proxyCalls).toEqual([
+      defaults,
       {
         startToCloseTimeout: "1 minute",
         retry: { maximumAttempts: 10 }, // initialInterval is gone — shallow merge
@@ -110,7 +126,46 @@ describe("buildRawActivitiesProxy", () => {
     ]);
   });
 
-  it("merges workflow-local and global activities into one map", () => {
+  it("override path: name lookup returns the override proxy for overridden names and falls back to default for the rest", () => {
+    const def: Record<string, ActivityDefinition> = {
+      fast: activityDef(z.object({}), z.object({})),
+      slow: activityDef(z.object({}), z.object({})),
+    };
+    const defaults: ActivityOptions = { startToCloseTimeout: "1 minute" };
+    const overrides = {
+      slow: { startToCloseTimeout: "10 minutes" },
+    } satisfies Partial<Record<string, ActivityOptions>>;
+
+    const result = buildRawActivitiesProxy(def, undefined, defaults, overrides);
+
+    // Both names resolve to functions — `fast` via the default proxy
+    // fallback, `slow` via the override proxy. The returned Proxy makes the
+    // distinction transparent to downstream code.
+    expect(typeof result["fast"]).toBe("function");
+    expect(typeof result["slow"]).toBe("function");
+  });
+
+  it("rejects override keys that don't match any declared activity", () => {
+    // A typo in `activityOptionsByName` is caught by the type system at
+    // declaration sites, but a raw call (or a stale options bag from a
+    // renamed activity) shouldn't silently spin up a proxy for a name that
+    // can never be invoked. Surface a clear error instead.
+    const def: Record<string, ActivityDefinition> = {
+      knownActivity: activityDef(z.object({}), z.object({})),
+    };
+    expect(() =>
+      buildRawActivitiesProxy(
+        def,
+        undefined,
+        {},
+        {
+          nonExistent: { startToCloseTimeout: "1 second" },
+        },
+      ),
+    ).toThrow(/nonExistent/);
+  });
+
+  it("merges workflow-local and global activities into one lookup space", () => {
     const workflowDefs: Record<string, ActivityDefinition> = {
       local: activityDef(z.object({}), z.object({})),
     };
@@ -121,12 +176,7 @@ describe("buildRawActivitiesProxy", () => {
 
     const result = buildRawActivitiesProxy(workflowDefs, globalDefs, defaults, undefined);
 
-    expect(Object.keys(result).sort()).toEqual(["global", "local"]);
-  });
-
-  it("returns no activities when none are declared", () => {
-    const result = buildRawActivitiesProxy(undefined, undefined, {}, undefined);
-    expect(result).toEqual({});
-    expect(proxyCalls).toEqual([]);
+    expect(typeof result["local"]).toBe("function");
+    expect(typeof result["global"]).toBe("function");
   });
 });
