@@ -1,4 +1,10 @@
-// Entry point for workflows
+// Entry point for workflow implementations.
+//
+// Workflows run inside Temporal's deterministic sandbox, which intercepts
+// timers, randomness, and Promise scheduling for replay. We use the in-house
+// `@temporal-contract/boxed` `Result`/`Future` here because they don't reach
+// for any non-deterministic primitive. Activity code (see activity.ts) is not
+// subject to this constraint and uses `@swan-io/boxed` instead.
 import {
   ActivityDefinition,
   ContractDefinition,
@@ -27,6 +33,7 @@ import {
   WorkerInferOutput,
 } from "./types.js";
 import { Future, Result } from "@temporal-contract/boxed";
+import { extractHandlerInput } from "./internal.js";
 import {
   ActivityOptions,
   ChildWorkflowHandle,
@@ -138,8 +145,7 @@ export function declareWorkflow<
   ] as TContract["workflows"][TWorkflowName];
 
   return async (...args: unknown[]) => {
-    // Extract single parameter (Temporal passes arguments as array)
-    const input = args.length === 1 ? args[0] : args;
+    const input = extractHandlerInput(args);
 
     // Validate workflow input
     const inputResult = await definition.input["~standard"].validate(input);
@@ -176,7 +182,13 @@ export function declareWorkflow<
       );
     }
 
-    // Context methods for defining signals, queries, and updates
+    // Context methods for defining signals, queries, and updates.
+    //
+    // The runtime defensive checks for "signal/query/update kind not declared
+    // in the contract" are intentionally absent: the type signature
+    // `K extends keyof TContract["workflows"][TWorkflowName]["signals"]` is
+    // `keyof never = never` when the workflow has no signals declared, so the
+    // call site cannot type-check unless the contract already lists the kind.
     function createDefineSignal<
       TSignalName extends keyof TContract["workflows"][TWorkflowName]["signals"],
     >(
@@ -187,25 +199,13 @@ export function declareWorkflow<
           : never
       >,
     ): void {
-      if (!definition.signals) {
-        throw new Error(
-          `Signal "${String(signalName)}" cannot be defined: workflow "${String(workflowName)}" has no signals in its contract`,
-        );
-      }
-
       const signalDef = (definition.signals as Record<string, SignalDefinition>)[
         signalName as string
-      ];
-      if (!signalDef) {
-        throw new Error(
-          `Signal "${String(signalName)}" not found in workflow "${String(workflowName)}" contract`,
-        );
-      }
+      ] as SignalDefinition;
 
       const signal = defineSignal(signalName as string);
       setHandler(signal, async (...args: unknown[]) => {
-        // Extract single parameter (Temporal passes as args array)
-        const input = args.length === 1 ? args[0] : args;
+        const input = extractHandlerInput(args);
         const inputResult = await signalDef.input["~standard"].validate(input);
         if (inputResult.issues) {
           throw new SignalInputValidationError(signalName as string, inputResult.issues);
@@ -224,23 +224,13 @@ export function declareWorkflow<
           : never
       >,
     ): void {
-      if (!definition.queries) {
-        throw new Error(
-          `Query "${String(queryName)}" cannot be defined: workflow "${String(workflowName)}" has no queries in its contract`,
-        );
-      }
-
-      const queryDef = (definition.queries as Record<string, QueryDefinition>)[queryName as string];
-      if (!queryDef) {
-        throw new Error(
-          `Query "${String(queryName)}" not found in workflow "${String(workflowName)}" contract`,
-        );
-      }
+      const queryDef = (definition.queries as Record<string, QueryDefinition>)[
+        queryName as string
+      ] as QueryDefinition;
 
       const query = defineQuery(queryName as string);
       setHandler(query, (...args: unknown[]) => {
-        // Extract single parameter (Temporal passes as args array)
-        const input = args.length === 1 ? args[0] : args;
+        const input = extractHandlerInput(args);
         // Note: Query handlers must be synchronous, so we need to handle validation synchronously
         const inputResult = queryDef.input["~standard"].validate(input);
 
@@ -282,25 +272,13 @@ export function declareWorkflow<
           : never
       >,
     ): void {
-      if (!definition.updates) {
-        throw new Error(
-          `Update "${String(updateName)}" cannot be defined: workflow "${String(workflowName)}" has no updates in its contract`,
-        );
-      }
-
       const updateDef = (definition.updates as Record<string, UpdateDefinition>)[
         updateName as string
-      ];
-      if (!updateDef) {
-        throw new Error(
-          `Update "${String(updateName)}" not found in workflow "${String(workflowName)}" contract`,
-        );
-      }
+      ] as UpdateDefinition;
 
       const update = defineUpdate(updateName as string);
       setHandler(update, async (...args: unknown[]) => {
-        // Extract single parameter (Temporal passes as args array)
-        const input = args.length === 1 ? args[0] : args;
+        const input = extractHandlerInput(args);
         const inputResult = await updateDef.input["~standard"].validate(input);
         if (inputResult.issues) {
           throw new UpdateInputValidationError(updateName as string, inputResult.issues);
