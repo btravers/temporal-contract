@@ -39,7 +39,7 @@ pnpm add @temporal-contract/boxed
 Activities use `@swan-io/boxed` for excellent performance and ecosystem compatibility:
 
 ```typescript
-import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { declareActivitiesHandler, ApplicationFailure } from "@temporal-contract/worker/activity";
 import { Future, Result } from "@swan-io/boxed";
 import { orderContract } from "./contract";
 
@@ -48,26 +48,24 @@ export const activities = declareActivitiesHandler({
   activities: {
     processPayment: ({ amount }) => {
       return Future.fromPromise(paymentGateway.charge(amount))
-        .mapError(
-          (error) =>
-            new ActivityError(
-              "PAYMENT_FAILED",
-              error instanceof Error ? error.message : "Payment failed",
-              error,
-            ),
+        .mapError((error) =>
+          ApplicationFailure.create({
+            type: "PAYMENT_FAILED",
+            message: error instanceof Error ? error.message : "Payment failed",
+            cause: error,
+          }),
         )
         .mapOk((txId) => ({ transactionId: txId, success: true }));
     },
 
     sendEmail: ({ to, body }) => {
       return Future.fromPromise(emailService.send({ to, body }))
-        .mapError(
-          (error) =>
-            new ActivityError(
-              "EMAIL_FAILED",
-              error instanceof Error ? error.message : "Email failed",
-              error,
-            ),
+        .mapError((error) =>
+          ApplicationFailure.create({
+            type: "EMAIL_FAILED",
+            message: error instanceof Error ? error.message : "Email failed",
+            cause: error,
+          }),
         )
         .mapOk(() => ({ sent: true }));
     },
@@ -245,13 +243,15 @@ type EmailError = { type: "InvalidEmail" } | { type: "ServiceUnavailable" };
 // Activities return Future with typed errors
 processPayment: ({ amount }) => {
   return Future.fromPromise(paymentGateway.charge(amount))
-    .mapError<ActivityError>((error) => {
-      // Wrap domain errors in ActivityError for Temporal retry policies
-      return new ActivityError(
-        "PAYMENT_FAILED",
-        error instanceof Error ? error.message : "Payment failed",
-        error,
-      );
+    .mapError<ApplicationFailure>((error) => {
+      // Wrap domain errors in ApplicationFailure so Temporal applies the
+      // configured retry policy; set `nonRetryable: true` for permanent
+      // failures.
+      return ApplicationFailure.create({
+        type: "PAYMENT_FAILED",
+        message: error instanceof Error ? error.message : "Payment failed",
+        ...(error instanceof Error ? { cause: error } : {}),
+      });
     })
     .mapOk((txId) => ({ transactionId: txId }));
 };
@@ -267,7 +267,13 @@ Activities use the Result pattern internally, while workflows use try/catch:
 // Activity implementation (uses Result pattern)
 const processPayment = ({ amount }) => {
   return Future.fromPromise(paymentGateway.charge(amount))
-    .mapError((error) => new ActivityError("PAYMENT_FAILED", "Payment failed", error))
+    .mapError((error) =>
+      ApplicationFailure.create({
+        type: "PAYMENT_FAILED",
+        message: "Payment failed",
+        cause: error,
+      }),
+    )
     .mapOk((txId) => ({ transactionId: txId }));
 };
 
@@ -297,7 +303,13 @@ Activities explicitly return Results instead of throwing:
 // ✅ Clear - activity returns Future<Result>
 const processPayment = ({ amount }) => {
   return Future.fromPromise(paymentGateway.charge(amount))
-    .mapError((error) => new ActivityError("PAYMENT_FAILED", "Payment failed", error))
+    .mapError((error) =>
+      ApplicationFailure.create({
+        type: "PAYMENT_FAILED",
+        message: "Payment failed",
+        cause: error,
+      }),
+    )
     .mapOk((txId) => ({ transactionId: txId }));
 };
 
@@ -333,7 +345,13 @@ const processOrder = ({ orderId }) => {
     .flatMap((validId) => fetchOrder(validId))
     .flatMap((order) => processPayment(order))
     .flatMap((payment) => updateDatabase(payment))
-    .mapError((error) => new ActivityError("ORDER_FAILED", "Order processing failed", error));
+    .mapError((error) =>
+      ApplicationFailure.create({
+        type: "ORDER_FAILED",
+        message: "Order processing failed",
+        cause: error,
+      }),
+    );
   // Stops at first error
 };
 ```
@@ -484,7 +502,7 @@ export const orderWorkflow = declareWorkflow({
 
 - **In Activity Implementations**: Always use Future/Result pattern for explicit error handling
 - **For Child Workflows**: Child workflows return Results for explicit error handling
-- **For Type-Safe Errors**: When you need ActivityError with proper retry policies
+- **For Type-Safe Errors**: When you need `ApplicationFailure` with `type` / `nonRetryable` for proper retry policies
 
 ### Use Standard async/await When:
 

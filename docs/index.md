@@ -75,7 +75,7 @@ export const orderContract = defineContract({
 
 ```typescript [2. Implement Activities]
 import { Future } from "@swan-io/boxed";
-import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { declareActivitiesHandler, ApplicationFailure } from "@temporal-contract/worker/activity";
 import { orderContract } from "./contract";
 
 export const activities = declareActivitiesHandler({
@@ -85,11 +85,17 @@ export const activities = declareActivitiesHandler({
       processPayment: ({ customerId, amount }) => {
         return Future.fromPromise(paymentService.charge(customerId, amount))
           .mapOk((tx) => ({ transactionId: tx.id }))
-          .mapError((e) => new ActivityError("PAYMENT_FAILED", e.message, e));
+          .mapError((e) =>
+            ApplicationFailure.create({
+              type: "PAYMENT_FAILED",
+              message: e.message,
+              cause: e,
+            }),
+          );
       },
       sendNotification: ({ customerId, message }) => {
-        return Future.fromPromise(notificationService.send(customerId, message)).mapError(
-          (e) => new ActivityError("NOTIFICATION_FAILED", e.message, e),
+        return Future.fromPromise(notificationService.send(customerId, message)).mapError((e) =>
+          ApplicationFailure.create({ type: "NOTIFICATION_FAILED", message: e.message, cause: e }),
         );
       },
     },

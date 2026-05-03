@@ -15,7 +15,7 @@ pnpm dev
 ## What It Demonstrates
 
 - ✅ Type-safe contracts with Zod
-- ✅ Result/Future pattern with ActivityError for explicit error handling
+- ✅ Result/Future pattern with ApplicationFailure for explicit error handling
 - ✅ Clean Architecture (Domain → Infrastructure → Application)
 - ✅ Dependency injection for testability
 - ✅ Error handling with compensating actions

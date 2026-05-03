@@ -7,7 +7,7 @@ import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { testContract } from "./test.contract.js";
 import { Client } from "@temporalio/client";
-import { ActivityError, declareActivitiesHandler } from "../activity.js";
+import { ApplicationFailure, declareActivitiesHandler } from "../activity.js";
 import { createWorker } from "../worker.js";
 
 // ============================================================================
@@ -103,8 +103,10 @@ const activities = declareActivitiesHandler({
       if (shouldFail) {
         return Future.value(
           Result.Error(
-            new ActivityError("ACTIVITY_FAILED", "Activity was configured to fail", {
-              shouldFail: true,
+            ApplicationFailure.create({
+              type: "ACTIVITY_FAILED",
+              message: "Activity was configured to fail",
+              details: [{ shouldFail: true }],
             }),
           ),
         );
@@ -496,7 +498,7 @@ describe("Worker Package - Integration Tests", () => {
   });
 
   describe.skip("Error Handling", () => {
-    it("should propagate ActivityError from activity to workflow", async ({ client }) => {
+    it("should propagate ApplicationFailure from activity to workflow", async ({ client }) => {
       // GIVEN
       const input = { shouldFail: true };
 
@@ -506,12 +508,15 @@ describe("Worker Package - Integration Tests", () => {
         args: input,
       });
 
-      // THEN
+      // THEN — at the workflow boundary Temporal wraps the activity's
+      // ApplicationFailure in an ActivityFailure (cause is the original
+      // ApplicationFailure with the type/message/details preserved).
       expect(result.isError()).toBe(true);
       if (result.isOk()) throw new Error("Expected error result");
       const error = result.error;
-      expect(error).toBeInstanceOf(ActivityError);
       expect(error.message).toMatch(/failableActivity failed/);
+      // Inner cause carries the ApplicationFailure from the activity.
+      expect((error as { cause?: unknown }).cause).toBeInstanceOf(ApplicationFailure);
     });
   });
 });

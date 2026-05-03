@@ -354,7 +354,7 @@ Error: Validation failed: [
 **Symptoms:**
 
 ```
-Error: Activity task failed: ActivityError
+Error: Activity task failed: ApplicationFailure
 ```
 
 **Cause:** Activity threw an error or returned an error result.
@@ -368,7 +368,9 @@ Error: Activity task failed: ActivityError
    processPayment: ({ customerId, amount }) => {
      return Future.fromPromise(paymentService.charge(customerId, amount))
        .mapOk((tx) => ({ transactionId: tx.id }))
-       .mapError((e) => new ActivityError("PAYMENT_FAILED", e.message, e));
+       .mapError((e) => ApplicationFailure.create({
+   type: "PAYMENT_FAILED",
+   message: e.message, e));
    };
    ```
 
@@ -381,7 +383,8 @@ Error: Activity task failed: ActivityError
        return { status: "success", transactionId: payment.transactionId };
      } catch (error) {
        // Handle activity failure
-       return { status: "failed", transactionId: undefined };
+       return { status: "failed",
+   cause: transactionId: undefined };
      }
    };
    ```
@@ -409,7 +412,8 @@ Error: Cannot find module './workflows'
    ```typescript
    // ✅ Use require.resolve for correct path
    const worker = await Worker.create({
-     workflowsPath: require.resolve("./workflows"),
+     workflowsPath: require.resolve("./workflows",
+   }),
      // ...
    });
    ```
@@ -451,7 +455,7 @@ processPayment: () => {
 processPayment: ({ customerId, amount }) => {
   return Future.fromPromise(paymentService.charge(customerId, amount))
     .mapOk((tx) => ({ transactionId: tx.id }))
-    .mapError((e) => new ActivityError("PAYMENT_FAILED", e.message));
+    .mapError((e) => ApplicationFailure.create({ type: "PAYMENT_FAILED", message: e.message }));
 };
 ```
 

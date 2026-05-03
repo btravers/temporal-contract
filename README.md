@@ -47,7 +47,7 @@ const contract = defineContract({
 });
 
 // Implement activities with Future/Result pattern
-import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { declareActivitiesHandler, ApplicationFailure } from "@temporal-contract/worker/activity";
 import { Future } from "@swan-io/boxed";
 
 const activities = declareActivitiesHandler({
@@ -55,10 +55,13 @@ const activities = declareActivitiesHandler({
   activities: {
     processPayment: ({ orderId }) => {
       return Future.fromPromise(paymentService.process(orderId))
-        .mapError((error) => new ActivityError("PAYMENT_FAILED", "Payment failed", error))
+        .mapError((error) => ApplicationFailure.create({
+  type: "PAYMENT_FAILED",
+  message: "Payment failed", error))
         .mapOk((txId) => ({ transactionId: txId }));
     },
   },
+  cause: },
 });
 
 // Call from client - fully typed everywhere

@@ -5,7 +5,7 @@
 Use `declareActivitiesHandler` with Result/Future pattern:
 
 ```typescript
-import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { declareActivitiesHandler, ApplicationFailure } from "@temporal-contract/worker/activity";
 import { Future, Result } from "@swan-io/boxed";
 
 export const activities = declareActivitiesHandler({
@@ -19,13 +19,16 @@ export const activities = declareActivitiesHandler({
         } catch (error) {
           resolve(
             Result.Error(
-              new ActivityError("INVENTORY_CHECK_FAILED", "Failed to check inventory", error),
+              ApplicationFailure.create({
+  type: "INVENTORY_CHECK_FAILED",
+  message: "Failed to check inventory", error),
             ),
           );
         }
       });
     },
   },
+  cause: },
 });
 ```
 
@@ -69,6 +72,6 @@ await worker.run();
 
 ## Anti-patterns
 
-- **Never throw** from activities — use `Result.Error(new ActivityError(...))` instead
+- **Never throw** from activities — use `Result.Error(ApplicationFailure.create({ type, message, nonRetryable }))` instead
 - **Never use `any`** — use `unknown` and validate with schemas
 - **Always use `.js` extensions** in imports (even for TypeScript files)

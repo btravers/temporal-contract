@@ -11,9 +11,9 @@
 ## Error Handling
 
 - Use `Result<T, E>` pattern instead of throwing exceptions
-- Activities return `Future<Result<T, ActivityError>>`
+- Activities return `Future<Result<T, ApplicationFailure>>`
 - Client methods return `Future<Result<T, E>>` with specific error types
-- Wrap technical exceptions in `ActivityError` with error codes
+- Wrap technical exceptions in `ApplicationFailure` (re-exported from `@temporal-contract/worker/activity`) with a `type` field; set `nonRetryable: true` for permanent failures
 
 ## Module System
 

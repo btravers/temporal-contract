@@ -3,7 +3,7 @@ import { Future, Result } from "@swan-io/boxed";
 import { z } from "zod";
 import { ActivityDefinitionNotFoundError } from "./errors.js";
 import type { ContractDefinition } from "@temporal-contract/contract";
-import { ActivityError, declareActivitiesHandler } from "./activity.js";
+import { ApplicationFailure, declareActivitiesHandler } from "./activity.js";
 
 describe("Worker-Boxed Package", () => {
   describe("declareActivitiesHandler", () => {
@@ -114,7 +114,7 @@ describe("Worker-Boxed Package", () => {
         activities: {
           fetchData: (
             _args,
-          ): Future<Result<{ data: string; timestamp: number }, ActivityError>> => {
+          ): Future<Result<{ data: string; timestamp: number }, ApplicationFailure>> => {
             // @ts-expect-error - intentionally returning invalid output
             return Future.value(Result.Ok({ data: "test" })); // Missing timestamp
           },
@@ -173,8 +173,10 @@ describe("Worker-Boxed Package", () => {
           failingActivity: (_args) => {
             return Future.value(
               Result.Error(
-                new ActivityError("ACTIVITY_FAILED", "Something went wrong", {
-                  info: "additional details",
+                ApplicationFailure.create({
+                  type: "ACTIVITY_FAILED",
+                  message: "Something went wrong",
+                  details: [{ info: "additional details" }],
                 }),
               ),
             );
@@ -182,15 +184,57 @@ describe("Worker-Boxed Package", () => {
         },
       });
 
-      // WHEN / THEN - should throw
-      await expect(activities.failingActivity({ value: "test" })).rejects.toEqual(
-        expect.objectContaining({
-          name: "ActivityError",
-          message: "Something went wrong",
-          code: "ACTIVITY_FAILED",
-          cause: expect.objectContaining({ info: "additional details" }),
-        }),
+      // WHEN / THEN - should throw the ApplicationFailure unchanged so
+      // Temporal recognizes the type/message/details when serializing.
+      const rejected = await activities.failingActivity({ value: "test" }).then(
+        () => {
+          throw new Error("expected rejection");
+        },
+        (err: unknown) => err,
       );
+      expect(rejected).toBeInstanceOf(ApplicationFailure);
+      expect((rejected as ApplicationFailure).type).toBe("ACTIVITY_FAILED");
+      expect((rejected as ApplicationFailure).message).toBe("Something went wrong");
+      expect((rejected as ApplicationFailure).details).toEqual([{ info: "additional details" }]);
+    });
+
+    it("forwards `nonRetryable: true` to Temporal so retry policies skip the failure", async () => {
+      const contract = {
+        taskQueue: "test-queue",
+        workflows: {},
+        activities: {
+          permanentlyFailingActivity: {
+            input: z.object({}),
+            output: z.object({}),
+          },
+        },
+      } satisfies ContractDefinition;
+
+      const activities = declareActivitiesHandler({
+        contract,
+        activities: {
+          permanentlyFailingActivity: (_args) => {
+            return Future.value(
+              Result.Error(
+                ApplicationFailure.create({
+                  type: "PERMANENT",
+                  message: "do not retry",
+                  nonRetryable: true,
+                }),
+              ),
+            );
+          },
+        },
+      });
+
+      const rejected = await activities.permanentlyFailingActivity({}).then(
+        () => {
+          throw new Error("expected rejection");
+        },
+        (err: unknown) => err,
+      );
+      expect(rejected).toBeInstanceOf(ApplicationFailure);
+      expect((rejected as ApplicationFailure).nonRetryable).toBe(true);
     });
 
     it("should handle Future properly", async () => {
@@ -210,7 +254,7 @@ describe("Worker-Boxed Package", () => {
         contract,
         activities: {
           asyncActivity: (args) => {
-            return Future.make<Result<{ completed: boolean }, ActivityError>>((resolve) => {
+            return Future.make<Result<{ completed: boolean }, ApplicationFailure>>((resolve) => {
               setTimeout(() => {
                 resolve(Result.Ok({ completed: true }));
               }, args.delay);

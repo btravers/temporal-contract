@@ -65,11 +65,11 @@ result.match({
 
 ### Activities
 
-Activities return `Future<Result<T, ActivityError>>` for explicit error handling:
+Activities return `Future<Result<T, ApplicationFailure>>` for explicit error handling:
 
 ```typescript
 import { Future, Result } from "@swan-io/boxed";
-import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { declareActivitiesHandler, ApplicationFailure } from "@temporal-contract/worker/activity";
 
 export const activities = declareActivitiesHandler({
   contract,
@@ -77,13 +77,12 @@ export const activities = declareActivitiesHandler({
     processOrder: {
       processPayment: (args) => {
         return Future.fromPromise(paymentService.charge(args))
-          .mapError(
-            (error) =>
-              new ActivityError(
-                "PAYMENT_FAILED",
-                error instanceof Error ? error.message : String(error),
-                error,
-              ),
+          .mapError((error) =>
+            ApplicationFailure.create({
+              type: "PAYMENT_FAILED",
+              message: error instanceof Error ? error.message : String(error),
+              cause: error,
+            }),
           )
           .mapOk((result) => ({ transactionId: result.id }));
       },
