@@ -164,4 +164,77 @@ describe("context.continueAsNew", () => {
 
     expect(captured[0]?.options.workflowType).toBe("evil");
   });
+
+  describe("cross-contract dispatch heuristic", () => {
+    // Same-workflow inputs that happen to share keys with a contract
+    // shouldn't be misrouted into the cross-contract branch. The dispatch
+    // requires both: (1) `arg1` looks contract-shaped (taskQueue: string,
+    // workflows: non-null object), AND (2) `arg2` is a string. None of the
+    // same-workflow signatures accept a string as `arg2`, so requiring it
+    // shrinks the false-positive surface to almost nothing.
+
+    it("treats a same-workflow input with taskQueue+workflows keys as same-workflow (no string arg2)", async () => {
+      // Input shape that *looks* contract-y but is actually the workflow's
+      // own payload. With only the loose two-key check, this would have
+      // been misclassified.
+      const treacherousInput = {
+        taskQueue: "hostile",
+        workflows: { counter: { input: { "~standard": { validate: () => null } } } },
+      };
+      const looseCounterContract = defineContract({
+        taskQueue: "tq",
+        workflows: {
+          counter: defineWorkflow({
+            input: z.object({
+              taskQueue: z.string(),
+              workflows: z.object({
+                counter: z.object({
+                  input: z.object({
+                    "~standard": z.object({ validate: z.unknown() }),
+                  }),
+                }),
+              }),
+            }),
+            output: z.object({}),
+          }),
+        },
+      });
+
+      const continueAsNew = createContinueAsNew(looseCounterContract, "counter");
+
+      // Called with a single arg → arg2 is undefined → not a string → must
+      // be classified as same-workflow even though arg1 looks contract-y.
+      await expect(continueAsNew(treacherousInput)).rejects.toThrow("__STUB_CONTINUE_AS_NEW__");
+
+      expect(captured[0]?.options.workflowType).toBe("counter");
+      expect(captured[0]?.options.taskQueue).toBe("tq");
+    });
+
+    it("does not misroute when workflows is null (typeof null === 'object')", async () => {
+      const treacherous = { taskQueue: "x", workflows: null };
+      const c = defineContract({
+        taskQueue: "tq",
+        workflows: {
+          handler: defineWorkflow({
+            // Allow the treacherous shape through this workflow's input
+            // schema so we exercise *the dispatch*, not validation.
+            input: z.object({
+              taskQueue: z.string(),
+              workflows: z.null(),
+            }),
+            output: z.object({}),
+          }),
+        },
+      });
+      const continueAsNew = createContinueAsNew(c, "handler");
+
+      await expect(continueAsNew(treacherous, "ignored-name")).rejects.toThrow(
+        "__STUB_CONTINUE_AS_NEW__",
+      );
+
+      // arg2 is a string, but arg1.workflows is null → check fails → routes
+      // as same-workflow. workflowType reflects the current workflow.
+      expect(captured[0]?.options.workflowType).toBe("handler");
+    });
+  });
 });

@@ -5,8 +5,8 @@
  * `exports` map, so consumers can't import from `@temporal-contract/worker/internal`.
  * In-package tests import it directly via relative path.
  */
-import { ContinueAsNewOptions, makeContinueAsNewFunc, proxyActivities } from "@temporalio/workflow";
-import type { ActivityOptions } from "@temporalio/workflow";
+import { makeContinueAsNewFunc, proxyActivities } from "@temporalio/workflow";
+import type { ActivityOptions, ContinueAsNewOptions } from "@temporalio/workflow";
 import type { ActivityDefinition, ContractDefinition } from "@temporal-contract/contract";
 import { WorkflowInputValidationError } from "./errors.js";
 
@@ -143,15 +143,20 @@ export function createContinueAsNew(
     arg3?: unknown,
     arg4?: TypedContinueAsNewOptions,
   ): Promise<never> {
-    // Heuristic: a contract object has both `taskQueue: string` and
-    // `workflows: Record<string, ...>`. Plain workflow input objects don't.
-    const isCrossContract =
-      typeof arg1 === "object" &&
-      arg1 !== null &&
-      "taskQueue" in arg1 &&
-      typeof (arg1 as ContractDefinition).taskQueue === "string" &&
-      "workflows" in arg1 &&
-      typeof (arg1 as ContractDefinition).workflows === "object";
+    // Cross-contract dispatch is only triggered when the call signature
+    // unambiguously matches `(contract, workflowName, args, options?)`:
+    //
+    // 1. `arg1` is a non-null object that *looks like* a contract — it has a
+    //    string `taskQueue` and a non-null `workflows` object.
+    // 2. `arg2` is a string — the destination workflow name.
+    // 3. `arg2` resolves to a workflow definition on `arg1.workflows` with a
+    //    Standard Schema `input.~standard.validate` function.
+    //
+    // Without (2)+(3), a same-workflow input that happens to have `taskQueue`
+    // and `workflows` keys (or `workflows = null`, where `typeof === "object"`)
+    // would be silently misclassified. The full triple of structural checks
+    // makes the false-positive surface vanishingly small.
+    const isCrossContract = looksLikeCrossContractCall(arg1, arg2);
 
     let targetContract: ContractDefinition;
     let targetName: string;
@@ -160,7 +165,7 @@ export function createContinueAsNew(
 
     if (isCrossContract) {
       targetContract = arg1 as ContractDefinition;
-      targetName = String(arg2);
+      targetName = arg2 as string;
       rawArgs = arg3;
       options = arg4;
     } else {
@@ -199,4 +204,35 @@ export function createContinueAsNew(
     /* c8 ignore next */
     return undefined as never;
   };
+}
+
+/**
+ * Structural check: does `(arg1, arg2)` look like the
+ * `(contract, workflowName, ...)` cross-contract overload of `continueAsNew`?
+ *
+ * Returns `true` only when:
+ *   1. `arg1` is a non-null object with a string `taskQueue` and a non-null
+ *      object `workflows` (handles `workflows: null`, where
+ *      `typeof null === "object"`).
+ *   2. `arg2` is a string.
+ *
+ * Both halves matter. A same-workflow input that happens to contain
+ * `taskQueue` and `workflows` keys would otherwise be misclassified — but
+ * none of the same-workflow signatures (`continueAsNew(args)`,
+ * `continueAsNew(args, options)`) accept a string as `arg2`, so the
+ * second check makes the false-positive surface vanishingly small.
+ *
+ * We deliberately do *not* check that `arg1.workflows[arg2]` is a valid
+ * workflow definition. If it isn't, the dispatcher falls through to the
+ * `targetContract.workflows[targetName]` lookup which throws a clear
+ * "target workflow X is not declared" error — better than silently
+ * misrouting a typo back to the current workflow.
+ */
+function looksLikeCrossContractCall(arg1: unknown, arg2: unknown): boolean {
+  if (typeof arg1 !== "object" || arg1 === null) return false;
+  if (typeof arg2 !== "string") return false;
+  const candidate = arg1 as Record<string, unknown>;
+  if (typeof candidate["taskQueue"] !== "string") return false;
+  const workflows = candidate["workflows"];
+  return typeof workflows === "object" && workflows !== null;
 }
