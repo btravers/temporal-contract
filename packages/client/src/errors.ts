@@ -43,8 +43,45 @@ export class WorkflowNotFoundError extends TypedClientError {
   }
 }
 
+/**
+ * Render a Standard Schema {@link StandardSchemaV1.Issue} into a human-readable
+ * string that includes the failing field's path.
+ *
+ * Example output:
+ * - `at items[0].quantity: Expected number, received undefined`
+ * - `at customerId: Expected string, received undefined`
+ * - `Validation error` *(no path)*
+ *
+ * Path segments come either as bare `PropertyKey` values or as
+ * `{ key: PropertyKey }` objects (per the spec); both are normalized.
+ * Numeric segments render as bracketed indices; string segments use dot
+ * notation (with a leading dot when not the first segment); symbols and
+ * other property keys fall back to `String(key)`.
+ */
+function formatIssue(issue: StandardSchemaV1.Issue): string {
+  if (issue.path === undefined || issue.path.length === 0) {
+    return issue.message;
+  }
+  let path = "";
+  for (let i = 0; i < issue.path.length; i++) {
+    const segment = issue.path[i];
+    const key =
+      segment !== null && typeof segment === "object" && "key" in segment ? segment.key : segment;
+    if (typeof key === "number") {
+      path += `[${key}]`;
+    } else if (typeof key === "string") {
+      path += i === 0 ? key : `.${key}`;
+    } else {
+      // Symbol or other PropertyKey — bracket-stringify so it parses
+      // unambiguously alongside string segments.
+      path += `[${String(key)}]`;
+    }
+  }
+  return `at ${path}: ${issue.message}`;
+}
+
 function summarizeIssues(issues: ReadonlyArray<StandardSchemaV1.Issue>): string {
-  return issues.map((issue) => issue.message).join("; ");
+  return issues.map(formatIssue).join("; ");
 }
 
 /**

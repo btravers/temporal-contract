@@ -33,7 +33,7 @@ import {
   WorkerInferOutput,
 } from "./types.js";
 import { Future, Result } from "@temporal-contract/boxed";
-import { buildRawActivitiesProxy, extractHandlerInput } from "./internal.js";
+import { buildRawActivitiesProxy, extractHandlerInput, summarizeIssues } from "./internal.js";
 import {
   ActivityOptions,
   ChildWorkflowHandle,
@@ -47,7 +47,6 @@ import {
   WorkflowInfo,
   workflowInfo,
 } from "@temporalio/workflow";
-import { StandardSchemaV1 } from "@standard-schema/spec";
 
 export {
   ActivityInputValidationError,
@@ -796,7 +795,7 @@ async function validateChildWorkflowOutput<TChildWorkflow extends WorkflowDefini
   if (outputResult.issues) {
     return Result.Error(
       new ChildWorkflowError(
-        `Child workflow "${childWorkflowName}" output validation failed: ${outputResult.issues.map((i: StandardSchemaV1.Issue) => i.message).join("; ")}`,
+        `Child workflow "${childWorkflowName}" output validation failed: ${summarizeIssues(outputResult.issues)}`,
       ),
     );
   }
@@ -835,7 +834,7 @@ async function getAndValidateChildWorkflow<
   if (inputResult.issues) {
     return Result.Error(
       new ChildWorkflowError(
-        `Child workflow "${String(childWorkflowName)}" input validation failed: ${inputResult.issues.map((i: StandardSchemaV1.Issue) => i.message).join("; ")}`,
+        `Child workflow "${String(childWorkflowName)}" input validation failed: ${summarizeIssues(inputResult.issues)}`,
       ),
     );
   }
