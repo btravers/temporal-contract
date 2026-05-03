@@ -12,7 +12,7 @@ Instead of defining activity implementations inline, you can extract types for r
 
 ```typescript
 import type { ActivitiesHandler } from "@temporal-contract/worker/activity";
-import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { declareActivitiesHandler, ApplicationFailure } from "@temporal-contract/worker/activity";
 import { Future, Result } from "@swan-io/boxed";
 import { orderContract } from "./contract";
 
@@ -24,12 +24,11 @@ const sendEmail: OrderActivitiesHandler["sendEmail"] = ({ to, body }) => {
   return Future.fromPromise(emailService.send({ to, body }))
     .mapError(
       (error) =>
-        new ActivityError(
-          "EMAIL_FAILED",
-          error instanceof Error ? error.message : "Failed to send email",
-          error,
-        ),
-    )
+        ApplicationFailure.create({
+  type: "EMAIL_FAILED",
+  message: error instanceof Error ? error.message : "Failed to send email",
+              cause: error,
+            })
     .mapOk(() => ({ sent: true }));
 };
 
@@ -37,12 +36,11 @@ const processPayment: OrderActivitiesHandler["processPayment"] = ({ amount }) =>
   return Future.fromPromise(paymentGateway.charge(amount))
     .mapError(
       (error) =>
-        new ActivityError(
-          "PAYMENT_FAILED",
-          error instanceof Error ? error.message : "Payment failed",
-          error,
-        ),
-    )
+        ApplicationFailure.create({
+  type: "PAYMENT_FAILED",
+  message: error instanceof Error ? error.message : "Payment failed",
+              cause: error,
+            })
     .mapOk((txId) => ({ transactionId: txId }));
 };
 
@@ -67,8 +65,8 @@ import type { ActivitiesHandler } from "@temporal-contract/worker/activity";
 
 type MyActivities = ActivitiesHandler<typeof myContract>;
 // {
-//   sendEmail: (input: { to: string, body: string }) => Future<Result<{ sent: boolean }, ActivityError>>;
-//   processPayment: (input: { amount: number }) => Future<Result<{ transactionId: string }, ActivityError>>;
+//   sendEmail: (input: { to: string, body: string }) => Future<Result<{ sent: boolean }, ApplicationFailure>>;
+//   processPayment: (input: { amount: number }) => Future<Result<{ transactionId: string }, ApplicationFailure>>;
 // }
 ```
 
@@ -81,7 +79,7 @@ type SendEmailHandler = ActivitiesHandler<typeof contract>["sendEmail"];
 type ProcessPaymentHandler = ActivitiesHandler<typeof contract>["processPayment"];
 
 const sendEmail: SendEmailHandler = ({ to, body }) => {
-  // Implementation — must return Future<Result<T, ActivityError>>
+  // Implementation — must return Future<Result<T, ApplicationFailure>>
   return Future.value(Result.Ok({ sent: true }));
 };
 ```
@@ -95,7 +93,7 @@ Implement activities in separate files:
 ```typescript
 // activities/email.ts
 import type { ActivitiesHandler } from "@temporal-contract/worker/activity";
-import { ActivityError } from "@temporal-contract/worker/activity";
+import { ApplicationFailure } from "@temporal-contract/worker/activity";
 import { Future, Result } from "@swan-io/boxed";
 import { orderContract } from "../contracts/order.contract";
 
@@ -105,12 +103,11 @@ export const sendEmail: Handlers["sendEmail"] = ({ to, body }) => {
   return Future.fromPromise(emailService.send({ to, body }))
     .mapError(
       (error) =>
-        new ActivityError(
-          "EMAIL_FAILED",
-          error instanceof Error ? error.message : "Failed to send email",
-          error,
-        ),
-    )
+        ApplicationFailure.create({
+  type: "EMAIL_FAILED",
+  message: error instanceof Error ? error.message : "Failed to send email",
+              cause: error,
+            })
     .mapOk(() => ({ sent: true }));
 };
 ```
@@ -118,7 +115,7 @@ export const sendEmail: Handlers["sendEmail"] = ({ to, body }) => {
 ```typescript
 // activities/payment.ts
 import type { ActivitiesHandler } from "@temporal-contract/worker/activity";
-import { ActivityError } from "@temporal-contract/worker/activity";
+import { ApplicationFailure } from "@temporal-contract/worker/activity";
 import { Future, Result } from "@swan-io/boxed";
 import { orderContract } from "../contracts/order.contract";
 
@@ -128,12 +125,11 @@ export const processPayment: Handlers["processPayment"] = ({ amount }) => {
   return Future.fromPromise(paymentGateway.charge(amount))
     .mapError(
       (error) =>
-        new ActivityError(
-          "PAYMENT_FAILED",
-          error instanceof Error ? error.message : "Payment failed",
-          error,
-        ),
-    )
+        ApplicationFailure.create({
+  type: "PAYMENT_FAILED",
+  message: error instanceof Error ? error.message : "Payment failed",
+              cause: error,
+            })
     .mapOk((txId) => ({ transactionId: txId }));
 };
 ```
@@ -168,12 +164,11 @@ export const createEmailActivity = (emailService: EmailService): Handlers["sendE
     return Future.fromPromise(emailService.send({ to, body }))
       .mapError(
         (error) =>
-          new ActivityError(
-            "EMAIL_FAILED",
-            error instanceof Error ? error.message : "Failed",
-            error,
-          ),
-      )
+          ApplicationFailure.create({
+  type: "EMAIL_FAILED",
+  message: error instanceof Error ? error.message : "Failed",
+              cause: error,
+            })
       .mapOk(() => ({ sent: true }));
   };
 };
@@ -185,12 +180,11 @@ export const createPaymentActivity = (
     return Future.fromPromise(paymentGateway.charge(amount))
       .mapError(
         (error) =>
-          new ActivityError(
-            "PAYMENT_FAILED",
-            error instanceof Error ? error.message : "Failed",
-            error,
-          ),
-      )
+          ApplicationFailure.create({
+  type: "PAYMENT_FAILED",
+  message: error instanceof Error ? error.message : "Failed",
+              cause: error,
+            })
       .mapOk((txId) => ({ transactionId: txId }));
   };
 };
@@ -374,12 +368,11 @@ export const createActivities = (services: Services) => {
     return Future.fromPromise(services.email.send({ to, body }))
       .mapError(
         (error) =>
-          new ActivityError(
-            "EMAIL_FAILED",
-            error instanceof Error ? error.message : "Failed",
-            error,
-          ),
-      )
+          ApplicationFailure.create({
+  type: "EMAIL_FAILED",
+  message: error instanceof Error ? error.message : "Failed",
+              cause: error,
+            })
       .mapOk(() => ({ sent: true }));
   };
 

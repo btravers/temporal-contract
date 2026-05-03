@@ -122,7 +122,7 @@ Implement your activities and workflows with full type safety:
 
 ```typescript
 // activities.ts
-import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { declareActivitiesHandler, ApplicationFailure } from "@temporal-contract/worker/activity";
 import { Future, Result } from "@swan-io/boxed";
 import { orderContract } from "./contract";
 
@@ -132,26 +132,24 @@ export const activities = declareActivitiesHandler({
     sendEmail: ({ to, subject, body }) => {
       // Full type safety - parameters are automatically typed!
       return Future.fromPromise(emailService.send({ to, subject, body }))
-        .mapError(
-          (error) =>
-            new ActivityError(
-              "EMAIL_FAILED",
-              error instanceof Error ? error.message : "Failed to send email",
-              error,
-            ),
+        .mapError((error) =>
+          ApplicationFailure.create({
+            type: "EMAIL_FAILED",
+            message: error instanceof Error ? error.message : "Failed to send email",
+            cause: error,
+          }),
         )
         .mapOk(() => ({ sent: true }));
     },
     processPayment: ({ customerId, amount }) => {
       // TypeScript knows the exact types
       return Future.fromPromise(paymentGateway.charge(customerId, amount))
-        .mapError(
-          (error) =>
-            new ActivityError(
-              "PAYMENT_FAILED",
-              error instanceof Error ? error.message : "Payment failed",
-              error,
-            ),
+        .mapError((error) =>
+          ApplicationFailure.create({
+            type: "PAYMENT_FAILED",
+            message: error instanceof Error ? error.message : "Payment failed",
+            cause: error,
+          }),
         )
         .mapOk((txId) => ({ transactionId: txId, success: true }));
     },

@@ -14,7 +14,7 @@ pnpm add @temporal-contract/worker @temporal-contract/contract @temporalio/workf
 
 ```typescript
 // activities.ts
-import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { declareActivitiesHandler, ApplicationFailure } from "@temporal-contract/worker/activity";
 import { Future, Result } from "@swan-io/boxed";
 
 export const activities = declareActivitiesHandler({
@@ -22,13 +22,12 @@ export const activities = declareActivitiesHandler({
   activities: {
     sendEmail: ({ to, body }) => {
       return Future.fromPromise(emailService.send({ to, body }))
-        .mapError(
-          (error) =>
-            new ActivityError(
-              "EMAIL_FAILED",
-              error instanceof Error ? error.message : "Failed to send email",
-              error,
-            ),
+        .mapError((error) =>
+          ApplicationFailure.create({
+            type: "EMAIL_FAILED",
+            message: error instanceof Error ? error.message : "Failed to send email",
+            cause: error,
+          }),
         )
         .mapOk(() => ({ sent: true }));
     },

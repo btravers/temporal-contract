@@ -183,7 +183,7 @@ export const orderContract = defineContract({
 Clean, typed activity implementations with Result/Future pattern:
 
 ```typescript
-import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { declareActivitiesHandler, ApplicationFailure } from "@temporal-contract/worker/activity";
 import { Future, Result } from "@swan-io/boxed";
 import { orderContract } from "../contracts/order.contract";
 import { emailService } from "../infrastructure/email.service";
@@ -198,7 +198,9 @@ export const activities = declareActivitiesHandler({
           await emailService.send({ to, subject, body });
           resolve(Result.Ok({ sent: true }));
         } catch (error) {
-          resolve(Result.Error(new ActivityError("EMAIL_FAILED", "Failed to send email", error)));
+          resolve(Result.Error(ApplicationFailure.create({
+  type: "EMAIL_FAILED",
+  message: "Failed to send email", error)));
         }
       });
     },
@@ -212,7 +214,7 @@ export const activities = declareActivitiesHandler({
           } catch (error) {
             resolve(
               Result.Error(
-                new ActivityError("INVENTORY_CHECK_FAILED", "Failed to check inventory", error),
+                ApplicationFailure.create({ type: "INVENTORY_CHECK_FAILED", message: "Failed to check inventory", cause: error }),
               ),
             );
           }
@@ -231,7 +233,7 @@ export const activities = declareActivitiesHandler({
             );
           } catch (error) {
             resolve(
-              Result.Error(new ActivityError("PAYMENT_FAILED", "Failed to process payment", error)),
+              Result.Error(ApplicationFailure.create({ type: "PAYMENT_FAILED", message: "Failed to process payment", cause: error })),
             );
           }
         });

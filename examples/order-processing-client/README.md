@@ -10,7 +10,7 @@ This client package demonstrates that:
 
 - The `order-processing-worker` implements the **unified contract**
 - The client works with the worker implementation through the shared contract
-- Workers handle errors internally using the Result/Future pattern with ActivityError
+- Workers handle errors internally using the Result/Future pattern with ApplicationFailure
 
 ## Running the Sample
 
@@ -81,7 +81,7 @@ The unified contract (`orderProcessingContract`) defines:
 
 The worker (`examples/order-processing-worker`) uses `@temporal-contract/worker` with:
 
-- Activities using the Result/Future pattern with ActivityError
+- Activities using the Result/Future pattern with ApplicationFailure
 - Clean Architecture with dependency injection
 - Standalone TypeScript application
 

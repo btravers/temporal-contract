@@ -17,7 +17,7 @@ pnpm add @temporal-contract/worker @swan-io/boxed
 Activities use `@swan-io/boxed` for explicit error handling:
 
 ```typescript
-import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { declareActivitiesHandler, ApplicationFailure } from "@temporal-contract/worker/activity";
 import { Future, Result } from "@swan-io/boxed";
 import { myContract } from "./contract";
 
@@ -34,13 +34,12 @@ export const activities = declareActivitiesHandler({
     processOrder: {
       processPayment: ({ customerId, amount }) => {
         return Future.fromPromise(paymentService.charge(customerId, amount))
-          .mapError(
-            (error) =>
-              new ActivityError(
-                "PAYMENT_FAILED",
-                error instanceof Error ? error.message : "Payment processing failed",
-                error,
-              ),
+          .mapError((error) =>
+            ApplicationFailure.create({
+              type: "PAYMENT_FAILED",
+              message: error instanceof Error ? error.message : "Payment processing failed",
+              cause: error,
+            }),
           )
           .mapOk((result) => ({ transactionId: result.id }));
       },
@@ -108,23 +107,25 @@ main().catch((error) => {
 
 ## Activity Error Handling
 
-### ActivityError Class
+### `ApplicationFailure`
 
-Use `ActivityError` for typed activity errors:
+`ApplicationFailure` (re-exported from `@temporal-contract/worker/activity`) is Temporal's first-class failure shape. Use it to wrap technical exceptions with a `type` field, optional `cause`, and the per-instance `nonRetryable` flag:
 
 ```typescript
-import { ActivityError } from "@temporal-contract/worker/activity";
-import { Future, Result } from "@swan-io/boxed";
+import { ApplicationFailure } from "@temporal-contract/worker/activity";
+import { Future } from "@swan-io/boxed";
 
 processPayment: ({ customerId, amount }) => {
   return Future.fromPromise(paymentService.charge(customerId, amount))
-    .mapError(
-      (error) =>
-        new ActivityError(
-          "PAYMENT_FAILED", // Error code
-          error instanceof Error ? error.message : "Payment failed", // Message
-          error, // Original error
-        ),
+    .mapError((error) =>
+      ApplicationFailure.create({
+        type: "PAYMENT_FAILED", // categorizes the failure for retry policies / search
+        message: error instanceof Error ? error.message : "Payment failed",
+        // `nonRetryable: true` would tell Temporal to skip the retry policy
+        // for this attempt — useful for permanent failures like a declined card.
+        nonRetryable: false,
+        ...(error instanceof Error ? { cause: error } : {}),
+      }),
     )
     .mapOk((transaction) => ({ transactionId: transaction.id }));
 };
@@ -281,7 +282,13 @@ Activities should use `Future.fromPromise` with `mapError` and `mapOk`:
 // ✅ Good - explicit error handling with Future.fromPromise
 processPayment: ({ amount }) => {
   return Future.fromPromise(paymentService.charge(amount))
-    .mapError((err) => new ActivityError("PAYMENT_FAILED", err.message, err))
+    .mapError((err) =>
+      ApplicationFailure.create({
+        type: "PAYMENT_FAILED",
+        message: err.message,
+        cause: err,
+      }),
+    )
     .mapOk((tx) => ({ transactionId: tx.id }));
 };
 
@@ -292,7 +299,15 @@ processPayment: ({ amount }) => {
       const tx = await paymentService.charge(amount);
       resolve(Result.Ok({ transactionId: tx.id }));
     } catch (err) {
-      resolve(Result.Error(new ActivityError("PAYMENT_FAILED", err.message, err)));
+      resolve(
+        Result.Error(
+          ApplicationFailure.create({
+            type: "PAYMENT_FAILED",
+            message: err.message,
+            cause: err,
+          }),
+        ),
+      );
     }
   });
 };
@@ -303,15 +318,19 @@ processPayment: ({ amount }) => {
 Activities internally use Result, but the framework unwraps them for network serialization:
 
 ```typescript
-// ✅ Good - activity returns Future<Result<T, ActivityError>>
+// ✅ Good - activity returns Future<Result<T, ApplicationFailure>>
 // Framework unwraps to plain DTO over network
 processPayment: ({ amount }) =>
   Future.fromPromise(paymentService.charge(amount))
-    .mapError((err) => new ActivityError("PAYMENT_FAILED", err.message, err))
+    .mapError((err) => ApplicationFailure.create({
+  type: "PAYMENT_FAILED",
+  message: err.message, err))
     .mapOk((tx) => ({ transactionId: tx.id }));
 
-// In workflow, you receive the plain value:
-const payment = await activities.processPayment({ amount: 100 });
+// In workflow,
+  cause: you receive the plain value:
+const payment = await activities.processPayment({ amount: 100 },
+});
 // payment is { transactionId: string }, not Result
 ```
 
@@ -337,11 +356,14 @@ implementation: async (context, args) => {
 
 ```typescript
 // ✅ Good - clear error codes
-new ActivityError("PAYMENT_GATEWAY_TIMEOUT", "Gateway did not respond");
-new ActivityError("INSUFFICIENT_FUNDS", "Customer has insufficient balance");
+ApplicationFailure.create({ type: "PAYMENT_GATEWAY_TIMEOUT", message: "Gateway did not respond" });
+ApplicationFailure.create({
+  type: "INSUFFICIENT_FUNDS",
+  message: "Customer has insufficient balance",
+});
 
 // ❌ Avoid - generic errors
-new ActivityError("ERROR", "Something went wrong");
+ApplicationFailure.create({ type: "ERROR", message: "Something went wrong" });
 ```
 
 ## See Also

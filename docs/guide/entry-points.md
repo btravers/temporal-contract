@@ -119,7 +119,7 @@ Create a single activities handler in your worker application:
 
 ```typescript
 // worker-application/src/activities/index.ts
-import { declareActivitiesHandler, ActivityError } from "@temporal-contract/worker/activity";
+import { declareActivitiesHandler, ApplicationFailure } from "@temporal-contract/worker/activity";
 import { Future, Result } from "@swan-io/boxed";
 import { orderContract } from "contract-package";
 
@@ -128,25 +128,23 @@ export const activities = declareActivitiesHandler({
   activities: {
     sendEmail: ({ to, body }) => {
       return Future.fromPromise(emailService.send({ to, body }))
-        .mapError(
-          (error) =>
-            new ActivityError(
-              "EMAIL_FAILED",
-              error instanceof Error ? error.message : "Failed to send email",
-              error,
-            ),
+        .mapError((error) =>
+          ApplicationFailure.create({
+            type: "EMAIL_FAILED",
+            message: error instanceof Error ? error.message : "Failed to send email",
+            cause: error,
+          }),
         )
         .mapOk(() => ({ sent: true }));
     },
     processPayment: ({ amount }) => {
       return Future.fromPromise(paymentGateway.charge(amount))
-        .mapError(
-          (error) =>
-            new ActivityError(
-              "PAYMENT_FAILED",
-              error instanceof Error ? error.message : "Payment failed",
-              error,
-            ),
+        .mapError((error) =>
+          ApplicationFailure.create({
+            type: "PAYMENT_FAILED",
+            message: error instanceof Error ? error.message : "Payment failed",
+            cause: error,
+          }),
         )
         .mapOk((txId) => ({ transactionId: txId }));
     },
@@ -281,14 +279,14 @@ const contract = defineContract({
   },
 });
 
-// Activities handler must match — must return Future<Result<T, ActivityError>>
+// Activities handler must match — must return Future<Result<T, ApplicationFailure>>
 declareActivitiesHandler({
   contract,
   activities: {
     processPayment: ({ amount }) => {
       // ✅ amount is number
       return Future.value(Result.Ok({ transactionId: "TXN-123" }));
-      // ✅ Must return Future<Result<{ transactionId: string }, ActivityError>>
+      // ✅ Must return Future<Result<{ transactionId: string }, ApplicationFailure>>
     },
   },
 });

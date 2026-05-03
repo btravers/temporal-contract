@@ -5,8 +5,15 @@
 // `@swan-io/boxed` here for its richer API. Workflow code (see workflow.ts)
 // must use `@temporal-contract/boxed` instead, since it's compatible with
 // Temporal's deterministic replay machinery.
+//
+// Errors flow through Temporal's `ApplicationFailure` (re-exported from
+// `@temporalio/common`) — it's the SDK's first-class failure shape, so we
+// don't wrap it in a custom class. `ApplicationFailure` exposes
+// `nonRetryable`, `type`, `details`, and `category` natively, and survives
+// the activity → workflow serialization boundary unchanged.
 import { ActivityDefinition, ContractDefinition } from "@temporal-contract/contract";
 import { Future, Result } from "@swan-io/boxed";
+import { ApplicationFailure } from "@temporalio/common";
 import { WorkerInferInput, WorkerInferOutput } from "./types.js";
 import {
   ActivityDefinitionNotFoundError,
@@ -21,34 +28,22 @@ export {
   ActivityOutputValidationError,
 } from "./errors.js";
 
-/**
- * Activity error class that should be used to wrap all technical exceptions
- * Forces proper error handling and enables retry policies
- */
-export class ActivityError extends Error {
-  constructor(
-    public readonly code: string,
-    message: string,
-    cause?: unknown,
-  ) {
-    super(message, { cause });
-    this.name = "ActivityError";
-    // Maintains proper stack trace for where our error was thrown (only available on V8)
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, ActivityError);
-    }
-  }
-}
+// Re-export the canonical activity-failure class so consumers don't need
+// a separate `@temporalio/common` import to construct one.
+export { ApplicationFailure } from "@temporalio/common";
 
 /**
- * Activity implementation using Future/Result pattern
+ * Activity implementation using Future/Result pattern.
  *
- * Returns Future<Result<Output, ActivityError>> for explicit error handling instead of throwing exceptions.
- * All errors must be wrapped in ActivityError to enable proper retry policies.
+ * Returns `Future<Result<Output, ApplicationFailure>>` for explicit error
+ * handling instead of throwing. The wrapper rethrows `Result.Error`
+ * payloads at the activity boundary; Temporal recognizes
+ * `ApplicationFailure` natively and applies the configured retry policy
+ * (with `nonRetryable: true` opting an instance out per-call).
  */
 type BoxedActivityImplementation<TActivity extends ActivityDefinition> = (
   args: WorkerInferInput<TActivity>,
-) => Future<Result<WorkerInferOutput<TActivity>, ActivityError>>;
+) => Future<Result<WorkerInferOutput<TActivity>, ApplicationFailure>>;
 
 /**
  * Map of all activity implementations for a contract (global + all workflow-specific)
@@ -117,11 +112,11 @@ export type ActivitiesHandler<TContract extends ContractDefinition> =
     >;
 
 /**
- * Create a typed activities handler with automatic validation and Result pattern
+ * Create a typed activities handler with automatic validation and Result pattern.
  *
  * This wraps all activity implementations with:
  * - Validation at network boundaries
- * - Result<T, ActivityError> pattern for explicit error handling
+ * - `Result<T, ApplicationFailure>` pattern for explicit error handling
  * - Automatic conversion from Result to Promise (throwing on Error)
  *
  * TypeScript ensures ALL activities (global + workflow-specific) are implemented.
@@ -130,28 +125,30 @@ export type ActivitiesHandler<TContract extends ContractDefinition> =
  *
  * @example
  * ```ts
- * import { declareActivitiesHandler, ActivityError } from '@temporal-contract/worker/activity';
+ * import { declareActivitiesHandler, ApplicationFailure } from '@temporal-contract/worker/activity';
  * import { Result, Future } from '@swan-io/boxed';
  * import myContract from './contract';
  *
  * export const activities = declareActivitiesHandler({
  *   contract: myContract,
  *   activities: {
- *     // Activity returns Result instead of throwing
- *     // All technical exceptions must be wrapped in ActivityError for retry policies
+ *     // Activity returns Result instead of throwing.
  *     sendEmail: (args) => {
- *       return Future.make(async resolve => {
+ *       return Future.make(async (resolve) => {
  *         try {
  *           await emailService.send(args);
  *           resolve(Result.Ok({ sent: true }));
  *         } catch (error) {
- *           // Wrap technical errors in ActivityError to enable retries
+ *           // Wrap technical errors in ApplicationFailure. `nonRetryable`
+ *           // is per-instance: set it to true on permanent failures so
+ *           // Temporal stops retrying immediately.
  *           resolve(Result.Error(
- *             new ActivityError(
- *               'EMAIL_SEND_FAILED',
- *               'Failed to send email',
- *               error // Original error as cause for debugging
- *             )
+ *             ApplicationFailure.create({
+ *               type: 'EMAIL_SEND_FAILED',
+ *               message: 'Failed to send email',
+ *               nonRetryable: false,
+ *               cause: error instanceof Error ? error : undefined,
+ *             }),
  *           ));
  *         }
  *       });
@@ -170,10 +167,11 @@ export type ActivitiesHandler<TContract extends ContractDefinition> =
  * ```
  *
  * @remarks
- * The wrapper accepts implementations in the `Future<Result<T, ActivityError>>`
- * shape and produces ordinary Promise-returning Temporal handlers
- * (Result.Error → thrown `ActivityError`; Result.Ok → output validated
- * against the contract and resolved). It does **not** hide Temporal's
+ * The wrapper accepts implementations in the
+ * `Future<Result<T, ApplicationFailure>>` shape and produces ordinary
+ * Promise-returning Temporal handlers (Result.Error → thrown
+ * `ApplicationFailure`; Result.Ok → output validated against the
+ * contract and resolved). It does **not** hide Temporal's
  * `@temporalio/activity` runtime: inside the body you can still call
  * `Context.current()` from `@temporalio/activity` to access heartbeats
  * (`heartbeat(details)`, `heartbeatDetails`), activity info (attempt
@@ -193,7 +191,7 @@ export function declareActivitiesHandler<TContract extends ContractDefinition>(
   function makeWrapped(
     activityName: string,
     activityDef: ActivityDefinition,
-    activityImpl: (args: unknown) => Future<Result<unknown, ActivityError>>,
+    activityImpl: (args: unknown) => Future<Result<unknown, ApplicationFailure>>,
   ) {
     return async (...args: unknown[]) => {
       const input = extractHandlerInput(args);
@@ -204,7 +202,7 @@ export function declareActivitiesHandler<TContract extends ContractDefinition>(
         throw new ActivityInputValidationError(activityName, inputResult.issues);
       }
 
-      // Execute boxed activity (returns Future<Result<T, ActivityError>>)
+      // Execute boxed activity (returns Future<Result<T, ApplicationFailure>>)
       const futureResult = activityImpl(inputResult.value);
 
       // Await Future and unwrap Result
@@ -219,7 +217,9 @@ export function declareActivitiesHandler<TContract extends ContractDefinition>(
         }
         return outputResult.value;
       } else {
-        // Convert Result.Error to thrown ActivityError for Temporal
+        // Convert Result.Error to thrown ApplicationFailure for Temporal.
+        // Temporal recognizes this class natively and applies the
+        // configured retry policy (honoring `nonRetryable: true`).
         throw result.error;
       }
     };
@@ -242,7 +242,7 @@ export function declareActivitiesHandler<TContract extends ContractDefinition>(
       (wrappedActivities as Record<string, unknown>)[activityName] = makeWrapped(
         activityName,
         activityDef,
-        impl as (args: unknown) => Future<Result<unknown, ActivityError>>,
+        impl as (args: unknown) => Future<Result<unknown, ApplicationFailure>>,
       );
     }
   }
@@ -273,7 +273,7 @@ export function declareActivitiesHandler<TContract extends ContractDefinition>(
         (wrappedActivities as Record<string, unknown>)[activityName] = makeWrapped(
           `${workflowName}.${activityName}`,
           activityDef,
-          impl as (args: unknown) => Future<Result<unknown, ActivityError>>,
+          impl as (args: unknown) => Future<Result<unknown, ApplicationFailure>>,
         );
       }
     }
