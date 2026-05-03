@@ -193,8 +193,6 @@ externalLibrary.processSomething(swanCompatible);
 - `flatMap<U>(fn)` - Chain results
 - `flatMapOk<U>(fn)` - Alias for flatMap
 - `getOr(defaultValue)` - Get value or default
-- `getWithDefault(defaultValue)` - Alias for getOr
-- `toOption()` - Convert to Option type
 - `Result.fromExecution(fn)` - Create result from synchronous function that may throw
 - `Result.fromAsyncExecution(fn)` - Create result from async function that may throw
 - `Result.all(results)` - Combine array of results into result of array
