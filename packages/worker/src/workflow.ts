@@ -33,7 +33,7 @@ import {
   WorkerInferOutput,
 } from "./types.js";
 import { Future, Result } from "@temporal-contract/boxed";
-import { extractHandlerInput } from "./internal.js";
+import { buildRawActivitiesProxy, extractHandlerInput } from "./internal.js";
 import {
   ActivityOptions,
   ChildWorkflowHandle,
@@ -42,7 +42,6 @@ import {
   defineSignal,
   defineUpdate,
   executeChild,
-  proxyActivities,
   setHandler,
   startChild,
   WorkflowInfo,
@@ -725,47 +724,6 @@ type WorkflowInferWorkflowContextActivities<
   TWorkflowName extends keyof TContract["workflows"],
 > = WorkflowInferWorkflowActivities<TContract["workflows"][TWorkflowName]> &
   WorkflowInferActivities<TContract>;
-
-/**
- * Build the raw `Record<name, fn>` proxy of activities for the workflow,
- * applying per-activity `ActivityOptions` overrides where requested.
- *
- * Each activity goes through its own `proxyActivities(...)` call with that
- * activity's effective options (the workflow's default `activityOptions`,
- * shallow-merged with any override in `activityOptionsByName`). This matches
- * Temporal's "one ActivityOptions per `proxyActivities` call" model — each
- * scheduled activity carries one full options bag, and the override-keyed
- * field replaces the default's field on conflict.
- *
- * @internal exported for unit testing of options propagation.
- */
-export function buildRawActivitiesProxy(
-  workflowActivities: Record<string, ActivityDefinition> | undefined,
-  contractActivities: Record<string, ActivityDefinition> | undefined,
-  defaultOptions: ActivityOptions,
-  overrides: Partial<Record<string, ActivityOptions>> | undefined,
-): Record<string, (...args: unknown[]) => Promise<unknown>> {
-  const allNames = new Set<string>([
-    ...Object.keys(workflowActivities ?? {}),
-    ...Object.keys(contractActivities ?? {}),
-  ]);
-
-  const rawActivities: Record<string, (...args: unknown[]) => Promise<unknown>> = {};
-  for (const name of allNames) {
-    const override = overrides?.[name];
-    const effective = override ? { ...defaultOptions, ...override } : defaultOptions;
-    const proxy =
-      proxyActivities<Record<string, (...args: unknown[]) => Promise<unknown>>>(effective);
-    // `proxy` is a Proxy that synthesizes a function for any property access;
-    // we materialize one function per declared activity so the resulting map
-    // is enumerable for downstream wrapping.
-    const handler = proxy[name];
-    if (handler !== undefined) {
-      rawActivities[name] = handler;
-    }
-  }
-  return rawActivities;
-}
 
 /**
  * Create a validated activities proxy that parses inputs and outputs
