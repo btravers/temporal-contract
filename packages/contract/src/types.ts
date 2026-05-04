@@ -143,23 +143,48 @@ export type AnyWorkflowDefinition = WorkflowDefinition<
  * Extract signal names declared on a workflow as a string union, or `never`
  * if the workflow declares no signals. Used to constrain `signalName` call
  * sites so typos surface at compile time instead of runtime.
+ *
+ * The conditional is intentionally distributive over `W` (rather than indexing
+ * `W["signals"]` directly) so that union workflow types — e.g. discriminated
+ * unions of workflow definitions — yield the *union* of their signal names
+ * rather than the intersection (`keyof (A | B)` is the intersection of keys,
+ * which usually collapses to `never`). Destructuring `signals` via
+ * `infer S` also tolerates the property being absent or `undefined` under
+ * `exactOptionalPropertyTypes`.
  */
-export type SignalNamesOf<W extends AnyWorkflowDefinition> =
-  W["signals"] extends Record<string, SignalDefinition> ? keyof W["signals"] & string : never;
+export type SignalNamesOf<W extends AnyWorkflowDefinition> = W extends {
+  signals?: infer S;
+}
+  ? S extends Record<string, SignalDefinition>
+    ? keyof S & string
+    : never
+  : never;
 
 /**
  * Extract query names declared on a workflow as a string union, or `never`
- * if the workflow declares no queries.
+ * if the workflow declares no queries. See {@link SignalNamesOf} for the
+ * rationale behind the distributive `infer`-based shape.
  */
-export type QueryNamesOf<W extends AnyWorkflowDefinition> =
-  W["queries"] extends Record<string, QueryDefinition> ? keyof W["queries"] & string : never;
+export type QueryNamesOf<W extends AnyWorkflowDefinition> = W extends {
+  queries?: infer Q;
+}
+  ? Q extends Record<string, QueryDefinition>
+    ? keyof Q & string
+    : never
+  : never;
 
 /**
  * Extract update names declared on a workflow as a string union, or `never`
- * if the workflow declares no updates.
+ * if the workflow declares no updates. See {@link SignalNamesOf} for the
+ * rationale behind the distributive `infer`-based shape.
  */
-export type UpdateNamesOf<W extends AnyWorkflowDefinition> =
-  W["updates"] extends Record<string, UpdateDefinition> ? keyof W["updates"] & string : never;
+export type UpdateNamesOf<W extends AnyWorkflowDefinition> = W extends {
+  updates?: infer U;
+}
+  ? U extends Record<string, UpdateDefinition>
+    ? keyof U & string
+    : never
+  : never;
 
 /**
  * Contract definition containing workflows and optional global activities
