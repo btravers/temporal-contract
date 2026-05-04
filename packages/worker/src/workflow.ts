@@ -413,9 +413,12 @@ type WorkflowContext<
   defineSignal: <K extends SignalNamesOf<TContract["workflows"][TWorkflowName]>>(
     signalName: K,
     handler: SignalHandlerImplementation<
-      TContract["workflows"][TWorkflowName]["signals"] extends Record<string, SignalDefinition>
-        ? TContract["workflows"][TWorkflowName]["signals"][K] extends SignalDefinition
-          ? TContract["workflows"][TWorkflowName]["signals"][K]
+      NonNullable<TContract["workflows"][TWorkflowName]["signals"]> extends Record<
+        string,
+        SignalDefinition
+      >
+        ? NonNullable<TContract["workflows"][TWorkflowName]["signals"]>[K] extends SignalDefinition
+          ? NonNullable<TContract["workflows"][TWorkflowName]["signals"]>[K]
           : never
         : never
     >,
@@ -441,9 +444,12 @@ type WorkflowContext<
   defineQuery: <K extends QueryNamesOf<TContract["workflows"][TWorkflowName]>>(
     queryName: K,
     handler: QueryHandlerImplementation<
-      TContract["workflows"][TWorkflowName]["queries"] extends Record<string, QueryDefinition>
-        ? TContract["workflows"][TWorkflowName]["queries"][K] extends QueryDefinition
-          ? TContract["workflows"][TWorkflowName]["queries"][K]
+      NonNullable<TContract["workflows"][TWorkflowName]["queries"]> extends Record<
+        string,
+        QueryDefinition
+      >
+        ? NonNullable<TContract["workflows"][TWorkflowName]["queries"]>[K] extends QueryDefinition
+          ? NonNullable<TContract["workflows"][TWorkflowName]["queries"]>[K]
           : never
         : never
     >,
@@ -470,9 +476,12 @@ type WorkflowContext<
   defineUpdate: <K extends UpdateNamesOf<TContract["workflows"][TWorkflowName]>>(
     updateName: K,
     handler: UpdateHandlerImplementation<
-      TContract["workflows"][TWorkflowName]["updates"] extends Record<string, UpdateDefinition>
-        ? TContract["workflows"][TWorkflowName]["updates"][K] extends UpdateDefinition
-          ? TContract["workflows"][TWorkflowName]["updates"][K]
+      NonNullable<TContract["workflows"][TWorkflowName]["updates"]> extends Record<
+        string,
+        UpdateDefinition
+      >
+        ? NonNullable<TContract["workflows"][TWorkflowName]["updates"]>[K] extends UpdateDefinition
+          ? NonNullable<TContract["workflows"][TWorkflowName]["updates"]>[K]
           : never
         : never
     >,

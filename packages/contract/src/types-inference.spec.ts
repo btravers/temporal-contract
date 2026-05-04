@@ -8,7 +8,14 @@
  */
 import { describe, expectTypeOf, it } from "vitest";
 import { z } from "zod";
-import { defineContract, defineActivity, defineSignal, defineWorkflow } from "./builder.js";
+import {
+  defineContract,
+  defineActivity,
+  defineQuery,
+  defineSignal,
+  defineUpdate,
+  defineWorkflow,
+} from "./builder.js";
 import type {
   InferActivityNames,
   InferContractWorkflows,
@@ -165,5 +172,79 @@ describe("Signal/query/update name helpers (audit fix #3)", () => {
   it("UpdateNamesOf is `never` when the workflow declares no updates", () => {
     type Names = UpdateNamesOf<(typeof contractNoInteractions)["workflows"]["bare"]>;
     expectTypeOf<Names>().toEqualTypeOf<never>();
+  });
+
+  it("name helpers distribute over union workflow types (signals)", () => {
+    const wfA = defineWorkflow({
+      input: z.object({}),
+      output: z.object({}),
+      signals: {
+        cancel: defineSignal({ input: z.object({ reason: z.string() }) }),
+      },
+    });
+    const wfB = defineWorkflow({
+      input: z.object({}),
+      output: z.object({}),
+      signals: {
+        pause: defineSignal({ input: z.object({}) }),
+      },
+    });
+
+    type Union = typeof wfA | typeof wfB;
+    type Names = SignalNamesOf<Union>;
+
+    // Distributive: union of each variant's signal names, not the
+    // intersection (which `keyof (A | B)` would otherwise produce).
+    expectTypeOf<Names>().toEqualTypeOf<"cancel" | "pause">();
+  });
+
+  it("name helpers distribute over union workflow types (queries + updates)", () => {
+    const wfA = defineWorkflow({
+      input: z.object({}),
+      output: z.object({}),
+      queries: {
+        getStatus: defineQuery({ input: z.object({}), output: z.string() }),
+      },
+      updates: {
+        bump: defineUpdate({ input: z.object({}), output: z.number() }),
+      },
+    });
+    const wfB = defineWorkflow({
+      input: z.object({}),
+      output: z.object({}),
+      queries: {
+        getCount: defineQuery({ input: z.object({}), output: z.number() }),
+      },
+      updates: {
+        reset: defineUpdate({ input: z.object({}), output: z.void() }),
+      },
+    });
+
+    type Union = typeof wfA | typeof wfB;
+
+    expectTypeOf<QueryNamesOf<Union>>().toEqualTypeOf<"getStatus" | "getCount">();
+    expectTypeOf<UpdateNamesOf<Union>>().toEqualTypeOf<"bump" | "reset">();
+  });
+
+  it("QueryNamesOf yields the declared query-name union", () => {
+    const wf = defineWorkflow({
+      input: z.object({}),
+      output: z.object({}),
+      queries: {
+        getStatus: defineQuery({ input: z.object({}), output: z.string() }),
+      },
+    });
+    expectTypeOf<QueryNamesOf<typeof wf>>().toEqualTypeOf<"getStatus">();
+  });
+
+  it("UpdateNamesOf yields the declared update-name union", () => {
+    const wf = defineWorkflow({
+      input: z.object({}),
+      output: z.object({}),
+      updates: {
+        bump: defineUpdate({ input: z.object({}), output: z.number() }),
+      },
+    });
+    expectTypeOf<UpdateNamesOf<typeof wf>>().toEqualTypeOf<"bump">();
   });
 });
