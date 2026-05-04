@@ -60,4 +60,7 @@ jobs:
           # or a fine-grained token with Contents: read/write + Pull requests:
           # read/write on this repo).
           GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # NPM_TOKEN is intentionally absent — npm Trusted Publishing uses
+          # the OIDC token minted via `id-token: write` above. Each package
+          # must have a Trusted Publisher configured on npmjs.com pointing
+          # at this repo + workflow file (.github/workflows/release.yml).
