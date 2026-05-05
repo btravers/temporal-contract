@@ -937,6 +937,33 @@ describe("TypedClient", () => {
       expect(mockWorkflow.start).not.toHaveBeenCalled();
     });
 
+    it("rejects searchAttributes when the workflow declares no searchAttributes block at all", async () => {
+      // Regression: workflows that omit the `searchAttributes` field
+      // entirely (no block at all) used to silently drop any caller-
+      // supplied values via an early return on `!workflowDef.searchAttributes`,
+      // re-introducing the escape-hatch gap on a different path. The helper
+      // now treats the missing block as an empty declared map so the
+      // per-key "undeclared" check fires uniformly.
+      const result = await searchClient.startWorkflow(
+        // `plain` declares no searchAttributes; pretend the caller cast
+        // through `as any` and tries to attach one anyway.
+        "plain",
+        {
+          workflowId: "plain-1",
+          args: { id: "P-1" },
+          searchAttributes: { customerId: "CUST-1" } as never,
+        },
+      );
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error).toBeInstanceOf(RuntimeClientError);
+        expect((result.error as RuntimeClientError).operation).toBe("searchAttributes");
+        expect((result.error as RuntimeClientError).message).toContain("customerId");
+      }
+      expect(mockWorkflow.start).not.toHaveBeenCalled();
+    });
+
     it("readTypedSearchAttributes round-trips declared keys with proper types", () => {
       // Build a TypedSearchAttributes instance the way Temporal would
       // populate one in `describe()`'s response, then round-trip through
