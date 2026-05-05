@@ -44,8 +44,15 @@ export function toTypedSearchAttributes(
   workflowName: string,
   values: Record<string, unknown> | undefined,
 ): Result<TypedSearchAttributes | undefined, RuntimeClientError> {
-  if (!values || !workflowDef.searchAttributes) return ok(undefined);
-  const declared = workflowDef.searchAttributes as Record<string, SearchAttributeDefinition>;
+  if (!values) return ok(undefined);
+  // Workflows that omit the `searchAttributes` block declare none. Treat
+  // that as an empty declared map so a caller passing values still hits
+  // the per-key "undeclared" check below — silently dropping them would
+  // re-introduce the escape-hatch gap this helper was designed to close.
+  const declared = (workflowDef.searchAttributes ?? {}) as Record<
+    string,
+    SearchAttributeDefinition
+  >;
   const pairs: SearchAttributePair[] = [];
   for (const [name, value] of Object.entries(values)) {
     if (value === undefined) continue;
