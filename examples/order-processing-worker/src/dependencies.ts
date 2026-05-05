@@ -16,14 +16,12 @@ import { MockPaymentAdapter } from "./infrastructure/adapters/payment.adapter.js
 import { MockInventoryAdapter } from "./infrastructure/adapters/inventory.adapter.js";
 import { MockShippingAdapter } from "./infrastructure/adapters/shipping.adapter.js";
 import { ConsoleNotificationAdapter } from "./infrastructure/adapters/notification.adapter.js";
-import { PinoLoggerAdapter } from "./infrastructure/adapters/logger.adapter.js";
 
 // ============================================================================
 // Adapters
 // ============================================================================
 
 export const paymentAdapter = new MockPaymentAdapter();
-export const loggerAdapter = new PinoLoggerAdapter();
 const inventoryAdapter = new MockInventoryAdapter();
 const shippingAdapter = new MockShippingAdapter();
 const notificationAdapter = new ConsoleNotificationAdapter();

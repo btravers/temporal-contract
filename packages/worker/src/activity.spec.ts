@@ -341,12 +341,14 @@ describe("Worker neverthrow Package", () => {
       });
 
       // WHEN / THEN
-      await expect(
-        activities.strictActivity({ amount: -10, email: "invalid" }),
-      ).rejects.toBeInstanceOf(ActivityInputValidationError);
-      await expect(
-        activities.strictActivity({ amount: -10, email: "invalid" }),
-      ).rejects.toMatchObject({
+      const error = await activities.strictActivity({ amount: -10, email: "invalid" }).then(
+        () => {
+          throw new Error("expected rejection");
+        },
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(ActivityInputValidationError);
+      expect(error).toMatchObject({
         activityName: "strictActivity",
         message: expect.stringContaining("strictActivity"),
       });
@@ -374,10 +376,14 @@ describe("Worker neverthrow Package", () => {
       });
 
       // WHEN / THEN
-      await expect(activities.strictOutputActivity({ id: "123" })).rejects.toBeInstanceOf(
-        ActivityOutputValidationError,
+      const error = await activities.strictOutputActivity({ id: "123" }).then(
+        () => {
+          throw new Error("expected rejection");
+        },
+        (e: unknown) => e,
       );
-      await expect(activities.strictOutputActivity({ id: "123" })).rejects.toMatchObject({
+      expect(error).toBeInstanceOf(ActivityOutputValidationError);
+      expect(error).toMatchObject({
         activityName: "strictOutputActivity",
         message: expect.stringContaining("strictOutputActivity"),
       });

@@ -92,10 +92,14 @@ describe("context.continueAsNew", () => {
   it("same-workflow: throws WorkflowInputValidationError when args fail validation", async () => {
     const continueAsNew = createContinueAsNew(contract, "counter");
 
-    await expect(continueAsNew({ n: "not a number" })).rejects.toBeInstanceOf(
-      WorkflowInputValidationError,
+    const error = await continueAsNew({ n: "not a number" }).then(
+      () => {
+        throw new Error("expected rejection");
+      },
+      (e: unknown) => e,
     );
-    await expect(continueAsNew({ n: "not a number" })).rejects.toMatchObject({
+    expect(error).toBeInstanceOf(WorkflowInputValidationError);
+    expect(error).toMatchObject({
       message: expect.stringContaining(`Workflow "counter" input validation failed`),
     });
     expect(captured).toHaveLength(0);
@@ -118,12 +122,14 @@ describe("context.continueAsNew", () => {
   it("cross-contract: validates args against the destination's input schema", async () => {
     const continueAsNew = createContinueAsNew(contract, "counter");
 
-    await expect(
-      continueAsNew(otherContract, "archive", { id: "wrong-key" }),
-    ).rejects.toBeInstanceOf(WorkflowInputValidationError);
-    await expect(
-      continueAsNew(otherContract, "archive", { id: "wrong-key" }),
-    ).rejects.toMatchObject({
+    const error = await continueAsNew(otherContract, "archive", { id: "wrong-key" }).then(
+      () => {
+        throw new Error("expected rejection");
+      },
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(WorkflowInputValidationError);
+    expect(error).toMatchObject({
       message: expect.stringContaining(`Workflow "archive" input validation failed`),
     });
     expect(captured).toHaveLength(0);
@@ -132,10 +138,14 @@ describe("context.continueAsNew", () => {
   it("cross-contract: rejects with WorkflowInputValidationError when the target workflow isn't declared", async () => {
     const continueAsNew = createContinueAsNew(contract, "counter");
 
-    await expect(continueAsNew(otherContract, "ghost", { batchId: "B-1" })).rejects.toBeInstanceOf(
-      WorkflowInputValidationError,
+    const error = await continueAsNew(otherContract, "ghost", { batchId: "B-1" }).then(
+      () => {
+        throw new Error("expected rejection");
+      },
+      (e: unknown) => e,
     );
-    await expect(continueAsNew(otherContract, "ghost", { batchId: "B-1" })).rejects.toMatchObject({
+    expect(error).toBeInstanceOf(WorkflowInputValidationError);
+    expect(error).toMatchObject({
       message: expect.stringContaining(`continueAsNew target workflow "ghost"`),
     });
     expect(captured).toHaveLength(0);

@@ -1,6 +1,4 @@
 ---
-"@temporal-contract/sample-order-processing-contract": patch
-"@temporal-contract/sample-order-processing-worker": patch
 "@temporal-contract/worker": patch
 "@temporal-contract/client": patch
 "@temporal-contract/contract": patch
