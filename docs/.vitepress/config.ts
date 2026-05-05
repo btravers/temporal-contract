@@ -78,7 +78,6 @@ export default withMermaid(
         { text: "Guides", link: "/guide/getting-started" },
         { text: "API", link: "/api/" },
         { text: "Examples", link: "/examples/" },
-        { text: "Blog", link: "/blog/" },
       ],
 
       sidebar: {
@@ -138,18 +137,6 @@ export default withMermaid(
               {
                 text: "Basic Order Processing",
                 link: "/examples/basic-order-processing",
-              },
-            ],
-          },
-        ],
-        "/blog/": [
-          {
-            text: "Blog",
-            items: [
-              { text: "Overview", link: "/blog/" },
-              {
-                text: "Introducing temporal-contract",
-                link: "/blog/introducing-temporal-contract",
               },
             ],
           },
