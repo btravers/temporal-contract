@@ -23,10 +23,10 @@ catalog:
   "@commitlint/cli": 20.5.3
   "@commitlint/config-conventional": 20.5.3
   "@standard-schema/spec": 1.1.0
-  "@temporalio/client": 1.17.0
-  "@temporalio/common": 1.17.0
-  "@temporalio/worker": 1.17.0
-  "@temporalio/workflow": 1.17.0
+  "@temporalio/client": 1.17.1
+  "@temporalio/common": 1.17.1
+  "@temporalio/worker": 1.17.1
+  "@temporalio/workflow": 1.17.1
   "@types/node": 24.12.2
   "@vitest/coverage-v8": 4.1.5
   arktype: 2.2.0
