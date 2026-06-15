@@ -15,6 +15,15 @@ peerDependencyRules:
 overrides:
   fast-uri: ">=3.1.2"
 
+# esbuild <0.28.1 advisory (GHSA-gv7w-rqvm-qjhr): a Deno-only dev-server binary
+# integrity issue. Only reachable transitively via vitepress>vite>esbuild, and
+# vitepress pins a vite that is incompatible with esbuild 0.28.x (its build
+# crashes transforming destructuring). Not exploitable for a static docs build,
+# so it is ignored until vitepress ships a vite compatible with the fixed esbuild.
+auditConfig:
+  ignoreGhsas:
+    - "GHSA-gv7w-rqvm-qjhr"
+
 packages:
   - packages/*
   - examples/*
