@@ -25,6 +25,7 @@ export {
   ActivityDefinitionNotFoundError,
   ActivityInputValidationError,
   ActivityOutputValidationError,
+  ValidationError,
 } from "./errors.js";
 
 // Re-export the canonical activity-failure class so consumers don't need

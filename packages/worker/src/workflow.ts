@@ -69,6 +69,7 @@ export {
   SignalInputValidationError,
   UpdateInputValidationError,
   UpdateOutputValidationError,
+  ValidationError,
   WorkflowCancelledError,
   WorkflowInputValidationError,
   WorkflowOutputValidationError,

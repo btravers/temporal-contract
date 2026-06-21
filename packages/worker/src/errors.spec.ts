@@ -10,11 +10,16 @@
  * Closes #141.
  */
 import { describe, expect, it } from "vitest";
+import { ApplicationFailure } from "@temporalio/common";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import {
   ActivityInputValidationError,
   ActivityOutputValidationError,
+  SignalInputValidationError,
+  UpdateOutputValidationError,
+  ValidationError,
   WorkflowInputValidationError,
+  WorkflowOutputValidationError,
 } from "./errors.js";
 import { formatChildWorkflowValidationMessage } from "./internal.js";
 
@@ -193,5 +198,53 @@ describe("validation error message formatting", () => {
       ]);
       expect(message).toBe(`Child workflow "processChild" input validation failed: invalid input`);
     });
+  });
+});
+
+describe("validation errors are terminal Temporal failures (#251)", () => {
+  // A plain `Error` thrown from workflow code is classified by the TS SDK as a
+  // Workflow Task failure and retried forever (the execution silently hangs as
+  // `Running`); the same is true at the activity boundary, where Temporal's
+  // default retry policy is unlimited. Contract validation failures are
+  // deterministic, so the error classes extend `ApplicationFailure` with
+  // `nonRetryable: true`, failing the execution terminally instead.
+  const cases = [
+    () => new WorkflowInputValidationError("wf", [issue("bad")]),
+    () => new WorkflowOutputValidationError("wf", [issue("bad")]),
+    () => new ActivityInputValidationError("act", [issue("bad")]),
+    () => new ActivityOutputValidationError("act", [issue("bad")]),
+    () => new SignalInputValidationError("sig", [issue("bad")]),
+    () => new UpdateOutputValidationError("upd", [issue("bad")]),
+  ];
+
+  it("are ApplicationFailure instances so Temporal fails the execution (not the task)", () => {
+    for (const make of cases) {
+      const error = make();
+      // Symbol-based instanceof — survives the workflow-sandbox realm boundary,
+      // which is how Temporal recognizes the failure as terminal.
+      expect(error).toBeInstanceOf(ApplicationFailure);
+      expect(error).toBeInstanceOf(ValidationError);
+      expect(error).toBeInstanceOf(Error);
+    }
+  });
+
+  it("are non-retryable so they don't loop forever", () => {
+    for (const make of cases) {
+      expect((make() as ApplicationFailure).nonRetryable).toBe(true);
+    }
+  });
+
+  it("expose the concrete class name as both `type` and `name` for discrimination", () => {
+    const error = new WorkflowInputValidationError("wf", [issue("bad")]);
+    // `type` survives serialization across the Temporal boundary; callers can
+    // branch on `failure.type` even after the JS class identity is lost.
+    expect(error.type).toBe("WorkflowInputValidationError");
+    expect(error.name).toBe("WorkflowInputValidationError");
+  });
+
+  it("still narrow to their concrete subclass in-process", () => {
+    const error: unknown = new ActivityInputValidationError("act", [issue("bad")]);
+    expect(error).toBeInstanceOf(ActivityInputValidationError);
+    expect(error).not.toBeInstanceOf(ActivityOutputValidationError);
   });
 });
