@@ -240,6 +240,12 @@ describe("validation errors are terminal Temporal failures (#251)", () => {
     // branch on `failure.type` even after the JS class identity is lost.
     expect(error.type).toBe("WorkflowInputValidationError");
     expect(error.name).toBe("WorkflowInputValidationError");
+
+    // `name` stays writable (shadowing ApplicationFailure's read-only
+    // prototype property), matching plain-Error behaviour so error-wrapping
+    // code can still reassign it without throwing.
+    error.name = "Wrapped";
+    expect(error.name).toBe("Wrapped");
   });
 
   it("still narrow to their concrete subclass in-process", () => {
