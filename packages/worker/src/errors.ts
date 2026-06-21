@@ -1,5 +1,6 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { summarizeIssues } from "@temporal-contract/contract";
+import { ApplicationFailure } from "@temporalio/common";
 
 /**
  * Base error class for worker errors
@@ -8,6 +9,54 @@ abstract class WorkerError extends Error {
   protected constructor(message: string, cause?: unknown) {
     super(message, { cause });
     this.name = "WorkerError";
+    // Maintains proper stack trace for where our error was thrown (only available on V8)
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+  }
+}
+
+/**
+ * Base class for the contract's runtime validation failures — workflow and
+ * activity input/output, plus signal/query/update payloads.
+ *
+ * These extend Temporal's {@link ApplicationFailure} with `nonRetryable: true`
+ * rather than a plain `Error`, and that distinction is load-bearing. The
+ * TypeScript SDK classifies a non-`TemporalFailure` thrown from *workflow* code
+ * as a Workflow Task failure — presumed to be a transient code bug or
+ * non-determinism — and retries the task indefinitely, leaving the execution
+ * silently `Running` forever (it looks like the worker "hung"). Only a
+ * `TemporalFailure` such as `ApplicationFailure` fails the Workflow Execution
+ * terminally. The same logic applies at the activity boundary, where Temporal's
+ * default retry policy has unlimited attempts: a plain `Error` would retry
+ * forever too.
+ *
+ * Contract validation failures are deterministic — the schema is static, so bad
+ * input/output never becomes valid on replay or retry — so they are surfaced as
+ * non-retryable, failing fast with a clear error instead of an infinite retry
+ * loop.
+ *
+ * The concrete subclass name is passed through as the failure `type`, so it
+ * stays discriminable after crossing Temporal's serialization boundary (where
+ * the JS class identity is lost) via `failure.type`. The failing field path is
+ * carried in the human-readable `message` (see {@link summarizeIssues}). The
+ * raw `issues` remain available as a property for in-process inspection.
+ *
+ * See issue #251.
+ */
+export abstract class ValidationError extends ApplicationFailure {
+  protected constructor(
+    message: string,
+    type: string,
+    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
+  ) {
+    // (message, type, nonRetryable) — terminal, deterministic failure.
+    super(message, type, true);
+    // `ApplicationFailure`'s `SymbolBasedInstanceOfError` decorator installs a
+    // read-only `name` ("ApplicationFailure") on the prototype, so a plain
+    // `this.name = type` assignment throws. Define an own property to shadow it
+    // and surface the concrete subclass name (matching `type`).
+    Object.defineProperty(this, "name", { value: type, configurable: true, enumerable: true });
     // Maintains proper stack trace for where our error was thrown (only available on V8)
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, this.constructor);
@@ -34,126 +83,153 @@ export class ActivityDefinitionNotFoundError extends WorkerError {
 /**
  * Error thrown when activity input validation fails
  */
-export class ActivityInputValidationError extends WorkerError {
+export class ActivityInputValidationError extends ValidationError {
   constructor(
     public readonly activityName: string,
-    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
+    issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
     const message = summarizeIssues(issues);
-    super(`Activity "${activityName}" input validation failed: ${message}`);
-    this.name = "ActivityInputValidationError";
+    super(
+      `Activity "${activityName}" input validation failed: ${message}`,
+      "ActivityInputValidationError",
+      issues,
+    );
   }
 }
 
 /**
  * Error thrown when activity output validation fails
  */
-export class ActivityOutputValidationError extends WorkerError {
+export class ActivityOutputValidationError extends ValidationError {
   constructor(
     public readonly activityName: string,
-    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
+    issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
     const message = summarizeIssues(issues);
-    super(`Activity "${activityName}" output validation failed: ${message}`);
-    this.name = "ActivityOutputValidationError";
+    super(
+      `Activity "${activityName}" output validation failed: ${message}`,
+      "ActivityOutputValidationError",
+      issues,
+    );
   }
 }
 
 /**
  * Error thrown when workflow input validation fails
  */
-export class WorkflowInputValidationError extends WorkerError {
+export class WorkflowInputValidationError extends ValidationError {
   constructor(
     public readonly workflowName: string,
-    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
+    issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
     const message = summarizeIssues(issues);
-    super(`Workflow "${workflowName}" input validation failed: ${message}`);
-    this.name = "WorkflowInputValidationError";
+    super(
+      `Workflow "${workflowName}" input validation failed: ${message}`,
+      "WorkflowInputValidationError",
+      issues,
+    );
   }
 }
 
 /**
  * Error thrown when workflow output validation fails
  */
-export class WorkflowOutputValidationError extends WorkerError {
+export class WorkflowOutputValidationError extends ValidationError {
   constructor(
     public readonly workflowName: string,
-    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
+    issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
     const message = summarizeIssues(issues);
-    super(`Workflow "${workflowName}" output validation failed: ${message}`);
-    this.name = "WorkflowOutputValidationError";
+    super(
+      `Workflow "${workflowName}" output validation failed: ${message}`,
+      "WorkflowOutputValidationError",
+      issues,
+    );
   }
 }
 
 /**
  * Error thrown when signal input validation fails
  */
-export class SignalInputValidationError extends WorkerError {
+export class SignalInputValidationError extends ValidationError {
   constructor(
     public readonly signalName: string,
-    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
+    issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
     const message = summarizeIssues(issues);
-    super(`Signal "${signalName}" input validation failed: ${message}`);
-    this.name = "SignalInputValidationError";
+    super(
+      `Signal "${signalName}" input validation failed: ${message}`,
+      "SignalInputValidationError",
+      issues,
+    );
   }
 }
 
 /**
  * Error thrown when query input validation fails
  */
-export class QueryInputValidationError extends WorkerError {
+export class QueryInputValidationError extends ValidationError {
   constructor(
     public readonly queryName: string,
-    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
+    issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
     const message = summarizeIssues(issues);
-    super(`Query "${queryName}" input validation failed: ${message}`);
-    this.name = "QueryInputValidationError";
+    super(
+      `Query "${queryName}" input validation failed: ${message}`,
+      "QueryInputValidationError",
+      issues,
+    );
   }
 }
 
 /**
  * Error thrown when query output validation fails
  */
-export class QueryOutputValidationError extends WorkerError {
+export class QueryOutputValidationError extends ValidationError {
   constructor(
     public readonly queryName: string,
-    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
+    issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
     const message = summarizeIssues(issues);
-    super(`Query "${queryName}" output validation failed: ${message}`);
-    this.name = "QueryOutputValidationError";
+    super(
+      `Query "${queryName}" output validation failed: ${message}`,
+      "QueryOutputValidationError",
+      issues,
+    );
   }
 }
 
 /**
  * Error thrown when update input validation fails
  */
-export class UpdateInputValidationError extends WorkerError {
+export class UpdateInputValidationError extends ValidationError {
   constructor(
     public readonly updateName: string,
-    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
+    issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
     const message = summarizeIssues(issues);
-    super(`Update "${updateName}" input validation failed: ${message}`);
-    this.name = "UpdateInputValidationError";
+    super(
+      `Update "${updateName}" input validation failed: ${message}`,
+      "UpdateInputValidationError",
+      issues,
+    );
   }
 }
 
 /**
  * Error thrown when update output validation fails
  */
-export class UpdateOutputValidationError extends WorkerError {
+export class UpdateOutputValidationError extends ValidationError {
   constructor(
     public readonly updateName: string,
-    public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>,
+    issues: ReadonlyArray<StandardSchemaV1.Issue>,
   ) {
     const message = summarizeIssues(issues);
-    super(`Update "${updateName}" output validation failed: ${message}`);
-    this.name = "UpdateOutputValidationError";
+    super(
+      `Update "${updateName}" output validation failed: ${message}`,
+      "UpdateOutputValidationError",
+      issues,
+    );
   }
 }
 

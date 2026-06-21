@@ -6,7 +6,7 @@ import { okAsync, errAsync } from "neverthrow";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { testContract } from "./test.contract.js";
-import { Client } from "@temporalio/client";
+import { Client, WorkflowFailedError } from "@temporalio/client";
 import { ApplicationFailure, declareActivitiesHandler } from "../activity.js";
 import { createWorker } from "../worker.js";
 
@@ -312,6 +312,46 @@ describe("Worker Package - Integration Tests", () => {
 
       // THEN - Should succeed with proper validation
       expect(result.isOk()).toBe(true);
+    });
+  });
+
+  describe("Worker-side validation fails the execution terminally (#251)", () => {
+    // The typed client validates input *before* dispatch, so its callers never
+    // reach the worker with bad input. This models the case the typed client
+    // can't catch — a raw (non-typed) caller or a stored/enqueued payload that
+    // drifted from the schema. Before the fix the worker threw a plain `Error`,
+    // which the TS SDK treats as a Workflow Task failure and retries forever:
+    // the execution hung as `Running` with no `WorkflowExecutionFailed` event.
+    // It must instead fail terminally with a non-retryable ApplicationFailure.
+    it("fails (not hangs) when started with contract-violating input", async ({
+      clientConnection,
+    }) => {
+      // GIVEN - a raw Temporal client, bypassing the typed client's pre-dispatch
+      // validation, starting the workflow with a number where the contract
+      // requires a string.
+      const rawClient = new Client({ connection: clientConnection, namespace: "default" });
+      const handle = await rawClient.workflow.start("simpleWorkflow", {
+        taskQueue: testContract.taskQueue,
+        workflowId: `worker-input-validation-${Date.now()}`,
+        args: [{ value: 123 }],
+      });
+
+      // WHEN - awaiting the result. Without the fix this never resolves (the
+      // task retries forever) and the test times out; with the fix it rejects
+      // promptly because the execution failed.
+      const failure = await handle.result().then(
+        () => {
+          throw new Error("expected the workflow execution to fail terminally");
+        },
+        (err: unknown) => err,
+      );
+
+      // THEN - a terminal WorkflowExecutionFailed whose cause is the library's
+      // non-retryable validation ApplicationFailure (discriminable by `type`).
+      expect(failure).toBeInstanceOf(WorkflowFailedError);
+      const cause = (failure as WorkflowFailedError).cause;
+      expect(cause).toBeInstanceOf(ApplicationFailure);
+      expect((cause as ApplicationFailure).type).toBe("WorkflowInputValidationError");
     });
   });
 
