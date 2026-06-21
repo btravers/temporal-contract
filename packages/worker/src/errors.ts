@@ -55,8 +55,15 @@ export abstract class ValidationError extends ApplicationFailure {
     // `ApplicationFailure`'s `SymbolBasedInstanceOfError` decorator installs a
     // read-only `name` ("ApplicationFailure") on the prototype, so a plain
     // `this.name = type` assignment throws. Define an own property to shadow it
-    // and surface the concrete subclass name (matching `type`).
-    Object.defineProperty(this, "name", { value: type, configurable: true, enumerable: true });
+    // and surface the concrete subclass name (matching `type`). `writable: true`
+    // keeps the field reassignable, matching the previous `this.name = ...`
+    // behaviour so consumers (e.g. error-wrapping code) can still adjust it.
+    Object.defineProperty(this, "name", {
+      value: type,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
     // Maintains proper stack trace for where our error was thrown (only available on V8)
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, this.constructor);
