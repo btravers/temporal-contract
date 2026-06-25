@@ -11,7 +11,7 @@ Thanks for your interest! This file is a quick on-ramp; the agent rules in [`.ag
 ## Quick start
 
 ```bash
-git clone https://github.com/btravers/temporal-contract.git
+git clone https://github.com/btravstack/temporal-contract.git
 cd temporal-contract
 pnpm install
 pnpm build

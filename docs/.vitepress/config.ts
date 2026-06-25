@@ -23,7 +23,7 @@ export default withMermaid(
     ],
 
     sitemap: {
-      hostname: "https://btravers.github.io/temporal-contract/",
+      hostname: "https://btravstack.github.io/temporal-contract/",
     },
 
     // Inject canonical URLs and dynamic meta tags for each page to prevent duplicate content issues
@@ -36,7 +36,7 @@ export default withMermaid(
       // VitePress provides relativePath without leading slash (e.g., "guide/getting-started.md")
       // Normalize the path by removing any leading slashes just in case
       const normalizedPath = pageData.relativePath.replace(/^\/+/, "");
-      const canonicalUrl = `https://btravers.github.io/temporal-contract/${normalizedPath}`
+      const canonicalUrl = `https://btravstack.github.io/temporal-contract/${normalizedPath}`
         .replace(/index\.md$/, "")
         .replace(/\.md$/, ".html");
 
@@ -144,7 +144,7 @@ export default withMermaid(
       },
 
       socialLinks: [
-        { icon: "github", link: "https://github.com/btravers/temporal-contract" },
+        { icon: "github", link: "https://github.com/btravstack/temporal-contract" },
         {
           icon: "npm",
           link: "https://www.npmjs.com/package/@temporal-contract/contract",
@@ -161,7 +161,7 @@ export default withMermaid(
       },
 
       editLink: {
-        pattern: "https://github.com/btravers/temporal-contract/edit/main/docs/:path",
+        pattern: "https://github.com/btravstack/temporal-contract/edit/main/docs/:path",
         text: "Edit this page on GitHub",
       },
     },
@@ -191,14 +191,14 @@ export default withMermaid(
       ["meta", { property: "og:locale", content: "en_US" }],
       [
         "meta",
-        { property: "og:image", content: "https://btravers.github.io/temporal-contract/logo.svg" },
+        { property: "og:image", content: "https://btravstack.github.io/temporal-contract/logo.svg" },
       ],
       ["meta", { property: "og:image:alt", content: "temporal-contract logo" }],
       // Twitter Card meta tags
       ["meta", { name: "twitter:card", content: "summary" }],
       [
         "meta",
-        { name: "twitter:image", content: "https://btravers.github.io/temporal-contract/logo.svg" },
+        { name: "twitter:image", content: "https://btravstack.github.io/temporal-contract/logo.svg" },
       ],
       ["meta", { name: "twitter:image:alt", content: "temporal-contract logo" }],
       // Additional SEO meta tags
@@ -227,7 +227,7 @@ export default withMermaid(
             price: "0",
             priceCurrency: "USD",
           },
-          url: "https://btravers.github.io/temporal-contract/",
+          url: "https://btravstack.github.io/temporal-contract/",
           author: {
             "@type": "Person",
             name: "Benoit TRAVERS",
@@ -249,7 +249,7 @@ export default withMermaid(
           "@context": "https://schema.org",
           "@type": "WebSite",
           name: "temporal-contract",
-          url: "https://btravers.github.io/temporal-contract/",
+          url: "https://btravstack.github.io/temporal-contract/",
         }),
       ],
       // Organization JSON-LD for logo display in Google search
@@ -260,12 +260,12 @@ export default withMermaid(
           "@context": "https://schema.org",
           "@type": "Organization",
           name: "temporal-contract",
-          url: "https://btravers.github.io/temporal-contract/",
+          url: "https://btravstack.github.io/temporal-contract/",
           logo: {
             "@type": "ImageObject",
-            url: "https://btravers.github.io/temporal-contract/logo.svg",
+            url: "https://btravstack.github.io/temporal-contract/logo.svg",
           },
-          sameAs: ["https://github.com/btravers/temporal-contract"],
+          sameAs: ["https://github.com/btravstack/temporal-contract"],
         }),
       ],
     ],

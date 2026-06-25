@@ -2,15 +2,15 @@
   "name": "@temporal-contract/testing",
   "version": "2.4.0",
   "description": "Temporal testing utilities",
-  "homepage": "https://github.com/btravers/temporal-contract#readme",
+  "homepage": "https://github.com/btravstack/temporal-contract#readme",
   "bugs": {
-    "url": "https://github.com/btravers/temporal-contract/issues"
+    "url": "https://github.com/btravstack/temporal-contract/issues"
   },
   "license": "MIT",
   "author": "Benoit TRAVERS <benoit.travers.fr@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/btravers/temporal-contract.git",
+    "url": "https://github.com/btravstack/temporal-contract.git",
     "directory": "packages/testing"
   },
   "files": [

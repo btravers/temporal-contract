@@ -32,11 +32,11 @@ export const myContract = defineContract({
 
 ## Documentation
 
-📖 **[Read the full documentation →](https://btravers.github.io/temporal-contract)**
+📖 **[Read the full documentation →](https://btravstack.github.io/temporal-contract)**
 
-- [API Reference](https://btravers.github.io/temporal-contract/api/contract)
-- [Getting Started](https://btravers.github.io/temporal-contract/guide/getting-started)
-- [Core Concepts](https://btravers.github.io/temporal-contract/guide/core-concepts)
+- [API Reference](https://btravstack.github.io/temporal-contract/api/contract)
+- [Getting Started](https://btravstack.github.io/temporal-contract/guide/getting-started)
+- [Core Concepts](https://btravstack.github.io/temporal-contract/guide/core-concepts)
 
 ## License
 

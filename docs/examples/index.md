@@ -47,14 +47,14 @@ A complete e-commerce order processing workflow using `Result` / `ResultAsync` f
 
 ## Running the Examples
 
-All examples are located in the [`examples/`](https://github.com/btravers/temporal-contract/tree/main/examples) directory of the repository.
+All examples are located in the [`examples/`](https://github.com/btravstack/temporal-contract/tree/main/examples) directory of the repository.
 
 ### Prerequisites
 
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/btravers/temporal-contract.git
+   git clone https://github.com/btravstack/temporal-contract.git
    cd temporal-contract
    ```
 
@@ -293,4 +293,4 @@ export const processOrder = declareWorkflow({
 
 ## Contributing Examples
 
-Have an interesting use case? We welcome example contributions! See our [Contributing Guide](https://github.com/btravers/temporal-contract/blob/main/CONTRIBUTING.md).
+Have an interesting use case? We welcome example contributions! See our [Contributing Guide](https://github.com/btravstack/temporal-contract/blob/main/CONTRIBUTING.md).

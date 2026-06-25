@@ -559,8 +559,8 @@ mapping.
 If your problem isn't listed here:
 
 1. **Check GitHub Issues:**
-   - [Search existing issues](https://github.com/btravers/temporal-contract/issues)
-   - [Open a new issue](https://github.com/btravers/temporal-contract/issues/new)
+   - [Search existing issues](https://github.com/btravstack/temporal-contract/issues)
+   - [Open a new issue](https://github.com/btravstack/temporal-contract/issues/new)
 
 2. **Review Documentation:**
    - [Core Concepts](/guide/core-concepts)

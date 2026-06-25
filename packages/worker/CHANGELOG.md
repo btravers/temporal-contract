@@ -7,7 +7,7 @@
 - eae7aae: Declare `engines.node: ">=22.19.0"` on every published package. The floor is set by `undici@8` (pulled in transitively by `testcontainers` via `@temporal-contract/testing`), which already fails at runtime on Node ≤22.18 — the engines field just surfaces that reality at install time so consumers get a clear signal instead of a stack trace. Also bumps `@temporalio/*` 1.18.0 → 1.18.1 and `testcontainers` 12.0.1 → 12.0.2 in the catalog.
 - 2c18aa4: Make contract validation failures fail the execution terminally instead of hanging the workflow.
 
-  Previously, the worker's runtime validation errors (`WorkflowInputValidationError`, `WorkflowOutputValidationError`, `ActivityInputValidationError`, `ActivityOutputValidationError`, and the signal/query/update equivalents) were plain `Error`s. The TypeScript SDK classifies a non-`TemporalFailure` thrown from workflow code as a _Workflow Task_ failure and retries it indefinitely, so a deterministic validation failure produced a silently _hung_ workflow (stuck `Running`, only a repeating `WorkflowTaskFailed` event) rather than a failed execution. The same hazard applied at the activity boundary, where Temporal's default retry policy is unlimited. See [#251](https://github.com/btravers/temporal-contract/issues/251).
+  Previously, the worker's runtime validation errors (`WorkflowInputValidationError`, `WorkflowOutputValidationError`, `ActivityInputValidationError`, `ActivityOutputValidationError`, and the signal/query/update equivalents) were plain `Error`s. The TypeScript SDK classifies a non-`TemporalFailure` thrown from workflow code as a _Workflow Task_ failure and retries it indefinitely, so a deterministic validation failure produced a silently _hung_ workflow (stuck `Running`, only a repeating `WorkflowTaskFailed` event) rather than a failed execution. The same hazard applied at the activity boundary, where Temporal's default retry policy is unlimited. See [#251](https://github.com/btravstack/temporal-contract/issues/251).
 
   These error classes now extend Temporal's `ApplicationFailure` with `nonRetryable: true`. Because contract schemas are static, a validation failure can never pass on retry, so the execution now **fails fast and terminally** with a `WorkflowExecutionFailed` event. The concrete error name is preserved as the failure `type` (e.g. `"WorkflowInputValidationError"`), so it stays discriminable via `failure.type` after crossing Temporal's serialization boundary, and the failing field path remains in the human-readable `message`.
 
@@ -152,7 +152,7 @@
   The `@temporal-contract/boxed` package has been removed.
 
   This is a **breaking change** for every downstream consumer. See
-  [Migrating to neverthrow](https://btravers.github.io/temporal-contract/guide/migrating-to-neverthrow)
+  [Migrating to neverthrow](https://btravstack.github.io/temporal-contract/guide/migrating-to-neverthrow)
   for the full mapping. Highlights:
   - Add `neverthrow` to your dependencies; remove `@swan-io/boxed` and
     `@temporal-contract/boxed`.
@@ -595,7 +595,7 @@
 ### Minor Changes
 
 - ## Breaking Changes
-  - Removed unimplemented Nexus types from public API (`defineNexusOperation`, `defineNexusService`, and related types). These were proof-of-concept exports that were not yet functional. The planned Nexus API design is documented at https://btravers.github.io/temporal-contract/guide/nexus-integration
+  - Removed unimplemented Nexus types from public API (`defineNexusOperation`, `defineNexusService`, and related types). These were proof-of-concept exports that were not yet functional. The planned Nexus API design is documented at https://btravstack.github.io/temporal-contract/guide/nexus-integration
 
   ## Improvements
 

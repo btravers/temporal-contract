@@ -19,7 +19,7 @@ hero:
       link: /guide/why-temporal-contract
     - theme: alt
       text: GitHub
-      link: https://github.com/btravers/temporal-contract
+      link: https://github.com/btravstack/temporal-contract
 
 features:
   - icon: 🔒

@@ -93,8 +93,8 @@ The worker application imports the contract package and implements:
 
 View the complete source code:
 
-- [Contract package](https://github.com/btravers/temporal-contract/tree/main/examples/order-processing-contract)
-- [Worker/Client application](https://github.com/btravers/temporal-contract/tree/main/examples/order-processing-worker)
+- [Contract package](https://github.com/btravstack/temporal-contract/tree/main/examples/order-processing-contract)
+- [Worker/Client application](https://github.com/btravstack/temporal-contract/tree/main/examples/order-processing-worker)
 
 ## Running the Example
 

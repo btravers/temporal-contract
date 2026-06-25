@@ -35,11 +35,11 @@ pnpm dev  # Terminal 2
 
 ## Documentation
 
-**[Read the full documentation](https://btravers.github.io/temporal-contract)**
+**[Read the full documentation](https://btravstack.github.io/temporal-contract)**
 
-- [Examples Overview](https://btravers.github.io/temporal-contract/examples/)
-- [Getting Started](https://btravers.github.io/temporal-contract/guide/getting-started)
-- [API Reference](https://btravers.github.io/temporal-contract/api/)
+- [Examples Overview](https://btravstack.github.io/temporal-contract/examples/)
+- [Getting Started](https://btravstack.github.io/temporal-contract/guide/getting-started)
+- [API Reference](https://btravstack.github.io/temporal-contract/api/)
 
 ## License
 
