@@ -12,10 +12,10 @@
 
 ## Documentation
 
-📖 **[Read the full documentation →](https://btravers.github.io/temporal-contract)**
+📖 **[Read the full documentation →](https://btravstack.github.io/temporal-contract)**
 
-- [Getting Started](https://btravers.github.io/temporal-contract/guide/getting-started)
-- [Contributing Guide](https://btravers.github.io/temporal-contract/guide/contributing)
+- [Getting Started](https://btravstack.github.io/temporal-contract/guide/getting-started)
+- [Contributing Guide](https://btravstack.github.io/temporal-contract/guide/contributing)
 
 ## License
 

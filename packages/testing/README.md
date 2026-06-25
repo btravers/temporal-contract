@@ -48,10 +48,10 @@ it("should execute workflow", async ({ clientConnection, workerConnection }) => 
 
 ## Documentation
 
-📖 **[Read the full documentation →](https://btravers.github.io/temporal-contract)**
+📖 **[Read the full documentation →](https://btravstack.github.io/temporal-contract)**
 
-- [API Reference](https://btravers.github.io/temporal-contract/api/testing)
-- [Examples](https://btravers.github.io/temporal-contract/examples/)
+- [API Reference](https://btravstack.github.io/temporal-contract/api/testing)
+- [Examples](https://btravstack.github.io/temporal-contract/examples/)
 
 ## License
 

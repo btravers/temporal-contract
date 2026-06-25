@@ -6,13 +6,13 @@
 
 End-to-end type safety and automatic validation for workflows and activities
 
-[![CI](https://github.com/btravers/temporal-contract/actions/workflows/ci.yml/badge.svg)](https://github.com/btravers/temporal-contract/actions/workflows/ci.yml)
+[![CI](https://github.com/btravstack/temporal-contract/actions/workflows/ci.yml/badge.svg)](https://github.com/btravstack/temporal-contract/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/@temporal-contract/contract.svg?logo=npm)](https://www.npmjs.com/package/@temporal-contract/contract)
 [![npm downloads](https://img.shields.io/npm/dm/@temporal-contract/contract.svg)](https://www.npmjs.com/package/@temporal-contract/contract)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[**Documentation**](https://btravers.github.io/temporal-contract) · [**Get Started**](https://btravers.github.io/temporal-contract/guide/getting-started) · [**Examples**](https://btravers.github.io/temporal-contract/examples/)
+[**Documentation**](https://btravstack.github.io/temporal-contract) · [**Get Started**](https://btravstack.github.io/temporal-contract/guide/getting-started) · [**Examples**](https://btravstack.github.io/temporal-contract/examples/)
 
 </div>
 
@@ -83,12 +83,12 @@ pnpm add neverthrow
 
 ## Documentation
 
-📖 **[Read the full documentation →](https://btravers.github.io/temporal-contract)**
+📖 **[Read the full documentation →](https://btravstack.github.io/temporal-contract)**
 
-- [Getting Started](https://btravers.github.io/temporal-contract/guide/getting-started)
-- [Core Concepts](https://btravers.github.io/temporal-contract/guide/core-concepts)
-- [API Reference](https://btravers.github.io/temporal-contract/api/)
-- [Examples](https://btravers.github.io/temporal-contract/examples/)
+- [Getting Started](https://btravstack.github.io/temporal-contract/guide/getting-started)
+- [Core Concepts](https://btravstack.github.io/temporal-contract/guide/core-concepts)
+- [API Reference](https://btravstack.github.io/temporal-contract/api/)
+- [Examples](https://btravstack.github.io/temporal-contract/examples/)
 
 ## Packages
 
@@ -101,11 +101,11 @@ pnpm add neverthrow
 
 ## Usage Patterns
 
-temporal-contract uses **[neverthrow](https://github.com/supermacro/neverthrow)** end-to-end (workflows, activities, and the typed client) for explicit error handling via `Result` and `ResultAsync`. Migrating from a previous release that used `@swan-io/boxed`? See [Migrating to neverthrow](https://btravers.github.io/temporal-contract/guide/migrating-to-neverthrow).
+temporal-contract uses **[neverthrow](https://github.com/supermacro/neverthrow)** end-to-end (workflows, activities, and the typed client) for explicit error handling via `Result` and `ResultAsync`. Migrating from a previous release that used `@swan-io/boxed`? See [Migrating to neverthrow](https://btravstack.github.io/temporal-contract/guide/migrating-to-neverthrow).
 
 ## Contributing
 
-See [CONTRIBUTING.md](https://github.com/btravers/temporal-contract/blob/main/CONTRIBUTING.md).
+See [CONTRIBUTING.md](https://github.com/btravstack/temporal-contract/blob/main/CONTRIBUTING.md).
 
 ## License
 

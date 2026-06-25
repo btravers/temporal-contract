@@ -158,11 +158,11 @@ typos surface as TypeScript errors rather than silently running with defaults.
 
 ## Documentation
 
-📖 **[Read the full documentation →](https://btravers.github.io/temporal-contract)**
+📖 **[Read the full documentation →](https://btravstack.github.io/temporal-contract)**
 
-- [API Reference](https://btravers.github.io/temporal-contract/api/worker)
-- [Worker Implementation Guide](https://btravers.github.io/temporal-contract/guide/worker-implementation)
-- [Examples](https://btravers.github.io/temporal-contract/examples/)
+- [API Reference](https://btravstack.github.io/temporal-contract/api/worker)
+- [Worker Implementation Guide](https://btravstack.github.io/temporal-contract/guide/worker-implementation)
+- [Examples](https://btravstack.github.io/temporal-contract/examples/)
 
 ## License
 

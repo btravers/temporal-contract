@@ -252,8 +252,8 @@ Planned for v0.5.0:
 
 Want to help implement Nexus support?
 
-1. Review [CONTRIBUTING.md](https://github.com/btravers/temporal-contract/blob/main/CONTRIBUTING.md)
-2. Join the discussion in [GitHub Issues](https://github.com/btravers/temporal-contract/issues)
+1. Review [CONTRIBUTING.md](https://github.com/btravstack/temporal-contract/blob/main/CONTRIBUTING.md)
+2. Join the discussion in [GitHub Issues](https://github.com/btravstack/temporal-contract/issues)
 
 ## Feedback
 

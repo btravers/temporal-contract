@@ -125,7 +125,7 @@
   The `@temporal-contract/boxed` package has been removed.
 
   This is a **breaking change** for every downstream consumer. See
-  [Migrating to neverthrow](https://btravers.github.io/temporal-contract/guide/migrating-to-neverthrow)
+  [Migrating to neverthrow](https://btravstack.github.io/temporal-contract/guide/migrating-to-neverthrow)
   for the full mapping. Highlights:
   - Add `neverthrow` to your dependencies; remove `@swan-io/boxed` and
     `@temporal-contract/boxed`.
@@ -502,7 +502,7 @@
 ### Minor Changes
 
 - ## Breaking Changes
-  - Removed unimplemented Nexus types from public API (`defineNexusOperation`, `defineNexusService`, and related types). These were proof-of-concept exports that were not yet functional. The planned Nexus API design is documented at https://btravers.github.io/temporal-contract/guide/nexus-integration
+  - Removed unimplemented Nexus types from public API (`defineNexusOperation`, `defineNexusService`, and related types). These were proof-of-concept exports that were not yet functional. The planned Nexus API design is documented at https://btravstack.github.io/temporal-contract/guide/nexus-integration
 
   ## Improvements
 
