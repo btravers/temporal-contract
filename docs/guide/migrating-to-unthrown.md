@@ -82,22 +82,27 @@ it to an `AsyncResult` with `.toAsync()`:
 + return err(new MyError()).toAsync();
 ```
 
-## Narrowing: free functions, not methods
+## Narrowing: methods or free functions
 
-In neverthrow you narrowed with the `.isOk()` / `.isErr()` **methods**. In
-unthrown those methods return a plain boolean and do **not** narrow the type.
-Use the free functions `isOk` / `isErr` / `isDefect` instead:
+Both narrow. The `result.isOk()` / `result.isErr()` / `result.isDefect()`
+**methods** are type guards (as in neverthrow), and unthrown also exports the
+matching **free functions** `isOk` / `isErr` / `isDefect`. This codebase
+prefers the free functions, but either reaches `.value` / `.error` / `.cause`:
 
-```diff
-- if (result.isErr()) {
-+ import { isErr } from "unthrown";
-+
-+ if (isErr(result)) {
-    console.error(result.error);
-    return;
-  }
-  console.log(result.value);
+```ts
+import { isErr } from "unthrown";
+
+if (isErr(result)) {
+  console.error(result.error);
+  return;
+}
+// result is narrowed to `Ok | Defect` here — a `Defect` still needs handling
+// (see below) before `.value` is reachable
 ```
+
+> [!NOTE]
+> Versions before unthrown 0.2.0 returned a plain `boolean` from the methods,
+> so only the free functions narrowed. On 0.2.0+ either form works.
 
 ## The new `defect` channel
 

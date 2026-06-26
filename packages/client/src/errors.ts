@@ -33,7 +33,9 @@ export type TemporalFailure =
 /**
  * Generic runtime failure wrapper when no specific error type applies
  */
-export class RuntimeClientError extends TaggedError("@temporal-contract/RuntimeClientError")<{
+export class RuntimeClientError extends TaggedError("@temporal-contract/RuntimeClientError", {
+  name: "RuntimeClientError",
+})<{
   operation: string;
   cause?: unknown;
   message: string;
@@ -46,16 +48,16 @@ export class RuntimeClientError extends TaggedError("@temporal-contract/RuntimeC
         cause instanceof Error ? cause.message : String(cause ?? "unknown error")
       }`,
     });
-    // Keep the conventional class name in logs; the package namespace lives
     // only on `_tag`.
-    this.name = "RuntimeClientError";
   }
 }
 
 /**
  * Thrown when a workflow is not found in the contract
  */
-export class WorkflowNotFoundError extends TaggedError("@temporal-contract/WorkflowNotFoundError")<{
+export class WorkflowNotFoundError extends TaggedError("@temporal-contract/WorkflowNotFoundError", {
+  name: "WorkflowNotFoundError",
+})<{
   workflowName: string;
   availableWorkflows: string[];
   message: string;
@@ -66,7 +68,6 @@ export class WorkflowNotFoundError extends TaggedError("@temporal-contract/Workf
       availableWorkflows,
       message: `Workflow "${workflowName}" not found in contract. Available workflows: ${availableWorkflows.join(", ")}`,
     });
-    this.name = "WorkflowNotFoundError";
   }
 }
 
@@ -83,6 +84,7 @@ export class WorkflowNotFoundError extends TaggedError("@temporal-contract/Workf
  */
 export class WorkflowAlreadyStartedError extends TaggedError(
   "@temporal-contract/WorkflowAlreadyStartedError",
+  { name: "WorkflowAlreadyStartedError" },
 )<{
   workflowType: string;
   workflowId: string;
@@ -96,7 +98,6 @@ export class WorkflowAlreadyStartedError extends TaggedError(
       cause,
       message: `Workflow "${workflowType}" with ID "${workflowId}" is already started or in retention.`,
     });
-    this.name = "WorkflowAlreadyStartedError";
   }
 }
 
@@ -114,6 +115,7 @@ export class WorkflowAlreadyStartedError extends TaggedError(
  */
 export class WorkflowExecutionNotFoundError extends TaggedError(
   "@temporal-contract/WorkflowExecutionNotFoundError",
+  { name: "WorkflowExecutionNotFoundError" },
 )<{
   workflowId: string;
   runId?: string | undefined;
@@ -127,7 +129,6 @@ export class WorkflowExecutionNotFoundError extends TaggedError(
       cause,
       message: `Workflow execution "${workflowId}"${runId ? ` (run "${runId}")` : ""} not found in namespace.`,
     });
-    this.name = "WorkflowExecutionNotFoundError";
   }
 }
 
@@ -150,7 +151,9 @@ export class WorkflowExecutionNotFoundError extends TaggedError(
  *
  * Returned from `executeWorkflow` and `handle.result()`.
  */
-export class WorkflowFailedError extends TaggedError("@temporal-contract/WorkflowFailedError")<{
+export class WorkflowFailedError extends TaggedError("@temporal-contract/WorkflowFailedError", {
+  name: "WorkflowFailedError",
+})<{
   workflowId: string;
   cause?: TemporalFailure | undefined;
   message: string;
@@ -163,7 +166,6 @@ export class WorkflowFailedError extends TaggedError("@temporal-contract/Workflo
       cause,
       message: `Workflow "${workflowId}" completed with failure: ${causeMessage}`,
     });
-    this.name = "WorkflowFailedError";
   }
 }
 
@@ -177,6 +179,7 @@ export class WorkflowFailedError extends TaggedError("@temporal-contract/Workflo
  */
 export class WorkflowValidationError extends TaggedError(
   "@temporal-contract/WorkflowValidationError",
+  { name: "WorkflowValidationError" },
 )<{
   workflowName: string;
   direction: "input" | "output";
@@ -194,14 +197,15 @@ export class WorkflowValidationError extends TaggedError(
       issues,
       message: `Validation failed for workflow "${workflowName}" ${direction}: ${summarizeIssues(issues)}`,
     });
-    this.name = "WorkflowValidationError";
   }
 }
 
 /**
  * Thrown when query input or output validation fails
  */
-export class QueryValidationError extends TaggedError("@temporal-contract/QueryValidationError")<{
+export class QueryValidationError extends TaggedError("@temporal-contract/QueryValidationError", {
+  name: "QueryValidationError",
+})<{
   queryName: string;
   direction: "input" | "output";
   issues: ReadonlyArray<StandardSchemaV1.Issue>;
@@ -218,14 +222,15 @@ export class QueryValidationError extends TaggedError("@temporal-contract/QueryV
       issues,
       message: `Validation failed for query "${queryName}" ${direction}: ${summarizeIssues(issues)}`,
     });
-    this.name = "QueryValidationError";
   }
 }
 
 /**
  * Thrown when signal input validation fails
  */
-export class SignalValidationError extends TaggedError("@temporal-contract/SignalValidationError")<{
+export class SignalValidationError extends TaggedError("@temporal-contract/SignalValidationError", {
+  name: "SignalValidationError",
+})<{
   signalName: string;
   issues: ReadonlyArray<StandardSchemaV1.Issue>;
   message: string;
@@ -236,14 +241,15 @@ export class SignalValidationError extends TaggedError("@temporal-contract/Signa
       issues,
       message: `Validation failed for signal "${signalName}": ${summarizeIssues(issues)}`,
     });
-    this.name = "SignalValidationError";
   }
 }
 
 /**
  * Thrown when update input or output validation fails
  */
-export class UpdateValidationError extends TaggedError("@temporal-contract/UpdateValidationError")<{
+export class UpdateValidationError extends TaggedError("@temporal-contract/UpdateValidationError", {
+  name: "UpdateValidationError",
+})<{
   updateName: string;
   direction: "input" | "output";
   issues: ReadonlyArray<StandardSchemaV1.Issue>;
@@ -260,6 +266,5 @@ export class UpdateValidationError extends TaggedError("@temporal-contract/Updat
       issues,
       message: `Validation failed for update "${updateName}" ${direction}: ${summarizeIssues(issues)}`,
     });
-    this.name = "UpdateValidationError";
   }
 }

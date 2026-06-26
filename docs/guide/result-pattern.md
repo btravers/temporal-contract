@@ -43,12 +43,12 @@ pnpm add unthrown
 so the type behaves like a lazy task — call sites that already `await` the
 value before checking `isOk(result)` / `isErr(result)` need no changes.
 
-> [!IMPORTANT]
-> unthrown narrows with **free functions** — `isOk(result)`, `isErr(result)`,
-> `isDefect(result)` imported from `"unthrown"`. The `result.isOk()` /
-> `result.isErr()` **methods** return a plain boolean and do **not** narrow
-> the type, so reach for the free functions before touching `.value` /
-> `.error` / `.cause`.
+> [!TIP]
+> Narrow before touching `.value` / `.error` / `.cause`. Both forms are type
+> guards: the `result.isOk()` / `result.isErr()` / `result.isDefect()`
+> **methods** and the matching **free functions** `isOk(result)` /
+> `isErr(result)` / `isDefect(result)` imported from `"unthrown"`. This
+> codebase uses the free functions; either works.
 
 ## Basic Usage
 
