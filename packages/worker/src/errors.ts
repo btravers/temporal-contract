@@ -63,6 +63,7 @@ export abstract class ValidationError extends ApplicationFailure {
  */
 export class ActivityDefinitionNotFoundError extends TaggedError(
   "@temporal-contract/ActivityDefinitionNotFoundError",
+  { name: "ActivityDefinitionNotFoundError" },
 )<{
   activityName: string;
   availableDefinitions: readonly string[];
@@ -75,9 +76,6 @@ export class ActivityDefinitionNotFoundError extends TaggedError(
       availableDefinitions,
       message: `Activity definition not found for: "${activityName}". Available activities: ${available}`,
     });
-    // Keep the conventional class name in logs/stack traces; the package
-    // namespace lives only on `_tag`.
-    this.name = "ActivityDefinitionNotFoundError";
   }
 }
 
@@ -239,6 +237,7 @@ export class UpdateOutputValidationError extends ValidationError {
  */
 export class ChildWorkflowNotFoundError extends TaggedError(
   "@temporal-contract/ChildWorkflowNotFoundError",
+  { name: "ChildWorkflowNotFoundError" },
 )<{
   workflowName: string;
   availableWorkflows: readonly string[];
@@ -251,7 +250,6 @@ export class ChildWorkflowNotFoundError extends TaggedError(
       availableWorkflows,
       message: `Child workflow not found: "${workflowName}". Available workflows: ${available}`,
     });
-    this.name = "ChildWorkflowNotFoundError";
   }
 }
 
@@ -264,13 +262,14 @@ export class ChildWorkflowNotFoundError extends TaggedError(
  * mirroring the client-side `WorkflowFailedError.cause` behavior, so callers
  * can branch on the failure category in one step instead of unwrapping twice.
  */
-export class ChildWorkflowError extends TaggedError("@temporal-contract/ChildWorkflowError")<{
+export class ChildWorkflowError extends TaggedError("@temporal-contract/ChildWorkflowError", {
+  name: "ChildWorkflowError",
+})<{
   message: string;
   cause?: unknown;
 }> {
   constructor(message: string, cause?: unknown) {
     super({ message, cause });
-    this.name = "ChildWorkflowError";
   }
 }
 
@@ -291,6 +290,7 @@ export class ChildWorkflowError extends TaggedError("@temporal-contract/ChildWor
  */
 export class ChildWorkflowCancelledError extends TaggedError(
   "@temporal-contract/ChildWorkflowCancelledError",
+  { name: "ChildWorkflowCancelledError" },
 )<{
   workflowName: string;
   cause?: unknown;
@@ -298,7 +298,6 @@ export class ChildWorkflowCancelledError extends TaggedError(
 }> {
   constructor(workflowName: string, cause?: unknown) {
     super({ workflowName, cause, message: `Child workflow "${workflowName}" was cancelled` });
-    this.name = "ChildWorkflowCancelledError";
   }
 }
 
@@ -316,12 +315,12 @@ export class ChildWorkflowCancelledError extends TaggedError(
  */
 export class WorkflowCancelledError extends TaggedError(
   "@temporal-contract/WorkflowCancelledError",
+  { name: "WorkflowCancelledError" },
 )<{
   cause?: unknown;
   message: string;
 }> {
   constructor(cause?: unknown) {
     super({ cause, message: "Workflow cancellation scope was cancelled" });
-    this.name = "WorkflowCancelledError";
   }
 }
