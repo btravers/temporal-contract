@@ -12,6 +12,16 @@ export default withMermaid(
     base: "/temporal-contract/",
     lang: "en-US",
 
+    // `@btravstack/theme` re-exports VitePress's default theme, which imports
+    // `.css`. Externalizing it during SSR makes Node try to `import` those
+    // stylesheets and throw `ERR_UNKNOWN_FILE_EXTENSION`. Transform the theme
+    // package through Vite instead so the CSS imports are handled.
+    vite: {
+      ssr: {
+        noExternal: ["@btravstack/theme"],
+      },
+    },
+
     ignoreDeadLinks: [
       // Ignore localhost links as they're for development examples
       /^http:\/\/localhost/,
